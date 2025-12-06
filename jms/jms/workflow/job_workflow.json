@@ -1,0 +1,123 @@
+{
+ "name": "Job Workflow",
+ "document_type": "Job",
+ "is_active": 1,
+ "workflow_name": "Job Workflow",
+ "workflow_state_field": "status",
+ "states": [
+  {
+   "state": "CREATED",
+   "doc_status": 0,
+   "allow_edit": "System Manager"
+  },
+  {
+   "state": "PROCESSING",
+   "doc_status": 0,
+   "allow_edit": "System Manager"
+  },
+  {
+   "state": "COMPLETED",
+   "doc_status": 1,
+   "allow_edit": null
+  },
+  {
+   "state": "AMT_PENDING(COMPLETED)",
+   "doc_status": 0,
+   "allow_edit": "System Manager"
+  },
+  {
+   "state": "PENDING_EXT(COMPLETED)",
+   "doc_status": 0,
+   "allow_edit": "System Manager"
+  },
+  {
+   "state": "REJECTED",
+   "doc_status": 2,
+   "allow_edit": null
+  },
+  {
+   "state": "CANCELED",
+   "doc_status": 2,
+   "allow_edit": null
+  }
+ ],
+ "transitions": [
+  {
+   "state": "CREATED",
+   "action": "Start Processing",
+   "next_state": "PROCESSING",
+   "allowed": "System Manager",
+   "allow_self_approval": 1
+  },
+  {
+   "state": "CREATED",
+   "action": "Reject",
+   "next_state": "REJECTED",
+   "allowed": "System Manager",
+   "allow_self_approval": 1
+  },
+  {
+   "state": "CREATED",
+   "action": "Cancel",
+   "next_state": "CANCELED",
+   "allowed": "System Manager",
+   "allow_self_approval": 1
+  },
+  {
+   "state": "PROCESSING",
+   "action": "Mark Complete",
+   "next_state": "COMPLETED",
+   "allowed": "System Manager",
+   "allow_self_approval": 1
+  },
+  {
+   "state": "PROCESSING",
+   "action": "Payment Pending",
+   "next_state": "AMT_PENDING(COMPLETED)",
+   "allowed": "System Manager",
+   "allow_self_approval": 1
+  },
+  {
+   "state": "PROCESSING",
+   "action": "External Pending",
+   "next_state": "PENDING_EXT(COMPLETED)",
+   "allowed": "System Manager",
+   "allow_self_approval": 1
+  },
+  {
+   "state": "PROCESSING",
+   "action": "Cancel",
+   "next_state": "CANCELED",
+   "allowed": "System Manager",
+   "allow_self_approval": 1
+  },
+  {
+   "state": "AMT_PENDING(COMPLETED)",
+   "action": "Payment Received",
+   "next_state": "COMPLETED",
+   "allowed": "System Manager",
+   "allow_self_approval": 1
+  },
+  {
+   "state": "AMT_PENDING(COMPLETED)",
+   "action": "Send Back",
+   "next_state": "PROCESSING",
+   "allowed": "System Manager",
+   "allow_self_approval": 1
+  },
+  {
+   "state": "PENDING_EXT(COMPLETED)",
+   "action": "Mark Complete",
+   "next_state": "COMPLETED",
+   "allowed": "System Manager",
+   "allow_self_approval": 1
+  },
+  {
+   "state": "PENDING_EXT(COMPLETED)",
+   "action": "Send Back",
+   "next_state": "PROCESSING",
+   "allowed": "System Manager",
+   "allow_self_approval": 1
+  }
+ ]
+}

@@ -1,0 +1,144 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:template_code",
+ "creation": "2025-12-05 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "template_code",
+  "description",
+  "job_type",
+  "column_break_4",
+  "job_qty",
+  "fee_price",
+  "extra",
+  "column_break_8",
+  "surcharge",
+  "vat",
+  "section_break_11",
+  "has_sub_tasks",
+  "sub_tasks",
+  "section_break_14",
+  "status",
+  "is_active"
+ ],
+ "fields": [
+  {
+   "fieldname": "template_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Code",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Description",
+   "reqd": 1
+  },
+  {
+   "fieldname": "job_type",
+   "fieldtype": "Link",
+   "label": "Job Type",
+   "options": "Job Type"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "job_qty",
+   "fieldtype": "Int",
+   "label": "Job Qty"
+  },
+  {
+   "fieldname": "fee_price",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Fee Price"
+  },
+  {
+   "fieldname": "extra",
+   "fieldtype": "Currency",
+   "label": "Extra"
+  },
+  {
+   "fieldname": "column_break_8",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "surcharge",
+   "fieldtype": "Currency",
+   "label": "Surcharge"
+  },
+  {
+   "fieldname": "vat",
+   "fieldtype": "Percent",
+   "label": "VAT %"
+  },
+  {
+   "fieldname": "section_break_11",
+   "fieldtype": "Section Break",
+   "label": "Sub Tasks"
+  },
+  {
+   "default": "0",
+   "fieldname": "has_sub_tasks",
+   "fieldtype": "Check",
+   "label": "Has Sub Tasks"
+  },
+  {
+   "depends_on": "has_sub_tasks",
+   "fieldname": "sub_tasks",
+   "fieldtype": "Table",
+   "label": "Sub Tasks",
+   "options": "Work Template Sub Task"
+  },
+  {
+   "fieldname": "section_break_14",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nCREATED\nPROCESSING\nCOMPLETED\nREJECTED\nCANCELED\nPENDING_EXT(COMPLETED)\nAMT_PENDING(COMPLETED)"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Is Active"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-12-05 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Jms",
+ "name": "Work Template",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

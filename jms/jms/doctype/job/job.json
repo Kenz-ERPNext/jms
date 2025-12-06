@@ -1,0 +1,438 @@
+{
+ "actions": [],
+ "allow_copy": 1,
+ "autoname": "naming_series:",
+ "creation": "2025-12-05 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "basic_info_section",
+  "naming_series",
+  "job_title",
+  "job_number",
+  "column_break_4",
+  "date",
+  "year",
+  "customer_section",
+  "customer",
+  "customer_name",
+  "customer_mobile",
+  "column_break_10",
+  "create_customer_from_agent",
+  "agent",
+  "agent_commission",
+  "job_details_section",
+  "job_type",
+  "job_nature",
+  "priority",
+  "column_break_17",
+  "job_source",
+  "timeline_section",
+  "start_date",
+  "expected_completion_date",
+  "column_break_21",
+  "completion_date",
+  "overdue_status",
+  "items_section",
+  "items",
+  "section_break_25",
+  "discount",
+  "gross_amount",
+  "column_break_28",
+  "vat",
+  "net_amount",
+  "section_break_31",
+  "column_break_32",
+  "balance",
+  "paid_up",
+  "assignment_section",
+  "assigned_agent",
+  "assigned_outsourced_party",
+  "column_break_38",
+  "staff_assignment",
+  "tasks_section",
+  "tasks",
+  "documents_section",
+  "documents",
+  "status_and_billing_section",
+  "status",
+  "billing_status",
+  "column_break_45",
+  "linked_invoice",
+  "remarks_section",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "basic_info_section",
+   "fieldtype": "Section Break",
+   "label": "Basic Info"
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "JOB-.YYYY.-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "job_title",
+   "fieldtype": "Data",
+   "label": "Job Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "job_number",
+   "fieldtype": "Data",
+   "label": "Job Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "year",
+   "fieldtype": "Int",
+   "label": "Year",
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer_section",
+   "fieldtype": "Section Break",
+   "label": "Customer / Agent"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "fetch_from": "customer.customer_name",
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "customer.mobile_no",
+   "fieldname": "customer_mobile",
+   "fieldtype": "Data",
+   "label": "Customer Mobile",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_10",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Tick this if customer should be created from agent details",
+   "fieldname": "create_customer_from_agent",
+   "fieldtype": "Check",
+   "label": "Create Customer from Agent"
+  },
+  {
+   "fieldname": "agent",
+   "fieldtype": "Link",
+   "label": "Agent",
+   "mandatory_depends_on": "create_customer_from_agent",
+   "options": "Agent"
+  },
+  {
+   "depends_on": "agent",
+   "fieldname": "agent_commission",
+   "fieldtype": "Currency",
+   "label": "Agent Commission",
+   "read_only": 1
+  },
+  {
+   "fieldname": "job_details_section",
+   "fieldtype": "Section Break",
+   "label": "Job Details"
+  },
+  {
+   "fieldname": "job_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Job Type",
+   "options": "Job Type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "job_nature",
+   "fieldtype": "Link",
+   "label": "Job Nature",
+   "options": "Job Nature"
+  },
+  {
+   "default": "Medium",
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Priority",
+   "options": "Low\nMedium\nHigh\nUrgent"
+  },
+  {
+   "fieldname": "column_break_17",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "job_source",
+   "fieldtype": "Link",
+   "label": "Job Source",
+   "options": "Job Source"
+  },
+  {
+   "fieldname": "timeline_section",
+   "fieldtype": "Section Break",
+   "label": "Timeline"
+  },
+  {
+   "default": "Today",
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Starting Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "expected_completion_date",
+   "fieldtype": "Date",
+   "label": "Expected Completion Date"
+  },
+  {
+   "fieldname": "column_break_21",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "completion_date",
+   "fieldtype": "Date",
+   "label": "Completion Date"
+  },
+  {
+   "fieldname": "overdue_status",
+   "fieldtype": "Select",
+   "label": "Overdue Status",
+   "options": "\nOverdue\nOn Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "items_section",
+   "fieldtype": "Section Break",
+   "label": "Services / Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Job Item"
+  },
+  {
+   "fieldname": "section_break_25",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "discount",
+   "fieldtype": "Currency",
+   "label": "Discount"
+  },
+  {
+   "fieldname": "gross_amount",
+   "fieldtype": "Currency",
+   "label": "Gross Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_28",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "vat",
+   "fieldtype": "Percent",
+   "label": "VAT"
+  },
+  {
+   "fieldname": "net_amount",
+   "fieldtype": "Currency",
+   "label": "Net Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_31",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_32",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "balance",
+   "fieldtype": "Currency",
+   "label": "Balance",
+   "read_only": 1
+  },
+  {
+   "fieldname": "paid_up",
+   "fieldtype": "Currency",
+   "label": "Paid Up"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "assignment_section",
+   "fieldtype": "Section Break",
+   "label": "Assignment (Agent / Outsourced Party / Staff)"
+  },
+  {
+   "description": "Agent who will bring the order",
+   "fieldname": "assigned_agent",
+   "fieldtype": "Link",
+   "label": "Assigned Agent",
+   "options": "Agent"
+  },
+  {
+   "description": "Outsourced party who will complete the work",
+   "fieldname": "assigned_outsourced_party",
+   "fieldtype": "Link",
+   "label": "Assigned Outsourced Party",
+   "options": "Outsourced Party"
+  },
+  {
+   "fieldname": "column_break_38",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "staff_assignment",
+   "fieldtype": "Table",
+   "label": "Staff Assignment",
+   "options": "Job Staff Assignment"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "tasks_section",
+   "fieldtype": "Section Break",
+   "label": "Tasks"
+  },
+  {
+   "fieldname": "tasks",
+   "fieldtype": "Table",
+   "label": "Tasks",
+   "options": "Job Task"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "documents_section",
+   "fieldtype": "Section Break",
+   "label": "Documents"
+  },
+  {
+   "fieldname": "documents",
+   "fieldtype": "Table",
+   "label": "Documents",
+   "options": "Job Document"
+  },
+  {
+   "fieldname": "status_and_billing_section",
+   "fieldtype": "Section Break",
+   "label": "Status & Billing"
+  },
+  {
+   "default": "CREATED",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "CREATED\nPROCESSING\nCOMPLETED\nREJECTED\nCANCELED\nPENDING_EXT(COMPLETED)\nAMT_PENDING(COMPLETED)",
+   "reqd": 1
+  },
+  {
+   "default": "Not Billed",
+   "fieldname": "billing_status",
+   "fieldtype": "Select",
+   "label": "Billing Status",
+   "options": "Not Billed\nPartially Billed\nFully Billed"
+  },
+  {
+   "fieldname": "column_break_45",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "linked_invoice",
+   "fieldtype": "Link",
+   "label": "Linked Invoice",
+   "options": "Sales Invoice"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "remarks_section",
+   "fieldtype": "Section Break",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text Editor",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "link_doctype": "Sales Invoice",
+   "link_fieldname": "custom_job",
+   "group": "Billing"
+  },
+  {
+   "link_doctype": "Payment Entry",
+   "link_fieldname": "custom_job",
+   "group": "Payments"
+  },
+  {
+   "link_doctype": "Task",
+   "link_fieldname": "custom_job",
+   "group": "Tasks"
+  }
+ ],
+ "modified": "2025-12-05 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Jms",
+ "name": "Job",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Customer",
+   "select": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "job_title",
+ "track_changes": 1,
+ "track_seen": 1
+}
