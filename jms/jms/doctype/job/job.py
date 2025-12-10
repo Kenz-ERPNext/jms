@@ -1,6 +1,6 @@
 # Copyright (c) 2025, Your Company and contributors
 # For license information, please see license.txt
-
+ 
 import frappe
 from frappe import _
 from frappe.model.document import Document
@@ -10,8 +10,8 @@ from frappe.utils import add_days, date_diff, getdate, today, nowdate
 class Job(Document):
 	def validate(self):
 		self.set_year()
-		self.validate_customer_or_agent()
-		self.create_customer_from_agent_if_required()
+		# self.validate_customer_or_agent()
+		# self.create_customer_from_agent_if_required()
 		self.validate_staff_assignment()
 		self.calculate_amounts()
 		self.calculate_agent_commission()
@@ -19,43 +19,16 @@ class Job(Document):
 		self.check_overdue()
 		self.auto_create_tasks_from_items()
 
+
+
 	def after_insert(self):
-		pass  # Tasks are now created from work templates in items
+		pass 
 
 	def set_year(self):
 		"""Set year from date field"""
 		if self.date:
 			self.year = getdate(self.date).year
 
-	def validate_customer_or_agent(self):
-		"""Ensure either customer or agent (with create flag) is provided"""
-		if not self.customer and not (self.create_customer_from_agent and self.agent):
-			frappe.throw(_("Please select either a Customer or tick 'Create Customer from Agent' and select an Agent"))
-
-	def create_customer_from_agent_if_required(self):
-		"""Create customer from agent if the checkbox is ticked"""
-		if self.create_customer_from_agent and self.agent and not self.customer:
-			agent = frappe.get_doc("Agent", self.agent)
-
-			# Check if customer already exists for this agent
-			if agent.linked_customer:
-				self.customer = agent.linked_customer
-			else:
-				# Create new customer
-				customer = frappe.get_doc({
-					"doctype": "Customer",
-					"customer_name": agent.agent_name,
-					"customer_type": "Individual",
-					"mobile_no": agent.mobile,
-					"email_id": agent.email
-				})
-				customer.insert(ignore_permissions=True)
-
-				# Link customer back to agent
-				frappe.db.set_value("Agent", agent.name, "linked_customer", customer.name)
-
-				self.customer = customer.name
-				frappe.msgprint(_("Customer {0} created from Agent {1}").format(customer.name, agent.agent_name))
 
 	def validate_staff_assignment(self):
 		"""Validate that only one staff is marked as primary"""
@@ -67,38 +40,42 @@ class Job(Document):
 		if primary_count > 1:
 			frappe.throw(_("Only one staff member can be marked as Primary"))
 
+
 	def calculate_amounts(self):
 		"""Calculate gross amount, net amount, and balance"""
-		# Calculate gross amount from items
-		gross_total = 0
+
+		gross_total = 0          
+		net_total = 0            
+
 		for item in self.items:
-			# Calculate item total
-			item_total = (item.fee_price or 0) * (item.job_qty or 1)
-			item_total += (item.extra or 0) + (item.surcharge or 0)
 
-			# Apply VAT to item
+			fee_price = item.fee_price or 0
+			extra = item.extra or 0
+			surcharge = item.surcharge or 0
+			qty = item.job_qty or 1
+
+			total_without_tax = (fee_price + extra + surcharge) * qty
+			item.total_without_tax = total_without_tax
+
+			gross_total += total_without_tax
+
 			if item.vat:
-				vat_amount = item_total * (item.vat / 100)
-				item_total += vat_amount
+				item.vat_amount = total_without_tax * (item.vat / 100)
+				item.total = total_without_tax + item.vat_amount
+			else:
+				item.vat_amount = 0
+				item.total = total_without_tax
 
-			item.cost = item_total
-			item.total = item_total
-			gross_total += item_total
+			net_total += item.total
 
 		self.gross_amount = gross_total
 
-		# Apply discount
-		discounted_amount = self.gross_amount - (self.discount or 0)
+		self.net_amount = net_total
 
-		# Apply VAT at job level (if any)
-		if self.vat:
-			vat_amount = discounted_amount * (self.vat / 100)
-			self.net_amount = discounted_amount + vat_amount
-		else:
-			self.net_amount = discounted_amount
+		self.balance = (self.net_amount or 0) - (self.discount or 0)
 
-		# Calculate balance
-		self.balance = self.net_amount - (self.paid_up or 0)
+
+
 
 	def calculate_agent_commission(self):
 		"""Calculate agent commission based on agent settings"""
@@ -133,8 +110,13 @@ class Job(Document):
 			else:
 				self.overdue_status = "On Time"
 
+
+
+
+
+	@frappe.whitelist()
 	def auto_create_tasks_from_items(self):
-		"""Auto-create tasks from work template sub tasks"""
+		"""Auto-create tasks from work template sub tasks or single task field"""
 		if not self.items:
 			return
 
@@ -149,25 +131,42 @@ class Job(Document):
 			# Get work template
 			work_template = frappe.get_doc("Work Template", item.work_template)
 
-			# Check if it has sub tasks
+			# 1️⃣ If work template has sub_tasks
 			if work_template.has_sub_tasks and work_template.sub_tasks:
 				for sub_task in work_template.sub_tasks:
 					# Check if task already exists
-					existing_task = False
-					for existing in self.tasks:
-						if existing.task_name == f"{work_template.description} - {sub_task.task_name}":
-							existing_task = True
-							break
-
+					existing_task = any(
+						existing.task_name == f"{work_template.description} - {sub_task.task_name}"
+						for existing in self.tasks
+					)
 					if not existing_task:
 						due_date = add_days(self.start_date, sub_task.due_days or 0)
-
 						self.append("tasks", {
 							"task_name": f"{work_template.description} - {sub_task.task_name}",
-							"assigned_to": sub_task.assigned_to,
+							# "assigned_to": sub_task.assigned_to,
 							"due_date": due_date,
-							"status": sub_task.status or "Pending"
+							"status": sub_task.status or "Pending",
+							"linked_task": sub_task.linked_task,
+							"item_code" :item.item_code
 						})
+
+			# 2️⃣ If no sub_tasks but single task field exists
+			elif getattr(work_template, "task", None):
+				task_name = f"{work_template.description} - {work_template.task}"
+				# Check if already exists
+				if not any(existing.task_name == task_name for existing in self.tasks):
+					due_date = self.start_date  # Or calculate differently if needed
+					self.append("tasks", {
+						"task_name": task_name,
+						# "assigned_to": getattr(work_template, "assigned_to", None),
+						"due_date": due_date,
+						"status": getattr(work_template, "status", "Pending"),
+						"linked_task": getattr(work_template, "linked_task", None),
+						"item_code" :item.item_code
+					})
+
+
+
 
 	def get_progress(self):
 		"""Calculate job progress based on completed tasks"""
@@ -178,19 +177,6 @@ class Job(Document):
 		completed_tasks = len([task for task in self.tasks if task.status == "Completed"])
 
 		return round((completed_tasks / total_tasks) * 100, 2) if total_tasks else 0
-
-	def on_update(self):
-		"""Update status based on tasks completion and payment"""
-		if self.tasks:
-			progress = self.get_progress()
-
-			# Auto-update status based on progress and payment
-			if progress == 100 and self.balance == 0:
-				self.db_set("status", "COMPLETED")
-			elif progress == 100 and self.balance > 0:
-				self.db_set("status", "AMT_PENDING(COMPLETED)")
-			elif progress > 0 and self.status == "CREATED":
-				self.db_set("status", "PROCESSING")
 
 	def before_cancel(self):
 		"""Validate before cancelling job"""
@@ -211,49 +197,165 @@ class Job(Document):
 			frappe.throw(_("Cannot delete job linked to invoice. Please remove invoice link first."))
 
 
-@frappe.whitelist()
-def get_job_progress(job_name):
-	"""API method to get job progress"""
-	job = frappe.get_doc("Job", job_name)
-	return {
-		"progress": job.get_progress(),
-		"total_tasks": len(job.tasks),
-		"completed_tasks": len([task for task in job.tasks if task.status == "Completed"]),
-		"pending_tasks": len([task for task in job.tasks if task.status == "Pending"]),
-		"in_progress_tasks": len([task for task in job.tasks if task.status == "In Progress"])
-	}
-
-
-@frappe.whitelist()
-def make_sales_invoice(source_name, target_doc=None):
-	"""Create Sales Invoice from Job"""
-	from frappe.model.mapper import get_mapped_doc
-
-	def set_missing_values(source, target):
-		target.customer = source.customer
-		target.run_method("set_missing_values")
-		target.run_method("calculate_taxes_and_totals")
-
-	def update_item(source_doc, target_doc, source_parent):
-		target_doc.qty = source_doc.job_qty or 1
-		target_doc.rate = source_doc.fee_price or 0
-
-	doclist = get_mapped_doc("Job", source_name, {
-		"Job": {
-			"doctype": "Sales Invoice",
-			"field_map": {
-				"customer": "customer",
-				"net_amount": "total"
-			}
-		},
-		"Job Item": {
-			"doctype": "Sales Invoice Item",
-			"field_map": {
-				"description": "description",
-				"fee_price": "rate"
-			},
-			"postprocess": update_item
+	@frappe.whitelist()
+	def get_job_progress(job_name):
+		"""API method to get job progress"""
+		job = frappe.get_doc("Job", job_name)
+		return {
+			"progress": job.get_progress(),
+			"total_tasks": len(job.tasks),
+			"completed_tasks": len([task for task in job.tasks if task.status == "Completed"]),
+			"pending_tasks": len([task for task in job.tasks if task.status == "Pending"]),
+			"in_progress_tasks": len([task for task in job.tasks if task.status == "In Progress"])
 		}
-	}, target_doc, set_missing_values)
 
-	return doclist
+
+
+	@frappe.whitelist()
+	def create_invoice(self, tax_template=None):
+
+		sales_invoice = frappe.new_doc("Sales Invoice")
+
+		if self.receivable_from == "Customer":
+			sales_invoice.customer = self.customer
+		else:
+			sales_invoice.customer = self.agent_customer
+
+		sales_invoice.company = frappe.defaults.get_user_default("company")
+		sales_invoice.posting_date = frappe.utils.nowdate()
+		sales_invoice.due_date = frappe.utils.add_days(frappe.utils.nowdate(), 30)
+		sales_invoice.custom_job = self.name
+
+		if tax_template:
+			sales_invoice.taxes_and_charges = tax_template
+
+			sales_invoice.set_taxes()    
+
+		if self.items:
+			for row in self.items:
+				sales_invoice.append("items", {
+					"item_code": row.item_code,
+					"description": row.description,
+					"qty": row.job_qty,
+					"rate": row.total_without_tax,
+				})
+
+		sales_invoice.run_method("calculate_taxes_and_totals")
+
+		sales_invoice.insert(ignore_permissions=True)
+
+		self.sales_invoice_status = "Created"
+		self.linked_invoice = sales_invoice.name   
+		self.save(ignore_permissions=True)
+
+		return sales_invoice.name
+
+
+
+	# @frappe.whitelist()
+	# def create_pinvoice(self, tax_template=None):
+	# 	outsource_rows = [row for row in self.tasks if row.employee__outsource == "Outsource"]
+
+	# 	if not outsource_rows:
+	# 		frappe.throw("No outsource rows found in tasks table.")
+
+	# 	suppliers = list({row.outsource_supplier for row in outsource_rows})
+
+	# 	if len(suppliers) > 1:
+	# 		frappe.throw("Multiple outsource suppliers found. Please create invoice individually per supplier.")
+
+	# 	supplier = suppliers[0]
+
+	# 	if not supplier:
+	# 		frappe.throw("Outsource Supplier is missing in some rows.")
+
+	# 	pi = frappe.new_doc("Purchase Invoice")
+	# 	pi.supplier = supplier
+	# 	pi.company = frappe.defaults.get_user_default("company")
+	# 	pi.posting_date = frappe.utils.nowdate()
+
+	# 	if tax_template:
+	# 		pi.taxes_and_charges = tax_template
+
+	# 	for row in outsource_rows:
+	# 		matching_item = next((i for i in self.items if i.item_code == row.item_code), None)
+
+	# 		if not matching_item:
+	# 			frappe.throw(f"No matching item found in Items table for item_code: {row.item_code}")
+
+	# 		pi.append("items", {
+	# 			"item_code": matching_item.item_code,
+	# 			"qty": matching_item.job_qty or 1,
+	# 			"rate": matching_item.total_without_tax or 0
+	# 		})
+
+
+	# 	pi.insert(ignore_permissions=True)
+
+	# 	return pi.name
+
+	@frappe.whitelist()
+	def create_pinvoice(self, tax_template=None):
+		outsource_rows = [row for row in self.tasks if row.employee__outsource == "Outsource"]
+
+		if not outsource_rows:
+			frappe.throw("No outsource rows found in tasks table.")
+
+		suppliers = list({row.outsource_supplier for row in outsource_rows})
+
+		if len(suppliers) > 1:
+			frappe.throw("Multiple outsource suppliers found. Please create invoice individually per supplier.")
+
+		supplier = suppliers[0]
+
+		if not supplier:
+			frappe.throw("Outsource Supplier is missing in some rows.")
+
+		# Create Purchase Invoice
+		pi = frappe.new_doc("Purchase Invoice")
+		pi.supplier = supplier
+		pi.company = frappe.defaults.get_user_default("company")
+		pi.posting_date = frappe.utils.nowdate()
+
+		if tax_template:
+			pi.taxes_and_charges = tax_template
+
+		for row in outsource_rows:
+			matching_item = next((i for i in self.items if i.item_code == row.item_code), None)
+			if not matching_item:
+				frappe.throw(f"No matching item found in Items table for item_code: {row.item_code}")
+
+			pi.append("items", {
+				"item_code": matching_item.item_code,
+				"qty": matching_item.job_qty or 1,
+				"rate": matching_item.total_without_tax or 0
+			})
+
+		# Insert first so taxes can be computed
+		pi.insert(ignore_permissions=True)
+
+		# Now calculate taxes and totals properly
+		pi.set_missing_values()
+		pi.calculate_taxes_and_totals()
+		pi.save()  # Save after calculation
+
+		# Optional: submit immediately
+		# pi.submit()
+
+		return pi.name
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

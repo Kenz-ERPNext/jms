@@ -242,3 +242,47 @@ app_license = "mit"
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
+
+
+doctype_js = {
+    
+    "Purchase Invoice": "public/js/purchase_invoice.js",
+
+   
+    }
+
+
+fixtures = [
+    {
+        "doctype": "Custom Field",
+        "filters": [
+            [
+                "name",
+                "in",
+
+                [
+
+                "Customer-custom_agent",
+                "Supplier-custom_outsourced_party",
+                "Sales Invoice-custom_job",
+                "Payment Entry-custom_job",
+                "Task-custom_job",
+                "Company-custom_purchase_taxes_and_charges_template"
+         
+ 
+                
+              
+                 ]
+            ]
+        ]
+    },
+    {"dt":"Property Setter",
+				"filters": [
+					["name", "in",[
+                        # "Purchase Receipt-main-field_order",
+                        
+
+                    ]]
+				]
+			},
+]

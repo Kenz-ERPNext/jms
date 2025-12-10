@@ -1,18 +1,18 @@
 {
  "actions": [],
- "creation": "2025-12-05 10:00:00.000000",
+ "creation": "2025-12-05 10:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "task_name",
-  "assigned_to",
-  "column_break_3",
   "due_days",
-  "status"
+  "status",
+  "assigned_to",
+  "linked_task"
  ],
  "fields": [
   {
-   "columns": 4,
+   "columns": 2,
    "fieldname": "task_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -23,16 +23,13 @@
    "columns": 2,
    "fieldname": "assigned_to",
    "fieldtype": "Link",
+   "hidden": 1,
    "in_list_view": 1,
    "label": "Assigned To",
    "options": "User"
   },
   {
-   "fieldname": "column_break_3",
-   "fieldtype": "Column Break"
-  },
-  {
-   "columns": 1,
+   "columns": 2,
    "default": "0",
    "fieldname": "due_days",
    "fieldtype": "Int",
@@ -41,23 +38,29 @@
   },
   {
    "columns": 1,
-   "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Pending\nIn Progress\nCompleted"
+   "options": "Open\nWorking\nPending Review\nOverdue\nCompleted"
+  },
+  {
+   "fieldname": "linked_task",
+   "fieldtype": "Data",
+   "label": "Linked Task",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-12-05 10:00:00.000000",
+ "modified": "2025-12-09 08:40:38.281981",
  "modified_by": "Administrator",
  "module": "Jms",
  "name": "Work Template Sub Task",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

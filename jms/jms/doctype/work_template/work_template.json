@@ -2,26 +2,30 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "field:template_code",
- "creation": "2025-12-05 10:00:00.000000",
+ "creation": "2025-12-05 10:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "template_code",
   "description",
   "job_type",
+  "task",
   "column_break_4",
   "job_qty",
   "fee_price",
   "extra",
   "column_break_8",
+  "is_active",
   "surcharge",
+  "tax_templates",
   "vat",
   "section_break_11",
   "has_sub_tasks",
   "sub_tasks",
   "section_break_14",
   "status",
-  "is_active"
+  "column_break_czbx",
+  "item_code"
  ],
  "fields": [
   {
@@ -78,7 +82,8 @@
   {
    "fieldname": "vat",
    "fieldtype": "Percent",
-   "label": "VAT %"
+   "label": "VAT %",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_11",
@@ -106,18 +111,42 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "\nCREATED\nPROCESSING\nCOMPLETED\nREJECTED\nCANCELED\nPENDING_EXT(COMPLETED)\nAMT_PENDING(COMPLETED)"
+   "options": "Open\nWorking\nPending Review\nOverdue\nTemplate\nCompleted\nCancelled",
+   "read_only": 1
   },
   {
    "default": "1",
    "fieldname": "is_active",
    "fieldtype": "Check",
    "label": "Is Active"
+  },
+  {
+   "fieldname": "column_break_czbx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "label": "Item Code",
+   "options": "Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tax_templates",
+   "fieldtype": "Link",
+   "label": "Tax Templates",
+   "options": "Sales Taxes and Charges Template"
+  },
+  {
+   "fieldname": "task",
+   "fieldtype": "Data",
+   "label": "Task",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-05 10:00:00.000000",
+ "modified": "2025-12-09 10:36:39.681528",
  "modified_by": "Administrator",
  "module": "Jms",
  "name": "Work Template",
@@ -137,6 +166,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

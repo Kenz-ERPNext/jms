@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "field:agent_name",
- "creation": "2025-12-04 20:00:00.000000",
+ "creation": "2025-12-04 20:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -11,6 +11,7 @@
   "email",
   "column_break_4",
   "linked_customer",
+  "tax_id",
   "is_active",
   "section_break_7",
   "commission_type",
@@ -44,7 +45,8 @@
    "fieldname": "linked_customer",
    "fieldtype": "Link",
    "label": "Linked Customer",
-   "options": "Customer"
+   "options": "Customer",
+   "read_only": 1
   },
   {
    "default": "1",
@@ -69,11 +71,16 @@
    "fieldname": "commission_rate",
    "fieldtype": "Currency",
    "label": "Commission Rate"
+  },
+  {
+   "fieldname": "tax_id",
+   "fieldtype": "Data",
+   "label": "TAX ID"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-04 20:00:00.000000",
+ "modified": "2025-12-09 07:09:31.505980",
  "modified_by": "Administrator",
  "module": "Jms",
  "name": "Agent",
@@ -93,6 +100,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

@@ -1,46 +1,168 @@
 // Copyright (c) 2025, Your Company and contributors
 // For license information, please see license.txt
-
+ 
 frappe.ui.form.on('Job', {
-	refresh: function(frm) {
-		// Add custom buttons
-		if (!frm.is_new()) {
-			frm.add_custom_button(__('Get Progress'), function() {
-				frappe.call({
-					method: 'jms.jms.doctype.job.job.get_job_progress',
-					args: {
-						job_name: frm.doc.name
-					},
-					callback: function(r) {
-						if (r.message) {
-							frappe.msgprint({
-								title: __('Job Progress'),
-								message: `
-									<div style="padding: 10px;">
-										<p><strong>Progress:</strong> ${r.message.progress}%</p>
-										<p><strong>Total Tasks:</strong> ${r.message.total_tasks}</p>
-										<p><strong>Completed:</strong> ${r.message.completed_tasks}</p>
-										<p><strong>In Progress:</strong> ${r.message.in_progress_tasks}</p>
-										<p><strong>Pending:</strong> ${r.message.pending_tasks}</p>
-									</div>
-								`,
-								indicator: 'blue'
-							});
-						}
-					}
-				});
-			});
 
-			// Add button to create invoice if not billed
-			if (frm.doc.billing_status != 'Fully Billed' && frm.doc.net_amount > 0) {
-				frm.add_custom_button(__('Create Invoice'), function() {
-					frappe.model.open_mapped_doc({
-						method: 'jms.jms.doctype.job.job.make_sales_invoice',
-						frm: frm
-					});
-				}, __('Create'));
-			}
-		}
+	onload(frm) {
+		salesInvoiceMessage(frm);
+    },
+
+	refresh: function(frm) {
+
+		salesInvoiceMessage(frm);
+
+		frm.set_query("customer", function() {
+            return {
+                filters: {
+                    custom_agent: 0,
+					
+                }
+            };
+        });
+
+
+
+		// Add custom buttons
+		// if (!frm.is_new()) {
+		// 	frm.add_custom_button(__('Get Progress'), function() {
+		// 		cur_frm.call({
+        //             doc: cur_frm.doc,
+		// 			method: "get_job_progress",
+		// 			args: {
+		// 				job_name: frm.doc.name
+		// 			},
+		// 			callback: function(r) {
+		// 				if (r.message) {
+		// 					frappe.msgprint({
+		// 						title: __('Job Progress'),
+		// 						message: `
+		// 							<div style="padding: 10px;">
+		// 								<p><strong>Progress:</strong> ${r.message.progress}%</p>
+		// 								<p><strong>Total Tasks:</strong> ${r.message.total_tasks}</p>
+		// 								<p><strong>Completed:</strong> ${r.message.completed_tasks}</p>
+		// 								<p><strong>In Progress:</strong> ${r.message.in_progress_tasks}</p>
+		// 								<p><strong>Pending:</strong> ${r.message.pending_tasks}</p>
+		// 							</div>
+		// 						`,
+		// 						indicator: 'blue'
+		// 					});
+		// 				}
+		// 			}
+		// 		});
+		// 	});
+
+		// 	}
+
+
+
+
+		// if (frm.doc.status === 'Completed') {
+        //     frm.add_custom_button(__('Create Invoice'), function () {
+        //         cur_frm.call({
+        //             doc: cur_frm.doc,
+        //             method: "create_invoice",
+        //             args: {},
+        //             callback: function (r) {
+        //                 if (r.message) {
+        //                 }
+        //             }
+        //         });
+        //     });
+        // }
+
+		if (frm.doc.status === 'Completed' && frm.doc.sales_invoice_status !== 'Created') {
+            frm.add_custom_button(__('Create Sales Invoice'), function () {
+
+                frappe.prompt(
+                    [
+                        {
+                            fieldname: "tax_template",
+                            label: "Sales Taxes and Charges Template",
+                            fieldtype: "Link",
+                            options: "Sales Taxes and Charges Template",
+                            reqd: 1
+                        }
+                    ],
+                    function (data) {
+                        cur_frm.call({
+                            doc: cur_frm.doc,
+                            method: "create_invoice",
+                            args: {
+                                tax_template: data.tax_template
+                            },
+                            callback: function (r) {
+                                if (r.message) {
+                                    frappe.msgprint("Invoice Created: <b>" + r.message + "</b>");
+                                }
+                            }
+                        });
+                    },
+                    __("Select Tax Template"),
+                    __("Create")
+                );
+
+            });
+        }
+
+		if (frm.doc.status === 'Completed' && frm.doc.purchase_invoice_status !== 'Created') {
+            frm.add_custom_button(__('Create Purchase Invoice'), function () {
+				cur_frm.call({
+                    doc: cur_frm.doc,
+                    method: "create_pinvoice",
+                    args: {},
+                    callback: function (r) {
+                        if (r.message) {
+							frappe.msgprint("Invoice Created: <b>" + r.message + "</b>");
+                        }
+                    }
+                });
+            });
+           
+			// frappe.prompt(
+            //         [
+            //             {
+            //                 fieldname: "tax_template",
+            //                 label: "Purchase Taxes and Charges Template",
+            //                 fieldtype: "Link",
+            //                 options: "Purchase Taxes and Charges Template",
+            //                 reqd: 1
+            //             }
+            //         ],
+            //         function (data) {
+            //             cur_frm.call({
+            //                 doc: cur_frm.doc,
+            //                 method: "create_pinvoice",
+            //                 args: {
+            //                     tax_template: data.tax_template
+            //                 },
+            //                 callback: function (r) {
+            //                     if (r.message) {
+            //                         frappe.msgprint("Invoice Created: <b>" + r.message + "</b>");
+            //                     }
+            //                 }
+            //             });
+            //         },
+            //         __("Select Tax Template"),
+            //         __("Create")
+            //     );
+
+            // });
+        }
+ //     cur_frm.call({
+            //         doc: cur_frm.doc,
+            //         method: "create_pinvoice",
+            //         args: {},
+            //         callback: function (r) {
+            //             if (r.message) {
+            //             }
+            //         }
+            //     });
+            // });
+
+
+
+
+		
 
 		// Set filter for job nature based on job type
 		frm.set_query('job_nature', function() {
@@ -162,7 +284,27 @@ frappe.ui.form.on('Job Task', {
 		if (row.status === 'Completed' && !row.completion_date) {
 			frappe.model.set_value(cdt, cdn, 'completion_date', frappe.datetime.get_today());
 		}
-	}
+
+		 set_job_status(frm);
+	},
+
+	employee__outsource: function(frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+
+        if (row.employee__outsource === "Employee") {
+            // Clear outsource field
+            frappe.model.set_value(cdt, cdn, 'outsource_supplier', "");
+			frappe.model.set_value(cdt, cdn, 'assigned_tos', "");
+            frm.refresh_field("job_task");   // refresh child table
+        }
+
+        if (row.employee__outsource === "Outsource") {
+            // Clear employee field
+            frappe.model.set_value(cdt, cdn, 'employee_user', "");
+			frappe.model.set_value(cdt, cdn, 'assigned_to', "");
+            frm.refresh_field("job_task");   // refresh child table
+        }
+    },
 });
 
 // Child table event for Job Item
@@ -230,3 +372,53 @@ frappe.ui.form.on('Job Item', {
 		setTimeout(() => frm.save(), 500);
 	}
 });
+
+
+function set_job_status(frm) {
+    if (!frm.doc.tasks || frm.doc.tasks.length === 0) return;
+
+    let all_completed = frm.doc.tasks.every(row => row.status === "Completed");
+
+    if (all_completed) {
+        frm.set_value("status", "Completed");
+		frm.set_value("completion_date", frappe.datetime.get_today());
+    }
+
+	let all_inp = frm.doc.tasks.every(row => row.status === "In Progress");
+
+    if (all_inp) {
+        frm.set_value("status", "In Progress");
+    }
+
+
+    frm.refresh_field("status");
+}
+
+
+
+function salesInvoiceMessage(frm) {
+
+    console.log("DOCSTATUS:", frm.doc.docstatus);
+    console.log("STATUS:", frm.doc.status);
+    console.log("HTML FIELD EXISTS:", !!frm.fields_dict.message);
+
+    if (!frm.fields_dict.message) {
+        console.log("FIELD 'message' NOT FOUND!");
+        return;
+    }
+
+    frm.fields_dict.message.$wrapper.html("");
+
+    if (frm.doc.status === "Completed" && frm.doc.sales_invoice_status == "" ) {
+
+        frm.fields_dict.message.$wrapper.html(`
+            <div style="color: green; font-size: 13px; font-weight: bold;  text-align:center;">
+                Invoice Creation is Pending ✨ 
+            </div>
+        `);
+
+        console.log("MESSAGE SHOWN");
+    } else {
+        console.log("CONDITION NOT MATCHED");
+    }
+}
