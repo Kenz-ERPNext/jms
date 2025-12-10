@@ -252,6 +252,7 @@ doctype_js = {
     }
 
 
+
 fixtures = [
     {
         "doctype": "Custom Field",
