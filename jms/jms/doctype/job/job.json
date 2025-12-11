@@ -7,12 +7,15 @@
  "engine": "InnoDB",
  "field_order": [
   "message",
+  "sales_invoice_status",
+  "purchase_invoice_status",
+  "column_break_pjky",
+  "payment",
+  "mode_of_payment",
   "basic_info_section",
   "naming_series",
   "job_title",
   "job_number",
-  "sales_invoice_status",
-  "purchase_invoice_status",
   "column_break_4",
   "date",
   "year",
@@ -70,8 +73,10 @@
   "status_billing_tab",
   "status_and_billing_section",
   "billing_status",
+  "sales_invoice_payment_entry",
   "column_break_45",
   "linked_invoice",
+  "purchase_invoice",
   "connections_tab"
  ],
  "fields": [
@@ -464,6 +469,39 @@
    "label": "Purchase Invoice Status",
    "options": "\nCreated",
    "read_only": 1
+  },
+  {
+   "fieldname": "purchase_invoice",
+   "fieldtype": "Link",
+   "label": "Purchase Invoice",
+   "options": "Purchase Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_pjky",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.status == 'Completed' && doc.sales_invoice_status !== 'Created'",
+   "fieldname": "payment",
+   "fieldtype": "Select",
+   "label": "Payment",
+   "options": "\nPayment Now\nCredit"
+  },
+  {
+   "depends_on": "eval:doc.payment && doc.status == 'Completed' && doc.sales_invoice_status !== 'Created'",
+   "fieldname": "mode_of_payment",
+   "fieldtype": "Link",
+   "label": "Mode of Payment",
+   "mandatory_depends_on": "eval:doc.payment === \"Payment Now\"",
+   "options": "Mode of Payment"
+  },
+  {
+   "fieldname": "sales_invoice_payment_entry",
+   "fieldtype": "Link",
+   "label": "Sales Invoice Payment Entry",
+   "options": "Payment Entry",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -471,6 +509,11 @@
   {
    "group": "Billing",
    "link_doctype": "Sales Invoice",
+   "link_fieldname": "custom_job"
+  },
+  {
+   "group": "Billing",
+   "link_doctype": "Purchase Invoice",
    "link_fieldname": "custom_job"
   },
   {
@@ -484,7 +527,7 @@
    "link_fieldname": "custom_job"
   }
  ],
- "modified": "2025-12-10 10:43:08.569246",
+ "modified": "2025-12-11 10:29:07.957987",
  "modified_by": "Administrator",
  "module": "Jms",
  "name": "Job",

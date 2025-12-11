@@ -243,56 +243,77 @@ class Job(Document):
 		sales_invoice.run_method("calculate_taxes_and_totals")
 
 		sales_invoice.insert(ignore_permissions=True)
+		sales_invoice.submit()
 
 		self.sales_invoice_status = "Created"
 		self.linked_invoice = sales_invoice.name   
 		self.save(ignore_permissions=True)
 
-		return sales_invoice.name
+	
+		if self.payment == "Payment Now":
+			payment_entry = frappe.new_doc("Payment Entry")
+			payment_entry.payment_type = "Receive"
+			payment_entry.company = sales_invoice.company
+			payment_entry.posting_date = frappe.utils.nowdate()
+			payment_entry.mode_of_payment = self.mode_of_payment
+			payment_entry.party_type = "Customer"
+			payment_entry.party = sales_invoice.customer
+			payment_entry.custom_job = self.name
+
+			# -----------------------------------
+			# FETCH ACCOUNT BASED ON MODE OF PAYMENT
+			# -----------------------------------
+
+			if self.mode_of_payment in ["Bank", "Bank Draft", "Bank Transfer"]:
+				# Fetch company default bank account
+				default_bank_account = frappe.db.get_value(
+					"Company",
+					sales_invoice.company,
+					"default_bank_account"
+				)
+				if not default_bank_account:
+					frappe.throw(f"Default bank account is not set for company: {sales_invoice.company}")
+
+				payment_entry.paid_to = default_bank_account
+
+				# Add reference number and date
+				payment_entry.reference_no = self.name
+				payment_entry.reference_date = frappe.utils.nowdate()
+
+			else:
+				# Standard Mode of Payment Account Fetch
+				payment_entry.paid_to = frappe.db.get_value(
+					"Mode of Payment Account",
+					{"parent": self.mode_of_payment, "company": sales_invoice.company},
+					"default_account"
+				)
+
+				if not payment_entry.paid_to:
+					frappe.throw(f"No account found for Mode of Payment: {self.mode_of_payment}")
 
 
+			# Add Invoice Reference
+			payment_entry.append("references", {
+				"reference_doctype": "Sales Invoice",
+				"reference_name": sales_invoice.name,
+				"total_amount": sales_invoice.grand_total,
+				"outstanding_amount": sales_invoice.outstanding_amount,
+				"allocated_amount": sales_invoice.grand_total
+			})
 
-	# @frappe.whitelist()
-	# def create_pinvoice(self, tax_template=None):
-	# 	outsource_rows = [row for row in self.tasks if row.employee__outsource == "Outsource"]
+			payment_entry.paid_amount = sales_invoice.grand_total
+			payment_entry.received_amount = sales_invoice.grand_total
 
-	# 	if not outsource_rows:
-	# 		frappe.throw("No outsource rows found in tasks table.")
+			payment_entry.insert(ignore_permissions=True)
+			payment_entry.submit()
 
-	# 	suppliers = list({row.outsource_supplier for row in outsource_rows})
+			# Link Payment Entry to Job
+			self.sales_invoice_payment_entry = payment_entry.name
+			self.save(ignore_permissions=True)
 
-	# 	if len(suppliers) > 1:
-	# 		frappe.throw("Multiple outsource suppliers found. Please create invoice individually per supplier.")
-
-	# 	supplier = suppliers[0]
-
-	# 	if not supplier:
-	# 		frappe.throw("Outsource Supplier is missing in some rows.")
-
-	# 	pi = frappe.new_doc("Purchase Invoice")
-	# 	pi.supplier = supplier
-	# 	pi.company = frappe.defaults.get_user_default("company")
-	# 	pi.posting_date = frappe.utils.nowdate()
-
-	# 	if tax_template:
-	# 		pi.taxes_and_charges = tax_template
-
-	# 	for row in outsource_rows:
-	# 		matching_item = next((i for i in self.items if i.item_code == row.item_code), None)
-
-	# 		if not matching_item:
-	# 			frappe.throw(f"No matching item found in Items table for item_code: {row.item_code}")
-
-	# 		pi.append("items", {
-	# 			"item_code": matching_item.item_code,
-	# 			"qty": matching_item.job_qty or 1,
-	# 			"rate": matching_item.total_without_tax or 0
-	# 		})
+			return payment_entry.name
 
 
-	# 	pi.insert(ignore_permissions=True)
-
-	# 	return pi.name
 
 	@frappe.whitelist()
 	def create_pinvoice(self, tax_template=None):
@@ -311,11 +332,11 @@ class Job(Document):
 		if not supplier:
 			frappe.throw("Outsource Supplier is missing in some rows.")
 
-		# Create Purchase Invoice
 		pi = frappe.new_doc("Purchase Invoice")
 		pi.supplier = supplier
 		pi.company = frappe.defaults.get_user_default("company")
 		pi.posting_date = frappe.utils.nowdate()
+		pi.custom_job = self.name
 
 		if tax_template:
 			pi.taxes_and_charges = tax_template
@@ -331,18 +352,76 @@ class Job(Document):
 				"rate": matching_item.total_without_tax or 0
 			})
 
-		# Insert first so taxes can be computed
 		pi.insert(ignore_permissions=True)
 
-		# Now calculate taxes and totals properly
 		pi.set_missing_values()
 		pi.calculate_taxes_and_totals()
-		pi.save()  # Save after calculation
+		pi.save() 
 
-		# Optional: submit immediately
-		# pi.submit()
+		self.purchase_invoice_status = "Created"
+		self.purchase_invoice = pi.name   
+		self.save(ignore_permissions=True)
 
 		return pi.name
+
+
+
+
+	@frappe.whitelist()
+	def create_payment(self, mode_of_payment):
+		sales_invoice = frappe.get_doc("Sales Invoice", self.linked_invoice)
+
+		payment_entry = frappe.new_doc("Payment Entry")
+		payment_entry.payment_type = "Receive"
+		payment_entry.company = sales_invoice.company
+		payment_entry.posting_date = frappe.utils.nowdate()
+		payment_entry.mode_of_payment = mode_of_payment
+		payment_entry.party_type = "Customer"
+		payment_entry.party = sales_invoice.customer
+		payment_entry.custom_job = self.name
+
+		# Fetch account based on mode of payment
+		if mode_of_payment in ["Bank", "Bank Draft", "Bank Transfer"]:
+			default_bank_account = frappe.db.get_value("Company", sales_invoice.company, "default_bank_account")
+			if not default_bank_account:
+				frappe.throw(f"Default bank account is not set for company: {sales_invoice.company}")
+
+			payment_entry.paid_to = default_bank_account
+			payment_entry.reference_no = self.name
+			payment_entry.reference_date = frappe.utils.nowdate()
+		else:
+			payment_entry.paid_to = frappe.db.get_value(
+				"Mode of Payment Account",
+				{"parent": mode_of_payment, "company": sales_invoice.company},
+				"default_account"
+			)
+			if not payment_entry.paid_to:
+				frappe.throw(f"No account found for Mode of Payment: {mode_of_payment}")
+
+		# Add invoice reference
+		payment_entry.append("references", {
+			"reference_doctype": "Sales Invoice",
+			"reference_name": sales_invoice.name,
+			"total_amount": sales_invoice.grand_total,
+			"outstanding_amount": sales_invoice.outstanding_amount,
+			"allocated_amount": sales_invoice.outstanding_amount
+		})
+
+		payment_entry.paid_amount = sales_invoice.grand_total
+		payment_entry.received_amount = sales_invoice.grand_total
+
+		payment_entry.insert(ignore_permissions=True)
+		payment_entry.submit()
+
+		# Link Payment Entry to Job
+		self.sales_invoice_payment_entry = payment_entry.name
+		self.save(ignore_permissions=True)
+
+		return payment_entry.name
+
+
+
+
 
 
 

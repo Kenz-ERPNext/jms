@@ -268,7 +268,8 @@ fixtures = [
                 "Sales Invoice-custom_job",
                 "Payment Entry-custom_job",
                 "Task-custom_job",
-                "Company-custom_purchase_taxes_and_charges_template"
+                "Company-custom_purchase_taxes_and_charges_template",
+                "Purchase Invoice-custom_job"
          
  
                 

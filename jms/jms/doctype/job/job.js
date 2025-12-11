@@ -56,22 +56,47 @@ frappe.ui.form.on('Job', {
 
 
 
-		// if (frm.doc.status === 'Completed') {
-        //     frm.add_custom_button(__('Create Invoice'), function () {
-        //         cur_frm.call({
-        //             doc: cur_frm.doc,
-        //             method: "create_invoice",
-        //             args: {},
-        //             callback: function (r) {
-        //                 if (r.message) {
-        //                 }
-        //             }
-        //         });
-        //     });
-        // }
+		if (frm.doc.sales_invoice_payment_entry === '' && frm.doc.sales_invoice_status === 'Created') {
+            frm.add_custom_button(__('SI Payment'), function () {
+
+                frappe.prompt(
+                    [
+                        {
+							fieldname: "mode_of_payment",
+							label: "Mode of Payment",
+							fieldtype: "Link",
+							options: "Mode of Payment",
+							reqd: 1
+						}
+                    ],
+                    function (data) {
+                        cur_frm.call({
+                            doc: cur_frm.doc,
+                            method: "create_payment",
+                            args: {
+                                mode_of_payment: data.mode_of_payment
+                            },
+                            callback: function (r) {
+                                if (r.message) {
+                                    frappe.msgprint("Invoice Created: <b>" + r.message + "</b>");
+                                }
+                            }
+                        });
+                    },
+                    __("Select Mode Of Payment"),
+                    __("Create")
+                );
+
+            });
+        }
 
 		if (frm.doc.status === 'Completed' && frm.doc.sales_invoice_status !== 'Created') {
             frm.add_custom_button(__('Create Sales Invoice'), function () {
+
+				if (!frm.doc.payment) {
+					frappe.msgprint(__('Payment is required before creating Sales Invoice.'));
+					return; // Stop execution
+				}
 
                 frappe.prompt(
                     [
@@ -104,65 +129,42 @@ frappe.ui.form.on('Job', {
             });
         }
 
-		if (frm.doc.status === 'Completed' && frm.doc.purchase_invoice_status !== 'Created') {
+		// if (frm.doc.status === 'Completed' && frm.doc.purchase_invoice_status !== 'Created') {
+        //     frm.add_custom_button(__('Create Purchase Invoice'), function () {
+		// 		cur_frm.call({
+        //             doc: cur_frm.doc,
+        //             method: "create_pinvoice",
+        //             args: {},
+        //             callback: function (r) {
+        //                 if (r.message) {
+		// 					frappe.msgprint("Invoice Created: <b>" + r.message + "</b>");
+        //                 }
+        //             }
+        //         });
+        //     });
+
+		let outsource_rows = frm.doc.tasks.filter(row => row.employee__outsource === "Outsource");
+
+        // Only show button if there are outsource rows
+        if (outsource_rows.length > 0 && frm.doc.status === 'Completed' && frm.doc.purchase_invoice_status !== 'Created') {
             frm.add_custom_button(__('Create Purchase Invoice'), function () {
-				cur_frm.call({
+                cur_frm.call({
                     doc: cur_frm.doc,
                     method: "create_pinvoice",
                     args: {},
                     callback: function (r) {
                         if (r.message) {
-							frappe.msgprint("Invoice Created: <b>" + r.message + "</b>");
+                            frappe.msgprint("Invoice Created: <b>" + r.message + "</b>");
                         }
                     }
                 });
             });
-           
-			// frappe.prompt(
-            //         [
-            //             {
-            //                 fieldname: "tax_template",
-            //                 label: "Purchase Taxes and Charges Template",
-            //                 fieldtype: "Link",
-            //                 options: "Purchase Taxes and Charges Template",
-            //                 reqd: 1
-            //             }
-            //         ],
-            //         function (data) {
-            //             cur_frm.call({
-            //                 doc: cur_frm.doc,
-            //                 method: "create_pinvoice",
-            //                 args: {
-            //                     tax_template: data.tax_template
-            //                 },
-            //                 callback: function (r) {
-            //                     if (r.message) {
-            //                         frappe.msgprint("Invoice Created: <b>" + r.message + "</b>");
-            //                     }
-            //                 }
-            //             });
-            //         },
-            //         __("Select Tax Template"),
-            //         __("Create")
-            //     );
-
-            // });
-        }
- //     cur_frm.call({
-            //         doc: cur_frm.doc,
-            //         method: "create_pinvoice",
-            //         args: {},
-            //         callback: function (r) {
-            //             if (r.message) {
-            //             }
-            //         }
-            //     });
-            // });
-
-
-
+        // }
 
 		
+        
+        }
+
 
 		// Set filter for job nature based on job type
 		frm.set_query('job_nature', function() {
@@ -395,9 +397,7 @@ function set_job_status(frm) {
 }
 
 
-
 function salesInvoiceMessage(frm) {
-
     console.log("DOCSTATUS:", frm.doc.docstatus);
     console.log("STATUS:", frm.doc.status);
     console.log("HTML FIELD EXISTS:", !!frm.fields_dict.message);
@@ -409,16 +409,41 @@ function salesInvoiceMessage(frm) {
 
     frm.fields_dict.message.$wrapper.html("");
 
-    if (frm.doc.status === "Completed" && frm.doc.sales_invoice_status == "" ) {
+    let html = "";
 
-        frm.fields_dict.message.$wrapper.html(`
-            <div style="color: green; font-size: 13px; font-weight: bold;  text-align:center;">
-                Invoice Creation is Pending ✨ 
+    if (frm.doc.status === "Completed" && frm.doc.sales_invoice_status === "") {
+        html += `
+            <div style="color: green; font-size: 13px; font-weight: bold;">
+                Sales Invoice Creation is Pending ✨
             </div>
-        `);
-
-        console.log("MESSAGE SHOWN");
-    } else {
-        console.log("CONDITION NOT MATCHED");
+        `;
+        console.log("SALES INVOICE MESSAGE SHOWN");
     }
+
+	let outsource_rows = frm.doc.tasks.filter(row => row.employee__outsource === "Outsource");
+    if (frm.doc.status === "Completed" && frm.doc.purchase_invoice_status === "" && outsource_rows.length > 0) {
+		html += `
+			<div style="color: green; font-size: 13px; font-weight: bold; margin-top: 5px;">
+				Purchase Invoice Creation is Pending ✨
+			</div>
+		`;
+		console.log("PURCHASE INVOICE MESSAGE SHOWN");
+	}
+
+    if (frm.doc.sales_invoice_status === "Created" && frm.doc.sales_invoice_payment_entry === "") {
+        html += `
+            <div style="color: #FF1717; font-size: 13px; font-weight: bold; margin-top: 5px;">
+                Sales Invoice Payment Pending ✨
+            </div>
+        `;
+        console.log("SALES INVOICE PAYMENT MESSAGE SHOWN");
+    }
+
+    if (!html) {
+        console.log("NO CONDITIONS MATCHED");
+        return;
+    }
+
+    frm.fields_dict.message.$wrapper.html(html);
 }
+
