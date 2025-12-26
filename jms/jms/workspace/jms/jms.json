@@ -1,7 +1,7 @@
 {
  "charts": [],
- "content": "[{\"id\":\"_8gD31fUOw\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Job Management System</b></span>\",\"col\":12}},{\"id\":\"gy0OjE5NQy\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job\",\"col\":3}},{\"id\":\"_IxUJZpTGK\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Type\",\"col\":3}},{\"id\":\"CaBbF-vqfD\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Agent\",\"col\":3}},{\"id\":\"4pCY6jmK0E\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Customer\",\"col\":3}},{\"id\":\"0FcOvbQ5b6\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Masters</b></span>\",\"col\":12}},{\"id\":\"TiVBZLcVBT\",\"type\":\"card\",\"data\":{\"card_name\":\"Masters\",\"col\":4}},{\"id\":\"FPmTiHC4jV\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"WQHdXSiqcz\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
- "creation": "2025-12-04 20:00:00.000000",
+ "content": "[{\"id\":\"_8gD31fUOw\",\"type\":\"header\",\"data\":{\"text\":\"<span style=\\\"font-size: 18px; letter-spacing: 0.18px;\\\"><b>Service Business Management</b></span>\",\"col\":12}},{\"id\":\"yOx9zpZc1Y\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"SBM Portal\",\"col\":3}},{\"id\":\"0FcOvbQ5b6\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Masters</b></span>\",\"col\":12}},{\"id\":\"gy0OjE5NQy\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job\",\"col\":3}},{\"id\":\"_IxUJZpTGK\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Type\",\"col\":3}},{\"id\":\"CaBbF-vqfD\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Agent\",\"col\":3}},{\"id\":\"4pCY6jmK0E\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Customer\",\"col\":3}},{\"id\":\"TiVBZLcVBT\",\"type\":\"card\",\"data\":{\"card_name\":\"Masters\",\"col\":4}},{\"id\":\"FPmTiHC4jV\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Reports</b></span>\",\"col\":12}}]",
+ "creation": "2025-12-04 20:00:00",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
@@ -79,26 +79,19 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Reports",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
   }
  ],
- "modified": "2025-12-04 20:00:00.000000",
+ "modified": "2025-12-12 10:05:51.681012",
  "modified_by": "Administrator",
  "module": "Jms",
  "name": "JMS",
+ "number_cards": [],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
  "quick_lists": [],
  "roles": [],
- "sequence_id": 1,
+ "sequence_id": 2.0,
  "shortcuts": [
   {
    "color": "Blue",
@@ -107,6 +100,13 @@
    "link_to": "Job",
    "stats_filter": "{\"status\": \"In Progress\"}",
    "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "SBM Portal",
+   "link_to": "sbm",
+   "type": "Page"
   },
   {
    "color": "Grey",
