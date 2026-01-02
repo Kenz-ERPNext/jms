@@ -1,372 +1,268 @@
-
-
-
-
-
-// frappe.pages['sbm'].on_page_load = function (wrapper) {
-
-//     const page = frappe.ui.make_app_page({
-//         parent: wrapper,
-//         title: "Service Business Management",
-//         single_column: true
-//     });
-
-//     // =========================
-//     // PAGE LAYOUT
-//     // =========================
-//     $(wrapper).find('.layout-main-section').html(`
-//         <div class="sbm-wrapper" style="display:flex; gap:20px;">
-
-//             <!-- LEFT SIDEBAR -->
-//             <div class="sbm-sidebar"
-//                 style="
-//                     width:220px;
-//                     background:#f9fafb;
-//                     border-right:1px solid #dcdcdc;
-//                     padding:15px;
-//                     height:calc(100vh - 180px);
-//                     overflow-y:auto;
-//                     border-radius:8px;
-//                 ">
-
-//                 <h4 style="margin-bottom:20px;">SBM Menu</h4>
-
-//                 <div class="sbm-menu-item" data-route="Job">Jobs</div>
-//                 <div class="sbm-menu-item" data-route="Task">Tasks</div>
-//                 <div class="sbm-menu-item" data-route="Customer">Customers</div>
-//                 <div class="sbm-menu-item" data-route="Agent">Agents</div>
-//                 <div class="sbm-menu-item" data-route="Sales Invoice">Invoices</div>
-//                 <div class="sbm-menu-item" data-route="Payment Entry">Payments</div>
-//                 <div class="sbm-menu-item" data-route="Report">Reports</div>
-//             </div>
-
-//             <!-- RIGHT CONTENT -->
-//             <div style="flex:1; padding:10px;">
-//                 <button class="btn btn-primary" id="create_job_btn">
-//                     Create Job
-//                 </button>
-
-//                 <div id="sbm-content" style="margin-top:20px;">
-//                     <h3>Welcome to Service Business Management</h3>
-//                     <p>Select a module from the left menu.</p>
-//                 </div>
-//             </div>
-//         </div>
-//     `);
-
-//     // =========================
-//     // SIDEBAR STYLES & EVENTS
-//     // =========================
-//     $(".sbm-menu-item")
-//         .css({
-//             padding: "8px 10px",
-//             cursor: "pointer",
-//             "border-radius": "6px",
-//             "margin-bottom": "5px"
-//         })
-//         .hover(
-//             function () { $(this).css("background", "#eef2ff"); },
-//             function () { $(this).css("background", ""); }
-//         )
-//         .click(function () {
-//             const doctype = $(this).data("route");
-
-//             if (doctype === "Job") {
-//                 load_job_cards();
-//             } else {
-//                 frappe.set_route("List", doctype);
-//             }
-//         });
-
-//     // =========================
-//     // CREATE JOB BUTTON
-//     // =========================
-//     $("#create_job_btn").click(() => {
-//         frappe.set_route("Form", "Job", "new-job");
-//     });
-// };
-
-
-// // ===================================================
-// // LOAD JOBS AS CARDS
-// // ===================================================
-
-
-// function load_job_cards() {
-
-//     $("#sbm-content").html(`
-//         <h3>Jobs</h3>
-//         <div id="job-card-container" class="row"></div>
-//     `);
-
-//     frappe.call({
-//         method: "frappe.client.get_list",
-//         args: {
-//             doctype: "Job",
-//             fields: [
-//                 "name",
-//                 "status",
-//                 "job_type",
-//                 "priority",
-//                 "customer",
-//                 "date"
-//             ],
-//             order_by: "date desc",
-//             limit_page_length: 50
-//         },
-//         callback: function (r) {
-
-//             if (!r.message || r.message.length === 0) {
-//                 $("#job-card-container").html("<p>No jobs found</p>");
-//                 return;
-//             }
-
-//             r.message.forEach(job => {
-
-//                 const is_completed = job.status === "Completed";
-
-//                 const card_bg = is_completed ? "#e9f7ef" : "#ffffff";
-//                 const border_color = is_completed ? "#2ecc71" : "#e0e0e0";
-//                 const status_bg = is_completed ? "#2ecc71" : "#6c757d";
-
-//                 $("#job-card-container").append(`
-//                     <div class="col-md-4">
-//                         <div class="job-card" style="
-//                             background:${card_bg};
-//                             border:1px solid ${border_color};
-//                             border-radius:12px;
-//                             padding:16px;
-//                             margin-bottom:18px;
-//                             box-shadow:0 6px 16px rgba(0,0,0,0.08);
-//                             transition:all 0.25s ease;
-//                         ">
-
-//                             <div style="display:flex; justify-content:space-between; align-items:center;">
-//                                 <h5 style="margin:0; font-weight:600;">
-//                                     ${job.name}
-//                                 </h5>
-
-//                                 <span style="
-//                                     background:${status_bg};
-//                                     color:#fff;
-//                                     padding:4px 10px;
-//                                     border-radius:20px;
-//                                     font-size:11px;
-//                                     font-weight:600;
-//                                 ">
-//                                     ${job.status}
-//                                 </span>
-//                             </div>
-
-//                             <hr style="margin:10px 0;">
-
-//                             <p><b>Job Type:</b> ${job.job_type || "-"}</p>
-//                             <p><b>Priority:</b> ${job.priority || "-"}</p>
-//                             <p><b>Customer:</b> ${job.customer || "-"}</p>
-//                             <p><b>Date:</b> ${job.date || "-"}</p>
-
-//                             <button class="btn btn-sm btn-primary view-tasks"
-//                                 data-job="${job.name}">
-//                                 View Tasks
-//                             </button>
-
-//                         </div>
-//                     </div>
-//                 `);
-//             });
-
-//             // Hover effect
-//             $(".job-card").hover(
-//                 function () {
-//                     $(this).css("transform", "translateY(-4px)");
-//                 },
-//                 function () {
-//                     $(this).css("transform", "translateY(0)");
-//                 }
-//             );
-
-//             bind_task_buttons();
-//         }
-//     });
-// }
-
-
-
-
-// // ===================================================
-// // LOAD TASKS TABLE FOR SELECTED JOB
-// // ===================================================
-// function bind_task_buttons() {
-
-//     $(".view-tasks").off("click").on("click", function () {
-
-//         const job_id = $(this).data("job");
-
-//         $("#sbm-content").html(`
-//             <h3>Tasks for Job: ${job_id}</h3>
-
-//             <table class="table table-bordered">
-//                 <thead>
-//                     <tr>
-//                         <th>Task ID</th>
-//                         <th>Employee/Outsource</th>
-//                         <th>Employee</th>
-//                         <th>Outsource</th>
-//                         <th>Status</th>
-//                         <th>Due Date</th>
-//                     </tr>
-//                 </thead>
-//                 <tbody id="task-table-body"></tbody>
-//             </table>
-
-//             <button class="btn btn-secondary" id="back-to-jobs">
-//                 ← Back to Jobs
-//             </button>
-//         `);
-
-//         frappe.call({
-//             method: "frappe.client.get",
-//             args: {
-//                 doctype: "Job",
-//                 name: job_id
-//             },
-//             callback: function (r) {
-
-//                 if (!r.message || !r.message.tasks || r.message.tasks.length === 0) {
-//                     $("#task-table-body").html(`
-//                         <tr>
-//                             <td colspan="6">No tasks found</td>
-//                         </tr>
-//                     `);
-//                     return;
-//                 }
-
-//                 r.message.tasks.forEach(task => {
-//                     $("#task-table-body").append(`
-//                         <tr>
-//                             <td>${task.task_name || "-"}</td>
-//                             <td>${task.employee__outsource || "-"}</td>
-//                             <td>${task.assigned_to || "-"}</td>
-//                             <td>${task.assigned_tos || "-"}</td>
-//                             <td>${task.status || "-"}</td>
-//                             <td>${task.due_date || "-"}</td>
-//                         </tr>
-//                     `);
-//                 });
-//             }
-//         });
-
-//         $("#back-to-jobs").click(load_job_cards);
-//     });
-// }
-
-
-
-
-
 frappe.pages['sbm'].on_page_load = function (wrapper) {
 
-    const page = frappe.ui.make_app_page({
+    frappe.ui.make_app_page({
         parent: wrapper,
-        title: "Service Business Management",
+        title: "",
         single_column: true
     });
 
-    // =========================
+    // ===================================================
     // PAGE LAYOUT
-    // =========================
+    // ===================================================
     $(wrapper).find('.layout-main-section').html(`
-        <div class="sbm-wrapper" style="display:flex; gap:20px;">
 
-            <!-- LEFT SIDEBAR -->
-            <div class="sbm-sidebar"
-                style="
-                    width:220px;
-                    background:#f9fafb;
-                    border-right:1px solid #dcdcdc;
-                    padding:15px;
-                    height:calc(100vh - 180px);
-                    overflow-y:auto;
-                    border-radius:8px;
-                ">
+        <!-- HEADER -->
+        <div class="sbm-portal-header">
+            <h1>Service Business Management</h1>
+            <p>Powered By KENZ Technology</p>
+        </div>
 
-                <h4 style="margin-bottom:20px;">SBM Menu</h4>
+        <div class="sbm-wrapper">
 
-                <div class="sbm-menu-item" data-route="Job">Jobs</div>
-                <div class="sbm-menu-item" data-route="Task">Tasks</div>
-                <div class="sbm-menu-item" data-route="Customer">Customers</div>
-                <div class="sbm-menu-item" data-route="Agent">Agents</div>
-                <div class="sbm-menu-item" data-route="Sales Invoice">Invoices</div>
-                <div class="sbm-menu-item" data-route="Payment Entry">Payments</div>
-                <div class="sbm-menu-item" data-route="Report">Reports</div>
+            <!-- SIDEBAR -->
+            <div class="sbm-sidebar">
+
+                <link rel="stylesheet"
+                    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+                <h4 class="SBM">
+                    SBM Menu
+                    <i class="fa fa-chevron-down"></i>
+                </h4>
+
+                <div class="sbm-menu-items">
+
+                    <!-- ================= MASTER DATAS ================= -->
+                    <div class="sbm-section-title">MASTER DATAS</div>
+
+                    <div class="sbm-menu-item" data-route="Customer">
+                        <span>Customers</span><i class="fa fa-user"></i>
+                    </div>
+
+                    <div class="sbm-menu-item" data-route="Agent">
+                        <span>Agents</span><i class="fa fa-users"></i>
+                    </div>
+
+                    <div class="sbm-menu-item" data-route="Job Type">
+                        <span>Job Type</span><i class="fa fa-tags"></i>
+                    </div>
+
+                    <div class="sbm-menu-item" data-route="Job Source">
+                        <span>Job Source</span><i class="fa fa-share-nodes"></i>
+                    </div>
+
+                    <div class="sbm-menu-item" data-route="Job Nature">
+                        <span>Job Nature</span><i class="fa fa-briefcase-medical"></i>
+                    </div>
+
+                    <div class="sbm-menu-item" data-route="Work Template">
+                        <span>Work Template</span><i class="fa fa-layer-group"></i>
+                    </div>
+
+                    <div class="sbm-menu-item" data-route="Employee">
+                        <span>Employee</span><i class="fa fa-id-badge"></i>
+                    </div>
+
+                    <div class="sbm-menu-item" data-route="Outsourced Party">
+                        <span>Outsourced Party</span><i class="fa fa-industry"></i>
+                    </div>
+
+                    <div class="sbm-menu-item" data-route="Task">
+                        <span>Tasks</span><i class="fa fa-tasks"></i>
+                    </div>
+
+                    <hr>
+
+                    <!-- ================= DOCUMENTS ================= -->
+                    <div class="sbm-section-title">DOCUMENTS</div>
+
+                    <div class="sbm-menu-item" data-route="Job">
+                        <span>Job</span><i class="fa fa-briefcase"></i>
+                    </div>
+
+                    <div class="sbm-menu-item" data-route="Sales Invoice">
+                        <span>Invoices</span><i class="fa fa-file-invoice-dollar"></i>
+                    </div>
+
+                    <div class="sbm-menu-item" data-route="Payment Entry">
+                        <span>Payments</span><i class="fa fa-credit-card"></i>
+                    </div>
+
+                </div>
             </div>
 
             <!-- RIGHT CONTENT -->
-            <div style="flex:1; padding:10px;" id="sbm-right-content">
-
-                <div id="sbm-content" style="margin-top:20px;">
-                    <h3>Service Overview</h3>
-                    <div id="overview-cards" class="row" style="display:flex; gap:15px; flex-wrap:wrap;"></div>
-                </div>
-
+            <div id="sbm-right-content">
+                <div id="overview-cards"></div>
             </div>
+
         </div>
     `);
 
-    // =========================
-    // SIDEBAR STYLES & EVENTS
-    // =========================
-    $(".sbm-menu-item")
-        .css({
-            padding: "8px 10px",
-            cursor: "pointer",
-            "border-radius": "6px",
-            "margin-bottom": "5px"
-        })
-        .hover(
-            function () { $(this).css("background", "#eef2ff"); },
-            function () { $(this).css("background", ""); }
-        )
-        .click(function () {
-            const doctype = $(this).data("route");
+    // ===================================================
+    // STYLES
+    // ===================================================
+    $("<style>").html(`
+        .sbm-wrapper{
+            display:flex;
+            gap:20px;
+            margin-top:20px;
+        }
 
-            if (doctype === "Job") {
-                load_job_cards(true); // true = show create button
-            } else if (doctype === "Task") {
-                frappe.set_route("List", "Task");
-            } else if (doctype === "Customer") {
-                frappe.set_route("List", "Customer");
-            } else if (doctype === "Agent") {
-                frappe.set_route("List", "Agent");
-            } else if (doctype === "Sales Invoice") {
-                frappe.set_route("List", "Sales Invoice");
-            } else if (doctype === "Payment Entry") {
-                frappe.set_route("List", "Payment Entry");
-            } else if (doctype === "Report") {
-                frappe.set_route("List", "Report");
-            }
-        });
+        .sbm-portal-header{
+            position:sticky;
+            top:0;
+            z-index:1000;
+            background:linear-gradient(135deg,#4e73df,#1cc88a);
+            color:#fff;
+            text-align:center;
+            padding:20px;
+            border-radius:0 0 12px 12px;
+        }
 
-    // =========================
+        .sbm-portal-header h1{
+            margin:0;
+            font-size:34px;
+            font-weight:800;
+        }
+
+        .sbm-portal-header p{
+            margin:5px 0 0;
+            font-size:12px;
+            opacity:0.6;
+        }
+
+        .sbm-sidebar{
+            width:260px;
+            background:#f9fafb;
+            padding:15px;
+            border-radius:12px;
+            height:calc(100vh - 200px);
+            overflow:auto;
+            position:sticky;
+            top:120px;
+        }
+
+        .SBM{
+            font-size:15px;
+            font-weight:700;
+            cursor:pointer;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            border-bottom:1px solid #ddd;
+            padding-bottom:6px;
+            margin-bottom:10px;
+        }
+
+        .sbm-section-title{
+            font-size:11px;
+            font-weight:700;
+            color:#6b7280;
+            margin:12px 0 6px;
+            letter-spacing:1px;
+        }
+
+        .sbm-menu-item{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:8px 12px;
+            border-radius:10px;
+            cursor:pointer;
+            font-weight:600;
+            margin-bottom:6px;
+            transition:.2s;
+        }
+
+        .sbm-menu-item:hover{
+            background:#000;
+            color:#fff;
+        }
+
+        #sbm-right-content{
+            flex:1;
+            padding:10px;
+        }
+
+        #overview-cards{
+            display:flex;
+            flex-wrap:wrap;
+            justify-content:center;
+        }
+
+        .overview-card{
+            width:280px;
+            height:170px;
+            margin:15px;
+            border-radius:20px;
+            backdrop-filter:blur(15px);
+            background:rgba(255,255,255,0.15);
+            box-shadow:0 8px 32px rgba(31,38,135,.37);
+            color:#fff;
+            text-align:center;
+            padding:25px;
+            cursor:pointer;
+            transition:.3s;
+        }
+
+        .overview-card:hover{
+            transform:translateY(-8px) scale(1.03);
+        }
+    `).appendTo("head");
+
+    // ===================================================
+    // MENU EVENTS
+    // ===================================================
+    $(".sbm-menu-items").hide();
+
+    $(".SBM").click(function () {
+        $(".sbm-menu-items").slideToggle(200);
+        $(this).find("i").toggleClass("fa-chevron-down fa-chevron-up");
+    });
+
+    $(".sbm-menu-item").click(function () {
+        const dt = $(this).data("route");
+        if (dt === "Job") frappe.set_route("job-list");
+        else frappe.set_route("List", dt);
+    });
+
+    // ===================================================
     // LOAD OVERVIEW CARDS
-    // =========================
+    // ===================================================
     load_overview_cards();
 };
 
-// ===================================================
-// LOAD OVERVIEW CARDS (TOTAL COUNTS)
-// ===================================================
 
-
+// ===================================================
+// OVERVIEW CARDS
+// ===================================================
 function load_overview_cards() {
-    const overview = $("#overview-cards");
-    overview.html(`<div class="loading">Loading...</div>`);
 
-    const doctypes = ["Job", "Task", "Customer", "Agent", "Sales Invoice", "Payment Entry"];
-    overview.html(""); // clear loading
+    // Order matches sidebar exactly
+    const doctypes = [
+        "Customer",
+        "Agent",
+        "Job Type",
+        "Job Source",
+        "Job Nature",
+        "Work Template",
+        "Employee",
+        "Outsourced Party",
+        "Task",
+        "Job",
+        "Sales Invoice",
+        "Payment Entry"
+    ];
 
-    doctypes.forEach(dt => {
-        // Get count
+    $("#overview-cards").html("");
+
+    // Create an array to store counts in order
+    const cardsData = new Array(doctypes.length);
+
+    let completed = 0;
+
+    doctypes.forEach((dt, index) => {
         frappe.call({
             method: "frappe.client.get_list",
             args: {
@@ -376,233 +272,29 @@ function load_overview_cards() {
             },
             callback: function (r) {
                 const count = r.message ? r.message.length : 0;
-                const colors = {
-                    "Job": "#3498db",
-                    "Task": "#f39c12",
-                    "Customer": "#2ecc71",
-                    "Agent": "#9b59b6",
-                    "Sales Invoice": "#e67e22",
-                    "Payment Entry": "#1abc9c"
-                };
+                cardsData[index] = { doctype: dt, count: count };
+                completed++;
 
-                // Append card
-                overview.append(`
-                    <div class="overview-card" style="
-                        flex:1 0 150px;
-                        background:${colors[dt] || "#7f8c8d"};
-                        color:#fff;
-                        border-radius:12px;
-                        padding:20px;
-                        text-align:center;
-                        cursor:pointer;
-                        box-shadow:0 6px 16px rgba(0,0,0,0.08);
-                        transition:all 0.25s ease;
-                    ">
-                        <h4 style="margin:0 0 10px 0;">${dt}</h4>
-                        <h2 style="margin:0;">${count}</h2>
-                    </div>
-                `);
-
-                // ✅ Fix closure issue: capture current dt using IIFE
-                (function(current_doctype){
-                    $(".overview-card").last().off("click").on("click", function () {
-                        if (current_doctype === "Job") {
-                            load_job_cards(true); // show Create Job button
-                        } else if (current_doctype === "Task") {
-                            frappe.set_route("List", "Task");
-                        } else if (current_doctype === "Customer") {
-                            frappe.set_route("List", "Customer");
-                        } else if (current_doctype === "Agent") {
-                            frappe.set_route("List", "Agent");
-                        } else if (current_doctype === "Sales Invoice") {
-                            frappe.set_route("List", "Sales Invoice");
-                        } else if (current_doctype === "Payment Entry") {
-                            frappe.set_route("List", "Payment Entry");
-                        }
-                    });
-                })(dt);
-
-                // Hover effect
-                $(".overview-card").last().hover(
-                    function () { $(this).css("transform", "translateY(-4px)"); },
-                    function () { $(this).css("transform", "translateY(0)"); }
-                );
-            }
-        });
-    });
-}
-
-
-// ===================================================
-// LOAD JOBS AS CARDS
-// ===================================================
-function load_job_cards(show_create_btn = false) {
-
-    let sbm_right = $("#sbm-right-content");
-    sbm_right.html(`
-        <div style="margin-bottom:10px;">
-            ${show_create_btn ? `<button class="btn btn-primary" id="create_job_btn">Create Job</button>` : ""}
-        </div>
-        <div id="sbm-content">
-            <h3>Jobs</h3>
-            <div id="job-card-container" class="row"></div>
-        </div>
-    `);
-
-    if (show_create_btn) {
-        $("#create_job_btn").click(() => {
-            frappe.set_route("Form", "Job", "new-job");
-        });
-    }
-
-    frappe.call({
-        method: "frappe.client.get_list",
-        args: {
-            doctype: "Job",
-            fields: [
-                "name",
-                "status",
-                "job_type",
-                "priority",
-                "customer",
-                "date"
-            ],
-            order_by: "date desc",
-            limit_page_length: 50
-        },
-        callback: function (r) {
-            const container = $("#job-card-container");
-            container.html("");
-            if (!r.message || r.message.length === 0) {
-                container.html("<p>No jobs found</p>");
-                return;
-            }
-
-            r.message.forEach(job => {
-                const is_completed = job.status === "Completed";
-                const card_bg = is_completed ? "#e9f7ef" : "#ffffff";
-                const border_color = is_completed ? "#2ecc71" : "#e0e0e0";
-                const status_bg = is_completed ? "#2ecc71" : "#6c757d";
-
-                container.append(`
-                    <div class="col-md-4">
-                        <div class="job-card" style="
-                            background:${card_bg};
-                            border:1px solid ${border_color};
-                            border-radius:12px;
-                            padding:16px;
-                            margin-bottom:18px;
-                            box-shadow:0 6px 16px rgba(0,0,0,0.08);
-                            transition:all 0.25s ease;
-                        ">
-
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <h5 style="margin:0; font-weight:600;">
-                                    ${job.name}
-                                </h5>
-
-                                <span style="
-                                    background:${status_bg};
-                                    color:#fff;
-                                    padding:4px 10px;
-                                    border-radius:20px;
-                                    font-size:11px;
-                                    font-weight:600;
-                                ">
-                                    ${job.status}
-                                </span>
+                // Once all API calls finish, render in order
+                if (completed === doctypes.length) {
+                    $("#overview-cards").html(""); // clear before appending
+                    cardsData.forEach(card => {
+                        $("#overview-cards").append(`
+                            <div class="overview-card" data-doctype="${card.doctype}">
+                                <h4>${card.doctype}</h4>
+                                <h1>${card.count}</h1>
                             </div>
+                        `);
 
-                            <hr style="margin:10px 0;">
-
-                            <p><b>Job Type:</b> ${job.job_type || "-"}</p>
-                            <p><b>Priority:</b> ${job.priority || "-"}</p>
-                            <p><b>Customer:</b> ${job.customer || "-"}</p>
-                            <p><b>Date:</b> ${job.date || "-"}</p>
-
-                            <button class="btn btn-sm btn-primary view-tasks"
-                                data-job="${job.name}">
-                                View Tasks
-                            </button>
-
-                        </div>
-                    </div>
-                `);
-            });
-
-            $(".job-card").hover(
-                function () { $(this).css("transform", "translateY(-4px)"); },
-                function () { $(this).css("transform", "translateY(0)"); }
-            );
-
-            bind_task_buttons();
-        }
-    });
-}
-
-// ===================================================
-// LOAD TASKS TABLE FOR SELECTED JOB
-// ===================================================
-function bind_task_buttons() {
-
-    $(".view-tasks").off("click").on("click", function () {
-
-        const job_id = $(this).data("job");
-
-        $("#sbm-content").html(`
-            <h3>Tasks for Job: ${job_id}</h3>
-
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Task ID</th>
-                        <th>Employee/Outsource</th>
-                        <th>Employee</th>
-                        <th>Outsource</th>
-                        <th>Status</th>
-                        <th>Due Date</th>
-                    </tr>
-                </thead>
-                <tbody id="task-table-body"></tbody>
-            </table>
-
-            <button class="btn btn-secondary" id="back-to-jobs">
-                ← Back to Jobs
-            </button>
-        `);
-
-        frappe.call({
-            method: "frappe.client.get",
-            args: {
-                doctype: "Job",
-                name: job_id
-            },
-            callback: function (r) {
-
-                if (!r.message || !r.message.tasks || r.message.tasks.length === 0) {
-                    $("#task-table-body").html(`
-                        <tr>
-                            <td colspan="6">No tasks found</td>
-                        </tr>
-                    `);
-                    return;
+                        $(".overview-card").last().click(function () {
+                            if (card.doctype === "Job") frappe.set_route("job-list");
+                            else frappe.set_route("List", card.doctype);
+                        });
+                    });
                 }
-
-                r.message.tasks.forEach(task => {
-                    $("#task-table-body").append(`
-                        <tr>
-                            <td>${task.task_name || "-"}</td>
-                            <td>${task.employee__outsource || "-"}</td>
-                            <td>${task.assigned_to || "-"}</td>
-                            <td>${task.assigned_tos || "-"}</td>
-                            <td>${task.status || "-"}</td>
-                            <td>${task.due_date || "-"}</td>
-                        </tr>
-                    `);
-                });
             }
         });
-
-        $("#back-to-jobs").click(() => load_job_cards(true));
     });
 }
+
+
