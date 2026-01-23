@@ -373,6 +373,8 @@ frappe.ui.form.on('Job Item', {
 		// Refresh totals
 		setTimeout(() => frm.save(), 500);
 	}
+
+
 });
 
 
