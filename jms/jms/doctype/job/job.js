@@ -335,6 +335,7 @@ frappe.ui.form.on('Job Item', {
 	},
 
 	fee_price: function(frm, cdt, cdn) {
+		
 		frm.trigger('calculate_item_total', cdt, cdn);
 	},
 
@@ -351,8 +352,10 @@ frappe.ui.form.on('Job Item', {
 	},
 
 	items_remove: function(frm) {
+		
 		frm.trigger('calculate_totals');
 	},
+	
 
 	calculate_item_total: function(frm, cdt, cdn) {
 		let row = locals[cdt][cdn];

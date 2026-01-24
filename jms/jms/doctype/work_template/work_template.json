@@ -63,8 +63,7 @@
    "fieldname": "fee_price",
    "fieldtype": "Currency",
    "in_list_view": 1,
-   "label": "Fee Price",
-   "reqd": 1
+   "label": "Fee Price"
   },
   {
    "fieldname": "extra",
@@ -147,7 +146,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-22 15:13:53.505657",
+ "modified": "2026-01-23 07:49:23.436022",
  "modified_by": "Administrator",
  "module": "Jms",
  "name": "Work Template",

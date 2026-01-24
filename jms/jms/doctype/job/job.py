@@ -42,6 +42,8 @@ class Job(Document):
 
 
 	def calculate_amounts(self):
+
+		# pass
 		"""Calculate gross amount, net amount, and balance"""
 
 		gross_total = 0          

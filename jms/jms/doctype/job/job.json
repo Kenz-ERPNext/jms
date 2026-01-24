@@ -152,6 +152,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval:doc.receivable_from == \"Agent\"\n",
    "fieldname": "agent",
    "fieldtype": "Link",
    "label": "Agent",
@@ -527,7 +528,7 @@
    "link_fieldname": "custom_job"
   }
  ],
- "modified": "2025-12-11 10:29:07.957987",
+ "modified": "2026-01-23 07:32:40.070336",
  "modified_by": "Administrator",
  "module": "Jms",
  "name": "Job",
