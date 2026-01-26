@@ -5,9 +5,11 @@ frappe.ui.form.on('Job', {
 
 	onload(frm) {
 		salesInvoiceMessage(frm);
+
     },
 
 	refresh: function(frm) {
+
 
 		salesInvoiceMessage(frm);
 
@@ -320,6 +322,7 @@ frappe.ui.form.on('Job Item', {
 				frappe.model.set_value(cdt, cdn, 'description', doc.description);
 				frappe.model.set_value(cdt, cdn, 'job_qty', doc.job_qty);
 				frappe.model.set_value(cdt, cdn, 'fee_price', doc.fee_price);
+				frappe.model.set_value(cdt, cdn, 'old_fee_price', doc.fee_price);
 				frappe.model.set_value(cdt, cdn, 'extra', doc.extra);
 				frappe.model.set_value(cdt, cdn, 'surcharge', doc.surcharge);
 				frappe.model.set_value(cdt, cdn, 'vat', doc.vat);
@@ -335,6 +338,22 @@ frappe.ui.form.on('Job Item', {
 	},
 
 	fee_price: function(frm, cdt, cdn) {
+
+		// let row = locals[cdt][cdn];
+
+        // // Trigger any other calculation if needed
+        // frm.trigger('calculate_item_total', cdt, cdn);
+
+        // // Check if old_fee_price exists
+        // if (row.old_fee_price !== undefined && row.old_fee_price != row.fee_price) {
+        //     // Show message in HTML field
+        //     frm.set_value('price_change', 
+        //         `Fee Price changed from <b>${row.old_fee_price}</b> to <b>${row.fee_price}</b> by <b>${frappe.session.user}</b>`
+        //     );
+        // }
+
+        // // Update old_fee_price to current fee_price for next change
+        // row.old_fee_price = row.fee_price;
 		
 		frm.trigger('calculate_item_total', cdt, cdn);
 	},
