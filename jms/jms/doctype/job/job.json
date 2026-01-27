@@ -341,7 +341,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Created\nIn Progress\nProcessing\nCompleted\nRejected\nCancelled",
+   "options": "Created\nIn Progress\nProcessing\nCompleted\nRejected\nCancelled\nSupervisor Approved\nMD Approved",
    "read_only": 1,
    "reqd": 1
   },
@@ -485,14 +485,14 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.status == 'Completed' && doc.sales_invoice_status !== 'Created'",
+   "depends_on": "eval:doc.status == 'Completed' || doc.status == 'Supervisor Approved' ||\n    doc.status == 'MD Approved' && doc.sales_invoice_status !== 'Created'",
    "fieldname": "payment",
    "fieldtype": "Select",
    "label": "Payment",
    "options": "\nPayment Now\nCredit"
   },
   {
-   "depends_on": "eval:doc.payment && doc.status == 'Completed' && doc.sales_invoice_status !== 'Created'",
+   "depends_on": "eval:doc.payment && doc.status == 'Completed' || doc.status == 'Supervisor Approved' ||\n    doc.status == 'MD Approved' && doc.sales_invoice_status !== 'Created'",
    "fieldname": "mode_of_payment",
    "fieldtype": "Link",
    "label": "Mode of Payment",
@@ -545,7 +545,7 @@
    "link_fieldname": "custom_job"
   }
  ],
- "modified": "2026-01-26 12:48:56.719075",
+ "modified": "2026-01-27 15:33:30.187225",
  "modified_by": "Administrator",
  "module": "Jms",
  "name": "Job",

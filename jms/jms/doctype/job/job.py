@@ -423,6 +423,78 @@ class Job(Document):
 
 
 
+	# @frappe.whitelist()
+	# def create_expense(self, expense_type, amount, supplier, taxes_template=None, reference_doctype=None, reference_name=None):
+	# 	# Use passed supplier or fallback to default
+	# 	supplier = supplier or frappe.get_value("Expense Type", expense_type, "default_supplier") or "Default Supplier"
+
+	# 	pi = frappe.get_doc({
+	# 		"doctype": "Purchase Invoice",
+	# 		"supplier": supplier,
+	# 		"posting_date": frappe.utils.nowdate(),
+	# 		"taxes_and_charges": taxes_template,
+	# 		"items": [
+	# 			{
+	# 				"item_code": frappe.get_value("Expense Type", expense_type, "default_item") or "EXP-ITEM",
+	# 				"qty": 1,
+	# 				"rate": amount,
+	# 				"expense_type": expense_type
+	# 			}
+	# 		],
+	# 		"references": [
+	# 			{
+	# 				"reference_doctype": reference_doctype,
+	# 				"reference_name": reference_name
+	# 			}
+	# 		]
+	# 	})
+	# 	pi.insert()
+	# 	pi.submit()
+	# 	return pi.name
+
+	@frappe.whitelist()
+	def create_expense(
+		self,
+		expense_type,
+		amount,
+		supplier,
+		item_code,
+		taxes_template=None,
+		reference_doctype=None,
+		reference_name=None
+	):
+
+		if not item_code:
+			frappe.throw("Item is mandatory to create Expense")
+
+		pi = frappe.get_doc({
+			"doctype": "Purchase Invoice",
+			"supplier": supplier,
+			"posting_date": frappe.utils.nowdate(),
+			"taxes_and_charges": taxes_template,
+			"items": [
+				{
+					"item_code": item_code,
+					"qty": 1,
+					"rate": amount,
+					"expense_type": expense_type
+				}
+			],
+			"references": [
+				{
+					"reference_doctype": reference_doctype,
+					"reference_name": reference_name
+				}
+			]
+		})
+
+		pi.insert()
+		pi.submit()
+
+		return pi.name
+
+
+
 
 
 

@@ -92,7 +92,7 @@ frappe.ui.form.on('Job', {
             });
         }
 
-		if (frm.doc.status === 'Completed' && frm.doc.sales_invoice_status !== 'Created') {
+		if (frm.doc.status === 'Completed' || frm.doc.status === 'Supervisor Approved' || frm.doc.status === 'MD Approved' && frm.doc.sales_invoice_status !== 'Created') {
             frm.add_custom_button(__('Create Sales Invoice'), function () {
 
 				if (!frm.doc.payment) {
@@ -130,6 +130,106 @@ frappe.ui.form.on('Job', {
 
             });
         }
+
+		if (
+    (frm.doc.status === 'Completed' || 
+     frm.doc.status === 'Supervisor Approved' || 
+     frm.doc.status === 'MD Approved') && 
+    frm.doc.purchase_invoice_status !== 'Created'
+) {
+    frm.add_custom_button(__('Create Expense'), function () {
+
+        let d = new frappe.ui.Dialog({
+            title: 'Create Expense',
+            fields: [
+                {
+                    label: 'Expense Type',
+                    fieldname: 'expense_type',
+                    fieldtype: 'Link',
+                    options: 'Expense Type',
+                    reqd: 1,
+                    change() {
+                        let expense_type = d.get_value('expense_type');
+
+                        if (expense_type) {
+                            frappe.db.get_value(
+                                'Expense Type',
+                                expense_type,
+                                'item',   // ✅ linked Item field
+                                (r) => {
+                                    if (r && r.item) {
+                                        d.set_value('item_code', r.item);
+                                    } else {
+                                        frappe.msgprint(__('Item not set in Expense Type'));
+                                        d.set_value('item_code', null);
+                                    }
+                                }
+                            );
+                        }
+                    }
+                },
+                {
+                    label: 'Amount',
+                    fieldname: 'amount',
+                    fieldtype: 'Currency',
+                    reqd: 1
+                },
+                {
+                    label: 'Supplier',
+                    fieldname: 'supplier',
+                    fieldtype: 'Link',
+                    options: 'Supplier',
+                    reqd: 1
+                },
+                {
+                    label: 'Purchase Taxes and Charges Template',
+                    fieldname: 'taxes_template',
+                    fieldtype: 'Link',
+                    options: 'Purchase Taxes and Charges Template'
+                },
+                {
+                    // 🔒 hidden field to hold fetched item
+                    fieldname: 'item_code',
+                    fieldtype: 'Link',
+                    options: 'Item',
+                    hidden: 1
+                }
+            ],
+            primary_action_label: 'Submit',
+            primary_action(values) {
+
+                if (!values.item_code) {
+                    frappe.msgprint(__('Item not found for selected Expense Type'));
+                    return;
+                }
+
+                cur_frm.call({
+                    doc: cur_frm.doc,
+                    method: "create_expense",
+                    args: {
+                        expense_type: values.expense_type,
+                        amount: values.amount,
+                        supplier: values.supplier,
+                        taxes_template: values.taxes_template,
+                        item_code: values.item_code,   // ✅ pass item
+                        reference_doctype: frm.doc.doctype,
+                        reference_name: frm.doc.name
+                    },
+                    callback: function(r) {
+                        if (!r.exc) {
+                            frappe.msgprint(__('Expense Invoice Created: {0}', [r.message]));
+                            d.hide();
+                            frm.reload_doc();
+                        }
+                    }
+                });
+            }
+        });
+
+        d.show();
+    });
+}
+    
 
 		// if (frm.doc.status === 'Completed' && frm.doc.purchase_invoice_status !== 'Created') {
         //     frm.add_custom_button(__('Create Purchase Invoice'), function () {
@@ -339,21 +439,6 @@ frappe.ui.form.on('Job Item', {
 
 	fee_price: function(frm, cdt, cdn) {
 
-		// let row = locals[cdt][cdn];
-
-        // // Trigger any other calculation if needed
-        // frm.trigger('calculate_item_total', cdt, cdn);
-
-        // // Check if old_fee_price exists
-        // if (row.old_fee_price !== undefined && row.old_fee_price != row.fee_price) {
-        //     // Show message in HTML field
-        //     frm.set_value('price_change', 
-        //         `Fee Price changed from <b>${row.old_fee_price}</b> to <b>${row.fee_price}</b> by <b>${frappe.session.user}</b>`
-        //     );
-        // }
-
-        // // Update old_fee_price to current fee_price for next change
-        // row.old_fee_price = row.fee_price;
 		
 		frm.trigger('calculate_item_total', cdt, cdn);
 	},
