@@ -7,9 +7,9 @@
  "engine": "InnoDB",
  "field_order": [
   "message",
-  "price_change",
   "sales_invoice_status",
   "purchase_invoice_status",
+  "expense_status",
   "column_break_pjky",
   "payment",
   "mode_of_payment",
@@ -517,9 +517,11 @@
    "search_index": 1
   },
   {
-   "fieldname": "price_change",
-   "fieldtype": "HTML",
-   "label": "Price Change"
+   "fieldname": "expense_status",
+   "fieldtype": "Select",
+   "label": "Expense Status",
+   "options": "\nCreated",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -545,7 +547,7 @@
    "link_fieldname": "custom_job"
   }
  ],
- "modified": "2026-01-27 15:33:30.187225",
+ "modified": "2026-01-28 09:40:28.197805",
  "modified_by": "Administrator",
  "module": "Jms",
  "name": "Job",

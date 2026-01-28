@@ -227,12 +227,15 @@ class Job(Document):
 		sales_invoice.posting_date = frappe.utils.nowdate()
 		sales_invoice.due_date = frappe.utils.add_days(frappe.utils.nowdate(), 30)
 		sales_invoice.custom_job = self.name
+		sales_invoice.disable_rounded_total = 1
+		if sales_invoice.job:
+			sales_invoice.job = self.name
 
 		if tax_template:
 			sales_invoice.taxes_and_charges = tax_template
 
 			sales_invoice.set_taxes()    
-
+\
 		if self.items:
 			for row in self.items:
 				sales_invoice.append("items", {
@@ -317,54 +320,117 @@ class Job(Document):
 
 
 
+	# @frappe.whitelist()
+	# def create_pinvoice(self, tax_template=None):
+	# 	outsource_rows = [row for row in self.tasks if row.employee__outsource == "Outsource"]
+
+	# 	if not outsource_rows:
+	# 		frappe.throw("No outsource rows found in tasks table.")
+
+	# 	suppliers = list({row.outsource_supplier for row in outsource_rows})
+
+	# 	if len(suppliers) > 1:
+	# 		frappe.throw("Multiple outsource suppliers found. Please create invoice individually per supplier.")
+
+	# 	supplier = suppliers[0]
+
+	# 	if not supplier:
+	# 		frappe.throw("Outsource Supplier is missing in some rows.")
+
+	# 	pi = frappe.new_doc("Purchase Invoice")
+	# 	pi.supplier = supplier
+	# 	pi.company = frappe.defaults.get_user_default("company")
+	# 	pi.posting_date = frappe.utils.nowdate()
+	# 	pi.custom_job = self.name
+
+	# 	if tax_template:
+	# 		pi.taxes_and_charges = tax_template
+
+	# 	for row in outsource_rows:
+	# 		matching_item = next((i for i in self.items if i.item_code == row.item_code), None)
+	# 		if not matching_item:
+	# 			frappe.throw(f"No matching item found in Items table for item_code: {row.item_code}")
+
+	# 		pi.append("items", {
+	# 			"item_code": matching_item.item_code,
+	# 			"qty": matching_item.job_qty or 1,
+	# 			"rate": matching_item.total_without_tax or 0
+	# 		})
+
+	# 	pi.insert(ignore_permissions=True)
+
+	# 	pi.set_missing_values()
+	# 	pi.calculate_taxes_and_totals()
+	# 	pi.save() 
+
+	# 	self.purchase_invoice_status = "Created"
+	# 	self.purchase_invoice = pi.name   
+	# 	self.save(ignore_permissions=True)
+
+	# 	return pi.name
+
 	@frappe.whitelist()
 	def create_pinvoice(self, tax_template=None):
+
+		# Filter outsource rows
 		outsource_rows = [row for row in self.tasks if row.employee__outsource == "Outsource"]
 
 		if not outsource_rows:
 			frappe.throw("No outsource rows found in tasks table.")
 
-		suppliers = list({row.outsource_supplier for row in outsource_rows})
-
-		if len(suppliers) > 1:
-			frappe.throw("Multiple outsource suppliers found. Please create invoice individually per supplier.")
-
-		supplier = suppliers[0]
-
-		if not supplier:
-			frappe.throw("Outsource Supplier is missing in some rows.")
-
-		pi = frappe.new_doc("Purchase Invoice")
-		pi.supplier = supplier
-		pi.company = frappe.defaults.get_user_default("company")
-		pi.posting_date = frappe.utils.nowdate()
-		pi.custom_job = self.name
-
-		if tax_template:
-			pi.taxes_and_charges = tax_template
-
+		# Group tasks by supplier
+		supplier_map = {}
 		for row in outsource_rows:
-			matching_item = next((i for i in self.items if i.item_code == row.item_code), None)
-			if not matching_item:
-				frappe.throw(f"No matching item found in Items table for item_code: {row.item_code}")
+			if not row.outsource_supplier:
+				frappe.throw("Outsource Supplier is missing in some task rows.")
 
-			pi.append("items", {
-				"item_code": matching_item.item_code,
-				"qty": matching_item.job_qty or 1,
-				"rate": matching_item.total_without_tax or 0
-			})
+			supplier_map.setdefault(row.outsource_supplier, []).append(row)
 
-		pi.insert(ignore_permissions=True)
+		created_invoices = []
 
-		pi.set_missing_values()
-		pi.calculate_taxes_and_totals()
-		pi.save() 
+		# Create PI per supplier
+		for supplier, rows in supplier_map.items():
 
+			pi = frappe.new_doc("Purchase Invoice")
+			pi.supplier = supplier
+			pi.company = frappe.defaults.get_user_default("company")
+			pi.posting_date = frappe.utils.nowdate()
+			pi.custom_job = self.name
+
+			if tax_template:
+				pi.taxes_and_charges = tax_template
+
+			for row in rows:
+				matching_item = next(
+					(i for i in self.items if i.item_code == row.item_code),
+					None
+				)
+
+				if not matching_item:
+					frappe.throw(
+						f"No matching item found in Items table for item_code: {row.item_code}"
+					)
+
+				pi.append("items", {
+					"item_code": matching_item.item_code,
+					"qty": matching_item.job_qty or 1,
+					"rate": matching_item.total_without_tax or 0
+				})
+
+			pi.insert(ignore_permissions=True)
+			pi.set_missing_values()
+			pi.calculate_taxes_and_totals()
+			pi.save()
+
+			created_invoices.append(pi.name)
+
+		# Update parent document
 		self.purchase_invoice_status = "Created"
-		self.purchase_invoice = pi.name   
+		self.purchase_invoice = ", ".join(created_invoices)
 		self.save(ignore_permissions=True)
 
-		return pi.name
+		return created_invoices
+
 
 
 

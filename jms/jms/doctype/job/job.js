@@ -92,7 +92,7 @@ frappe.ui.form.on('Job', {
             });
         }
 
-		if (frm.doc.status === 'Completed' || frm.doc.status === 'Supervisor Approved' || frm.doc.status === 'MD Approved' && frm.doc.sales_invoice_status !== 'Created') {
+		if (frm.doc.status === 'Completed' || frm.doc.status === 'Supervisor Approved' || frm.doc.status === 'MD Approved' && frm.doc.sales_invoice_status !== 'Created' ) {
             frm.add_custom_button(__('Create Sales Invoice'), function () {
 
 				if (!frm.doc.payment) {
@@ -135,7 +135,7 @@ frappe.ui.form.on('Job', {
     (frm.doc.status === 'Completed' || 
      frm.doc.status === 'Supervisor Approved' || 
      frm.doc.status === 'MD Approved') && 
-    frm.doc.purchase_invoice_status !== 'Created'
+    frm.doc.expense_status !== 'Created'
 ) {
     frm.add_custom_button(__('Create Expense'), function () {
 
