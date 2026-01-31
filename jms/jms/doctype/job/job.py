@@ -342,6 +342,8 @@ class Job(Document):
 	# 	pi.company = frappe.defaults.get_user_default("company")
 	# 	pi.posting_date = frappe.utils.nowdate()
 	# 	pi.custom_job = self.name
+	# 	if pi.job:
+	# 		pi.job = self.name
 
 	# 	if tax_template:
 	# 		pi.taxes_and_charges = tax_template
@@ -371,45 +373,39 @@ class Job(Document):
 
 	@frappe.whitelist()
 	def create_pinvoice(self, tax_template=None):
-
 		# Filter outsource rows
 		outsource_rows = [row for row in self.tasks if row.employee__outsource == "Outsource"]
 
 		if not outsource_rows:
 			frappe.throw("No outsource rows found in tasks table.")
 
-		# Group tasks by supplier
+		# Group rows by supplier
 		supplier_map = {}
 		for row in outsource_rows:
 			if not row.outsource_supplier:
-				frappe.throw("Outsource Supplier is missing in some task rows.")
-
+				frappe.throw(f"Outsource Supplier is missing for row with item {row.item_code}")
 			supplier_map.setdefault(row.outsource_supplier, []).append(row)
 
-		created_invoices = []
+		created_pis = []
 
-		# Create PI per supplier
+		# Loop through each supplier and create a Purchase Invoice
 		for supplier, rows in supplier_map.items():
-
 			pi = frappe.new_doc("Purchase Invoice")
 			pi.supplier = supplier
 			pi.company = frappe.defaults.get_user_default("company")
 			pi.posting_date = frappe.utils.nowdate()
 			pi.custom_job = self.name
+			if getattr(pi, "job", None):
+				pi.job = self.name
 
 			if tax_template:
 				pi.taxes_and_charges = tax_template
 
+			# Add items for this supplier
 			for row in rows:
-				matching_item = next(
-					(i for i in self.items if i.item_code == row.item_code),
-					None
-				)
-
+				matching_item = next((i for i in self.items if i.item_code == row.item_code), None)
 				if not matching_item:
-					frappe.throw(
-						f"No matching item found in Items table for item_code: {row.item_code}"
-					)
+					frappe.throw(f"No matching item found in Items table for item_code: {row.item_code}")
 
 				pi.append("items", {
 					"item_code": matching_item.item_code,
@@ -421,15 +417,14 @@ class Job(Document):
 			pi.set_missing_values()
 			pi.calculate_taxes_and_totals()
 			pi.save()
+			created_pis.append(pi.name)
 
-			created_invoices.append(pi.name)
-
-		# Update parent document
+		# Update job record with info of created invoices
 		self.purchase_invoice_status = "Created"
-		self.purchase_invoice = ", ".join(created_invoices)
+		self.purchase_invoice = created_pis[-1]
 		self.save(ignore_permissions=True)
 
-		return created_invoices
+		return created_pis
 
 
 
