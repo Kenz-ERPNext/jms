@@ -13,6 +13,7 @@
   "column_break_pjky",
   "payment",
   "mode_of_payment",
+  "priority",
   "basic_info_section",
   "naming_series",
   "job_title",
@@ -35,7 +36,6 @@
   "job_nature",
   "column_break_17",
   "job_source",
-  "priority",
   "timeline_section",
   "start_date",
   "expected_completion_date",
@@ -547,7 +547,7 @@
    "link_fieldname": "custom_job"
   }
  ],
- "modified": "2026-01-28 09:40:28.197805",
+ "modified": "2026-02-03 10:14:13.466023",
  "modified_by": "Administrator",
  "module": "Jms",
  "name": "Job",

@@ -97,7 +97,7 @@ frappe.pages['jobs'].on_page_load = function (wrapper) {
 
         </div>
     `);
-
+ 
     // =========================
     // ADD ITEM ROW
     // =========================

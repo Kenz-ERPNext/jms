@@ -228,8 +228,8 @@ class Job(Document):
 		sales_invoice.due_date = frappe.utils.add_days(frappe.utils.nowdate(), 30)
 		sales_invoice.custom_job = self.name
 		sales_invoice.disable_rounded_total = 1
-		if sales_invoice.job:
-			sales_invoice.job = self.name
+		# if sales_invoice.job:
+		sales_invoice.job = self.name
 
 		if tax_template:
 			sales_invoice.taxes_and_charges = tax_template
@@ -243,6 +243,7 @@ class Job(Document):
 					"description": row.description,
 					"qty": row.job_qty,
 					"rate": row.total_without_tax,
+					"job": self.name 
 				})
 
 		sales_invoice.run_method("calculate_taxes_and_totals")
@@ -264,6 +265,7 @@ class Job(Document):
 			payment_entry.party_type = "Customer"
 			payment_entry.party = sales_invoice.customer
 			payment_entry.custom_job = self.name
+			payment_entry.job = self.name 
 
 			# -----------------------------------
 			# FETCH ACCOUNT BASED ON MODE OF PAYMENT
@@ -303,7 +305,8 @@ class Job(Document):
 				"reference_name": sales_invoice.name,
 				"total_amount": sales_invoice.grand_total,
 				"outstanding_amount": sales_invoice.outstanding_amount,
-				"allocated_amount": sales_invoice.grand_total
+				"allocated_amount": sales_invoice.grand_total,
+				"job": self.name
 			})
 
 			payment_entry.paid_amount = sales_invoice.grand_total
@@ -395,8 +398,8 @@ class Job(Document):
 			pi.company = frappe.defaults.get_user_default("company")
 			pi.posting_date = frappe.utils.nowdate()
 			pi.custom_job = self.name
-			if getattr(pi, "job", None):
-				pi.job = self.name
+			# if pi.job:
+			pi.job = self.name
 
 			if tax_template:
 				pi.taxes_and_charges = tax_template
@@ -410,13 +413,17 @@ class Job(Document):
 				pi.append("items", {
 					"item_code": matching_item.item_code,
 					"qty": matching_item.job_qty or 1,
-					"rate": matching_item.total_without_tax or 0
+					"rate": row.outsource_charge or 0
 				})
 
 			pi.insert(ignore_permissions=True)
 			pi.set_missing_values()
 			pi.calculate_taxes_and_totals()
 			pi.save()
+
+			for row in rows:
+				row.purchase_invoice = pi.name
+				
 			created_pis.append(pi.name)
 
 		# Update job record with info of created invoices

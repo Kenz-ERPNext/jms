@@ -184,3 +184,4 @@ frappe.pages['task-list'].on_page_load = function(wrapper) {
         fetch_tasks();
     };
 };
+ 
