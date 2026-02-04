@@ -34,7 +34,7 @@ def get_columns():
             "label": "Agent",
             "fieldname": "agent",
             "fieldtype": "Link",
-            "options": "Sales Partner",
+            "options": "Agent",
             "width": 140
         },
         {
@@ -50,11 +50,29 @@ def get_columns():
             "width": 190
         },
         {
+            "label": "Invoice Amount",
+            "fieldname": "si_amount",
+            "fieldtype": "Currency",
+            "width": 140
+        },
+        {
+            "label": "Balance Amount",
+            "fieldname": "si_outstanding",
+            "fieldtype": "Currency",
+            "width": 140
+        },
+        {
             "label": "Payment Entry",
             "fieldname": "payment_entry",
             "fieldtype": "Link",
             "options": "Payment Entry",
             "width": 190
+        },
+        {
+            "label": "Paid Amount",
+            "fieldname": "paid_amount",
+            "fieldtype": "Currency",
+            "width": 140
         }
     ]
 
@@ -103,17 +121,27 @@ def get_data(filters):
             j.customer,
             j.agent,
             j.status AS job_status,
+
             si.name AS sales_invoice,
-            pe.name AS payment_entry
+            si.grand_total AS si_amount,
+            si.outstanding_amount AS si_outstanding,
+
+            pe.name AS payment_entry,
+            pe.total_allocated_amount AS paid_amount
+
         FROM `tabJob` j
+
         LEFT JOIN `tabSales Invoice` si
             ON si.job = j.name
             AND si.docstatus = 1
+
         LEFT JOIN `tabPayment Entry Reference` per
             ON per.reference_name = si.name
+
         LEFT JOIN `tabPayment Entry` pe
             ON pe.name = per.parent
             AND pe.docstatus = 1
+
         WHERE {condition_str}
         ORDER BY j.date DESC
     """

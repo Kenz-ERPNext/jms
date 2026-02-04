@@ -52,13 +52,33 @@ def get_columns():
             "width": 150
         },
         {
+            "label": "Invoice Amount",
+            "fieldname": "pi_total",
+            "fieldtype": "Currency",
+            "width": 120
+        },
+        {
+            "label": "Invoice Balance",
+            "fieldname": "pi_outstanding",
+            "fieldtype": "Currency",
+            "width": 130
+        },
+        {
             "label": "Payment Entry",
             "fieldname": "payment_entry",
             "fieldtype": "Link",
             "options": "Payment Entry",
             "width": 150
+        },
+        {
+            "label": "Paid Amount",
+            "fieldname": "paid_amount",
+            "fieldtype": "Currency",
+            "width": 120
         }
     ]
+
+
 
 def get_data(filters):
     conditions = []
@@ -80,38 +100,44 @@ def get_data(filters):
         conditions.append("jt.assigned_tos = %(outsourced_party)s")
         values["outsourced_party"] = filters["outsourced_party"]
 
+    # ✅ ONLY OUTSOURCE JOBS CHECKBOX
+    if filters.get("only_outsource"):
+        conditions.append("jt.assigned_tos IS NOT NULL AND jt.assigned_tos != ''")
+
     condition_str = ""
     if conditions:
         condition_str = " AND " + " AND ".join(conditions)
 
     return frappe.db.sql(
-        f"""
-        SELECT
-            j.date AS date,
-            j.name AS job,
-            j.customer,
-            j.agent,
-            jt.assigned_tos AS outsourced_party,
-            jt.purchase_invoice,
-            pe.name AS payment_entry
-        FROM `tabJob` j
-        INNER JOIN `tabJob Task` jt
-            ON jt.parent = j.name
-        LEFT JOIN `tabPurchase Invoice` pi
-            ON pi.name = jt.purchase_invoice
-            AND pi.docstatus = 1
-        LEFT JOIN `tabPayment Entry Reference` per
-            ON per.reference_name = pi.name
-            AND per.reference_doctype = 'Purchase Invoice'
-        LEFT JOIN `tabPayment Entry` pe
-            ON pe.name = per.parent
-            AND pe.docstatus = 1
-        WHERE
-            j.docstatus = 1
-            AND IFNULL(jt.employee__outsource, 0) != 0
-            {condition_str}
-        ORDER BY j.date DESC
-        """,
-        values,
-        as_dict=True
-    )
+		f"""
+		SELECT
+			j.date AS date,
+			j.name AS job,
+			j.customer,
+			j.agent,
+			jt.assigned_tos AS outsourced_party,
+			jt.purchase_invoice,
+			pi.rounded_total AS pi_total,
+			pi.outstanding_amount AS pi_outstanding,
+			pe.name AS payment_entry,
+			per.allocated_amount AS paid_amount
+		FROM `tabJob` j
+		LEFT JOIN `tabJob Task` jt
+			ON jt.parent = j.name
+		LEFT JOIN `tabPurchase Invoice` pi
+			ON pi.name = jt.purchase_invoice
+			AND pi.docstatus = 1
+		LEFT JOIN `tabPayment Entry Reference` per
+			ON per.reference_name = pi.name
+			AND per.reference_doctype = 'Purchase Invoice'
+		LEFT JOIN `tabPayment Entry` pe
+			ON pe.name = per.parent
+			AND pe.docstatus = 1
+		WHERE
+			j.docstatus IN (0, 1)
+			{condition_str}
+		ORDER BY j.date DESC
+		""",
+		values,
+		as_dict=True
+	)

@@ -4,15 +4,13 @@ frappe.query_reports["Job Supplier Payment Report"] = {
             fieldname: "from_date",
             label: __("From Date"),
             fieldtype: "Date",
-            reqd: 1,
             default: frappe.datetime.month_start()
         },
         {
             fieldname: "to_date",
             label: __("To Date"),
             fieldtype: "Date",
-            reqd: 1,
-            default: frappe.datetime.month_end()
+            default: frappe.datetime.get_today()
         },
         {
             fieldname: "job",
@@ -25,6 +23,12 @@ frappe.query_reports["Job Supplier Payment Report"] = {
             label: __("Outsourced Party"),
             fieldtype: "Link",
             options: "Outsourced Party"
+        },
+        {
+            fieldname: "only_outsource",
+            label: __("Only Show Outsource Jobs"),
+            fieldtype: "Check",
+            default: 0
         }
     ]
 };
