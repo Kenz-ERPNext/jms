@@ -3,7 +3,7 @@
 
 import frappe
 from frappe.model.document import Document
-
+ 
 
 class Agent(Document):
 	
@@ -16,6 +16,7 @@ class Agent(Document):
 
 		cus = frappe.new_doc("Customer")
 		cus.customer_name = self.agent_name
+		cus.custom_customer_name_arabic = "."
 		cus.customer_type = "Individual"  
 		if self.tax_id:
 			cus.tax_id = self.tax_id
