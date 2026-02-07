@@ -6,4 +6,4 @@ frappe.ui.form.on("Expense Type", {
 
 	},
 });
- 
+  

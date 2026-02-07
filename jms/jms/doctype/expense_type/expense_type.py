@@ -6,7 +6,7 @@ from frappe.model.document import Document
 
 
 class ExpenseType(Document):
-	pass
+	
 
 	@frappe.whitelist()
 	def validate(self):
@@ -22,3 +22,6 @@ class ExpenseType(Document):
 			item.insert(ignore_permissions=True)
 			item.save()
 
+			self.item = item.item_code
+
+ 
