@@ -214,7 +214,7 @@ class Job(Document):
 
 
 	@frappe.whitelist()
-	def create_invoice(self, tax_template=None):
+	def create_invoice(self, tax_template=None, payment_type=None, partial_amount=None):
 
 		sales_invoice = frappe.new_doc("Sales Invoice")
 
@@ -235,7 +235,7 @@ class Job(Document):
 			sales_invoice.taxes_and_charges = tax_template
 
 			sales_invoice.set_taxes()    
-\
+
 		if self.items:
 			for row in self.items:
 				sales_invoice.append("items", {
@@ -255,8 +255,10 @@ class Job(Document):
 		self.linked_invoice = sales_invoice.name   
 		self.save(ignore_permissions=True)
 
-	
+
+
 		if self.payment == "Payment Now":
+
 			payment_entry = frappe.new_doc("Payment Entry")
 			payment_entry.payment_type = "Receive"
 			payment_entry.company = sales_invoice.company
@@ -265,30 +267,27 @@ class Job(Document):
 			payment_entry.party_type = "Customer"
 			payment_entry.party = sales_invoice.customer
 			payment_entry.custom_job = self.name
-			payment_entry.job = self.name 
+			payment_entry.job = self.name
 
-			# -----------------------------------
-			# FETCH ACCOUNT BASED ON MODE OF PAYMENT
-			# -----------------------------------
-
+			# -------------------------------
+			# Account Fetch
+			# -------------------------------
 			if self.mode_of_payment in ["Bank", "Bank Draft", "Bank Transfer"]:
-				# Fetch company default bank account
+
 				default_bank_account = frappe.db.get_value(
 					"Company",
 					sales_invoice.company,
 					"default_bank_account"
 				)
+
 				if not default_bank_account:
 					frappe.throw(f"Default bank account is not set for company: {sales_invoice.company}")
 
 				payment_entry.paid_to = default_bank_account
-
-				# Add reference number and date
 				payment_entry.reference_no = self.name
 				payment_entry.reference_date = frappe.utils.nowdate()
 
 			else:
-				# Standard Mode of Payment Account Fetch
 				payment_entry.paid_to = frappe.db.get_value(
 					"Mode of Payment Account",
 					{"parent": self.mode_of_payment, "company": sales_invoice.company},
@@ -298,117 +297,102 @@ class Job(Document):
 				if not payment_entry.paid_to:
 					frappe.throw(f"No account found for Mode of Payment: {self.mode_of_payment}")
 
+			# -------------------------------
+			# Amount Logic
+			# -------------------------------
 
-			# Add Invoice Reference
+			if payment_type == "Partially Paid":
+				paid_amount = float(partial_amount or 0)
+
+				if paid_amount <= 0:
+					frappe.throw("Partial amount must be greater than 0")
+
+				if paid_amount > sales_invoice.grand_total:
+					frappe.throw("Partial amount cannot exceed Invoice Total")
+
+			else:
+				# Full Paid
+				paid_amount = sales_invoice.grand_total
+
+			# -------------------------------
+			# References
+			# -------------------------------
 			payment_entry.append("references", {
 				"reference_doctype": "Sales Invoice",
 				"reference_name": sales_invoice.name,
 				"total_amount": sales_invoice.grand_total,
 				"outstanding_amount": sales_invoice.outstanding_amount,
-				"allocated_amount": sales_invoice.grand_total,
+				"allocated_amount": paid_amount,
 				"job": self.name
 			})
 
-			payment_entry.paid_amount = sales_invoice.grand_total
-			payment_entry.received_amount = sales_invoice.grand_total
+			payment_entry.paid_amount = paid_amount
+			payment_entry.received_amount = paid_amount
 
 			payment_entry.insert(ignore_permissions=True)
 			payment_entry.submit()
 
-			# Link Payment Entry to Job
+			# Link Payment Entry
 			self.sales_invoice_payment_entry = payment_entry.name
 			self.save(ignore_permissions=True)
 
 			return payment_entry.name
 
+	
 
-
-	# @frappe.whitelist()
-	# def create_pinvoice(self, tax_template=None):
-	# 	outsource_rows = [row for row in self.tasks if row.employee__outsource == "Outsource"]
-
-	# 	if not outsource_rows:
-	# 		frappe.throw("No outsource rows found in tasks table.")
-
-	# 	suppliers = list({row.outsource_supplier for row in outsource_rows})
-
-	# 	if len(suppliers) > 1:
-	# 		frappe.throw("Multiple outsource suppliers found. Please create invoice individually per supplier.")
-
-	# 	supplier = suppliers[0]
-
-	# 	if not supplier:
-	# 		frappe.throw("Outsource Supplier is missing in some rows.")
-
-	# 	pi = frappe.new_doc("Purchase Invoice")
-	# 	pi.supplier = supplier
-	# 	pi.company = frappe.defaults.get_user_default("company")
-	# 	pi.posting_date = frappe.utils.nowdate()
-	# 	pi.custom_job = self.name
-	# 	if pi.job:
-	# 		pi.job = self.name
-
-	# 	if tax_template:
-	# 		pi.taxes_and_charges = tax_template
-
-	# 	for row in outsource_rows:
-	# 		matching_item = next((i for i in self.items if i.item_code == row.item_code), None)
-	# 		if not matching_item:
-	# 			frappe.throw(f"No matching item found in Items table for item_code: {row.item_code}")
-
-	# 		pi.append("items", {
-	# 			"item_code": matching_item.item_code,
-	# 			"qty": matching_item.job_qty or 1,
-	# 			"rate": matching_item.total_without_tax or 0
-	# 		})
-
-	# 	pi.insert(ignore_permissions=True)
-
-	# 	pi.set_missing_values()
-	# 	pi.calculate_taxes_and_totals()
-	# 	pi.save() 
-
-	# 	self.purchase_invoice_status = "Created"
-	# 	self.purchase_invoice = pi.name   
-	# 	self.save(ignore_permissions=True)
-
-	# 	return pi.name
 
 	@frappe.whitelist()
 	def create_pinvoice(self, tax_template=None):
+
+		# -------------------------
 		# Filter outsource rows
+		# -------------------------
 		outsource_rows = [row for row in self.tasks if row.employee__outsource == "Outsource"]
 
 		if not outsource_rows:
 			frappe.throw("No outsource rows found in tasks table.")
 
-		# Group rows by supplier
+		# -------------------------
+		# Group by Supplier
+		# -------------------------
 		supplier_map = {}
 		for row in outsource_rows:
 			if not row.outsource_supplier:
-				frappe.throw(f"Outsource Supplier is missing for row with item {row.item_code}")
+				frappe.throw(f"Outsource Supplier missing for item {row.item_code}")
+
 			supplier_map.setdefault(row.outsource_supplier, []).append(row)
 
 		created_pis = []
 
-		# Loop through each supplier and create a Purchase Invoice
+		# -------------------------
+		# Loop Suppliers
+		# -------------------------
 		for supplier, rows in supplier_map.items():
+
 			pi = frappe.new_doc("Purchase Invoice")
 			pi.supplier = supplier
 			pi.company = frappe.defaults.get_user_default("company")
 			pi.posting_date = frappe.utils.nowdate()
 			pi.custom_job = self.name
-			# if pi.job:
 			pi.job = self.name
+			pi.update_stock = 0
+			pi.disable_rounded_total = 1
 
 			if tax_template:
 				pi.taxes_and_charges = tax_template
 
-			# Add items for this supplier
+			# -------------------------
+			# Add Items
+			# -------------------------
 			for row in rows:
-				matching_item = next((i for i in self.items if i.item_code == row.item_code), None)
+
+				matching_item = next(
+					(i for i in self.items if i.item_code == row.item_code),
+					None
+				)
+
 				if not matching_item:
-					frappe.throw(f"No matching item found in Items table for item_code: {row.item_code}")
+					frappe.throw(f"No matching item found for {row.item_code}")
 
 				pi.append("items", {
 					"item_code": matching_item.item_code,
@@ -416,17 +400,119 @@ class Job(Document):
 					"rate": row.outsource_charge or 0
 				})
 
-			pi.insert(ignore_permissions=True)
+			if tax_template:
+				pi.taxes_and_charges = tax_template
+				pi.set("taxes", [])              
+				pi.set_taxes()
+			
 			pi.set_missing_values()
-			pi.calculate_taxes_and_totals()
-			pi.save()
+			pi.run_method("calculate_taxes_and_totals")
 
-			for row in rows:
-				row.purchase_invoice = pi.name
-				
+			pi.insert(ignore_permissions=True)
+		
+			pi.submit()
+
 			created_pis.append(pi.name)
 
-		# Update job record with info of created invoices
+			# -------------------------
+			# Payment Entry Creation
+			# -------------------------
+			if self.payment_pi == "Payment Now":
+
+				if not self.mode_of_payment_pi:
+					frappe.throw("Mode of Payment required for Payment Now")
+
+				# Mode of Payment Account
+				mop_account = frappe.db.get_value(
+					"Mode of Payment Account",
+					{
+						"parent": self.mode_of_payment_pi,
+						"company": pi.company
+					},
+					"default_account"
+				)
+
+				if not mop_account:
+					frappe.throw(
+						f"No account set in Mode of Payment {self.mode_of_payment_pi}"
+					)
+
+				paid_from = mop_account
+
+				# Account Currency
+				account_currency = frappe.db.get_value(
+					"Account",
+					paid_from,
+					"account_currency"
+				)
+
+				# Supplier Payable Account
+				paid_to = frappe.db.get_value(
+					"Party Account",
+					{
+						"parenttype": "Supplier",
+						"parent": supplier,
+						"company": pi.company
+					},
+					"account"
+				)
+
+				if not paid_to:
+					paid_to = frappe.get_value(
+						"Company",
+						pi.company,
+						"default_payable_account"
+					)
+
+				if not paid_to:
+					frappe.throw(
+						f"No Payable Account found for Supplier {supplier}"
+					)
+
+				# Create Payment Entry
+				pe = frappe.new_doc("Payment Entry")
+				pe.payment_type = "Pay"
+				pe.party_type = "Supplier"
+				pe.party = supplier
+				pe.company = pi.company
+				pe.posting_date = frappe.utils.nowdate()
+				pe.mode_of_payment = self.mode_of_payment_pi
+				pe.job = self.name
+
+				pe.paid_from = paid_from
+				pe.paid_from_account_currency = account_currency
+				pe.paid_to = paid_to
+
+
+
+				pe.paid_amount = pi.grand_total
+				pe.received_amount = pi.grand_total
+
+				pe.source_exchange_rate = 1
+				pe.target_exchange_rate = 1
+
+				pe.append("references", {
+					"reference_doctype": "Purchase Invoice",
+					"reference_name": pi.name,
+					"total_amount": pi.grand_total,
+					"allocated_amount": pi.grand_total
+				})
+
+				pe.insert(ignore_permissions=True)
+				pi.set_missing_values()
+				pi.calculate_taxes_and_totals()
+				pe.submit()
+
+
+			# -------------------------
+			# Update Child Rows
+			# -------------------------
+			for row in rows:
+				row.purchase_invoice = pi.name
+
+		# -------------------------
+		# Update Job
+		# -------------------------
 		self.purchase_invoice_status = "Created"
 		self.purchase_invoice = created_pis[-1]
 		self.save(ignore_permissions=True)
@@ -491,35 +577,6 @@ class Job(Document):
 
 
 
-	# @frappe.whitelist()
-	# def create_expense(self, expense_type, amount, supplier, taxes_template=None, reference_doctype=None, reference_name=None):
-	# 	# Use passed supplier or fallback to default
-	# 	supplier = supplier or frappe.get_value("Expense Type", expense_type, "default_supplier") or "Default Supplier"
-
-	# 	pi = frappe.get_doc({
-	# 		"doctype": "Purchase Invoice",
-	# 		"supplier": supplier,
-	# 		"posting_date": frappe.utils.nowdate(),
-	# 		"taxes_and_charges": taxes_template,
-	# 		"items": [
-	# 			{
-	# 				"item_code": frappe.get_value("Expense Type", expense_type, "default_item") or "EXP-ITEM",
-	# 				"qty": 1,
-	# 				"rate": amount,
-	# 				"expense_type": expense_type
-	# 			}
-	# 		],
-	# 		"references": [
-	# 			{
-	# 				"reference_doctype": reference_doctype,
-	# 				"reference_name": reference_name
-	# 			}
-	# 		]
-	# 	})
-	# 	pi.insert()
-	# 	pi.submit()
-	# 	return pi.name
-
 	@frappe.whitelist()
 	def create_expense(
 		self,
@@ -527,6 +584,8 @@ class Job(Document):
 		amount,
 		supplier,
 		item_code,
+		payment_type,
+		mode_of_payment=None,
 		taxes_template=None,
 		reference_doctype=None,
 		reference_name=None
@@ -535,35 +594,155 @@ class Job(Document):
 		if not item_code:
 			frappe.throw("Item is mandatory to create Expense")
 
-		pi = frappe.get_doc({
-			"doctype": "Purchase Invoice",
-			"supplier": supplier,
-			"posting_date": frappe.utils.nowdate(),
-			"taxes_and_charges": taxes_template,
-			"items": [
-				{
-					"item_code": item_code,
-					"qty": 1,
-					"rate": amount,
-					"expense_type": expense_type
-				}
-			],
-			"references": [
-				{
-					"reference_doctype": reference_doctype,
-					"reference_name": reference_name
-				}
-			]
+		company = self.company or frappe.defaults.get_user_default("Company")
+
+		# -----------------------
+		# Create Purchase Invoice
+		# -----------------------
+		pi = frappe.new_doc("Purchase Invoice")
+
+		pi.supplier = supplier
+		pi.company = company
+		pi.posting_date = frappe.utils.nowdate()
+		pi.update_stock = 0
+		pi.job = self.name
+		pi.disable_rounded_total = 1
+		pi.custom_job = self.name
+
+		# ADD ITEM
+		pi.append("items", {
+			"item_code": item_code,
+			"qty": 1,
+			"rate": amount,
+			"expense_type": expense_type
 		})
 
-		pi.insert()
+		# -----------------------
+		# SET TAX TEMPLATE
+		# -----------------------
+		if taxes_template:
+			pi.taxes_and_charges = taxes_template
+
+		# IMPORTANT → run before taxes
+		pi.set_missing_values()
+
+		# LOAD TAX ROWS
+		if taxes_template:
+			pi.set_taxes()
+
+		# CALCULATE
+		pi.calculate_taxes_and_totals()
+
+		# SAVE
+		pi.insert(ignore_permissions=True)
 		pi.submit()
 
-		return pi.name
+		# -----------------------
+		# PAYMENT ENTRY
+		# -----------------------
+		if payment_type == "Payment Now":
+
+			if not mode_of_payment:
+				frappe.throw("Mode of Payment required for Payment Now")
+
+			# Mode of Payment Account
+			paid_account = frappe.db.get_value(
+				"Mode of Payment Account",
+				{
+					"parent": mode_of_payment,
+					"company": company
+				},
+				"default_account"
+			)
+
+			if not paid_account:
+				frappe.throw(
+					f"Default account not set for Mode of Payment {mode_of_payment}"
+				)
+
+			# -----------------------
+			# FETCH PI AMOUNTS (Tax Included)
+			# -----------------------
+			grand_total = frappe.db.get_value(
+				"Purchase Invoice",
+				pi.name,
+				"grand_total"
+			)
+
+			outstanding_amount = frappe.db.get_value(
+				"Purchase Invoice",
+				pi.name,
+				"outstanding_amount"
+			)
+
+			# -----------------------
+			# SUPPLIER PAYABLE ACCOUNT
+			# -----------------------
+			payable_account = frappe.db.get_value(
+				"Party Account",
+				{
+					"parenttype": "Supplier",
+					"parent": supplier,
+					"company": company
+				},
+				"account"
+			)
+
+			if not payable_account:
+				payable_account = frappe.get_value(
+					"Company",
+					company,
+					"default_payable_account"
+				)
+
+			if not payable_account:
+				frappe.throw(f"No Payable Account found for Supplier {supplier}")
+
+			# Account Currency
+			account_currency = frappe.db.get_value(
+				"Account",
+				payable_account,
+				"account_currency"
+			)
+
+			# -----------------------
+			# CREATE PAYMENT ENTRY
+			# -----------------------
+			pe = frappe.new_doc("Payment Entry")
+			pe.payment_type = "Pay"
+			pe.party_type = "Supplier"
+			pe.party = supplier
+			pe.company = company
+			pe.posting_date = frappe.utils.nowdate()
+			pe.mode_of_payment = mode_of_payment
+			pe.job = self.name
+
+			pe.paid_from = paid_account
+			pe.paid_to = payable_account
+
+			pe.party_account = payable_account
+			pe.party_account_currency = account_currency
+
+			# TAX INCLUDED PAYMENT
+			pe.paid_amount = grand_total
+			pe.received_amount = grand_total
+
+			pe.append("references", {
+				"reference_doctype": "Purchase Invoice",
+				"reference_name": pi.name,
+				"total_amount": grand_total,
+				"outstanding_amount": outstanding_amount,
+				"allocated_amount": grand_total
+			})
+
+			# ONLY THIS — NO TAX METHOD
+			pe.set_missing_values()
+
+			pe.insert(ignore_permissions=True)
+			pe.submit()
 
 
-
-
+ 
 
 
 

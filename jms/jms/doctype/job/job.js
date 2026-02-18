@@ -3,8 +3,52 @@
  
 frappe.ui.form.on('Job', {
 
+
+    payment: function(frm) {
+        if (frm.doc.payment) {
+            frm.save();
+        }
+    },
+
+    mode_of_payment: function(frm) {
+        if (frm.doc.mode_of_payment) {
+            frm.save();
+        }
+    },
+
+    payment_pi: function(frm) {
+        if (frm.doc.payment) {
+            frm.save();
+        }
+    },
+
+    mode_of_payment_pi: function(frm) {
+        if (frm.doc.mode_of_payment) {
+            frm.save();
+        }
+    },
+
+
+
 	onload(frm) {
 		salesInvoiceMessage(frm);
+
+        if (!frm.doc.company) {
+
+            frappe.call({
+                method: "frappe.client.get_value",
+                args: {
+                    doctype: "Global Defaults",
+                    fieldname: "default_company"
+                },
+                callback: function(r) {
+                    if (r.message && r.message.default_company) {
+                        frm.set_value("company", r.message.default_company);
+                    }
+                }
+            });
+
+        }
 
     },
 
@@ -22,38 +66,6 @@ frappe.ui.form.on('Job', {
             };
         });
 
-
-
-		// Add custom buttons
-		// if (!frm.is_new()) {
-		// 	frm.add_custom_button(__('Get Progress'), function() {
-		// 		cur_frm.call({
-        //             doc: cur_frm.doc,
-		// 			method: "get_job_progress",
-		// 			args: {
-		// 				job_name: frm.doc.name
-		// 			},
-		// 			callback: function(r) {
-		// 				if (r.message) {
-		// 					frappe.msgprint({
-		// 						title: __('Job Progress'),
-		// 						message: `
-		// 							<div style="padding: 10px;">
-		// 								<p><strong>Progress:</strong> ${r.message.progress}%</p>
-		// 								<p><strong>Total Tasks:</strong> ${r.message.total_tasks}</p>
-		// 								<p><strong>Completed:</strong> ${r.message.completed_tasks}</p>
-		// 								<p><strong>In Progress:</strong> ${r.message.in_progress_tasks}</p>
-		// 								<p><strong>Pending:</strong> ${r.message.pending_tasks}</p>
-		// 							</div>
-		// 						`,
-		// 						indicator: 'blue'
-		// 					});
-		// 				}
-		// 			}
-		// 		});
-		// 	});
-
-		// 	}
 
 
 
@@ -92,14 +104,41 @@ frappe.ui.form.on('Job', {
             });
         }
 
-		if (frm.doc.status === 'Completed' || frm.doc.status === 'Supervisor Approved' || frm.doc.status === 'MD Approved' && frm.doc.sales_invoice_status !== 'Created' ) {
+
+
+
+
+
+        if (frm.doc.status === 'Completed' || 
+            frm.doc.status === 'Supervisor Approved' || 
+            frm.doc.status === 'MD Approved' && frm.doc.sales_invoice_status !== 'Created') {
+
             frm.add_custom_button(__('Create Sales Invoice'), function () {
 
-				if (!frm.doc.payment) {
-					frappe.msgprint(__('Payment is required before creating Sales Invoice.'));
-					return; // Stop execution
-				}
+                if (!frm.doc.payment) {
+                    frappe.msgprint(__('Payment is required before creating Sales Invoice.'));
+                    return;
+                }
 
+                if (frm.doc.sales_invoice_status === 'Created') {
+                    frappe.msgprint(__('Sales Invoice already created for this Job.'));
+                    return;
+                }
+
+                // ----------------------------
+                // Calculate Total Invoice Amount
+                // ----------------------------
+                let total_amount = 0;
+
+                if (frm.doc.items) {
+                    frm.doc.items.forEach(row => {
+                        total_amount += flt(row.total_without_tax || 0);
+                    });
+                }
+
+                // ----------------------------
+                // Popup
+                // ----------------------------
                 frappe.prompt(
                     [
                         {
@@ -108,30 +147,70 @@ frappe.ui.form.on('Job', {
                             fieldtype: "Link",
                             options: "Sales Taxes and Charges Template",
                             reqd: 1
+                        },
+                        {
+                            fieldname: "invoice_total",
+                            label: "Total Invoice Amount",
+                            fieldtype: "Currency",
+                            default: total_amount,
+                            read_only: 1
+                        },
+                        {
+                            fieldname: "payment_type",
+                            label: "Payment Type",
+                            fieldtype: "Select",
+                            options: "Full Paid\nPartially Paid",
+                            reqd: 1
+                        },
+                        {
+                            fieldname: "partial_amount",
+                            label: "Partial Amount",
+                            fieldtype: "Currency",
+                            depends_on: "eval:doc.payment_type=='Partially Paid'"
                         }
                     ],
                     function (data) {
+
+                        // Validation
+                        if (data.payment_type === "Partially Paid" && !data.partial_amount) {
+                            frappe.msgprint("Please enter Partial Amount");
+                            return;
+                        }
+
+                        if (data.payment_type === "Partially Paid" && data.partial_amount > data.invoice_total) {
+                            frappe.msgprint("Partial amount cannot exceed Invoice Total");
+                            return;
+                        }
+
                         cur_frm.call({
                             doc: cur_frm.doc,
                             method: "create_invoice",
                             args: {
-                                tax_template: data.tax_template
+                                tax_template: data.tax_template,
+                                payment_type: data.payment_type,
+                                partial_amount: data.partial_amount
                             },
                             callback: function (r) {
                                 if (r.message) {
-                                    frappe.msgprint("Invoice Created: <b>" + r.message + "</b>");
+                                    frappe.msgprint("Process Completed: <b>" + r.message + "</b>");
                                 }
                             }
                         });
                     },
-                    __("Select Tax Template"),
-                    __("Create")
+                    __("Create Invoice & Payment"),
+                    __("Submit")
                 );
 
             });
         }
 
-		if (
+
+
+
+
+
+
+if (
     (frm.doc.status === 'Completed' || 
      frm.doc.status === 'Supervisor Approved' || 
      frm.doc.status === 'MD Approved') && 
@@ -155,7 +234,7 @@ frappe.ui.form.on('Job', {
                             frappe.db.get_value(
                                 'Expense Type',
                                 expense_type,
-                                'item',   // ✅ linked Item field
+                                'item',
                                 (r) => {
                                     if (r && r.item) {
                                         d.set_value('item_code', r.item);
@@ -182,24 +261,53 @@ frappe.ui.form.on('Job', {
                     reqd: 1
                 },
                 {
+                    label: 'Payment Type',
+                    fieldname: 'payment_type',
+                    fieldtype: 'Select',
+                    options: 'Payment Now\nCredit',
+                    reqd: 1,
+                    change() {
+                        let pt = d.get_value('payment_type');
+
+                        if (pt === 'Payment Now') {
+                            d.set_df_property('mode_of_payment', 'hidden', 0);
+                        } else {
+                            d.set_df_property('mode_of_payment', 'hidden', 1);
+                            d.set_value('mode_of_payment', null);
+                        }
+                    }
+                }, 
+                {
+                    label: 'Mode of Payment',
+                    fieldname: 'mode_of_payment',
+                    fieldtype: 'Link',
+                    options: 'Mode of Payment',
+                    hidden: 1
+                },
+                {
                     label: 'Purchase Taxes and Charges Template',
                     fieldname: 'taxes_template',
                     fieldtype: 'Link',
                     options: 'Purchase Taxes and Charges Template'
                 },
                 {
-                    // 🔒 hidden field to hold fetched item
                     fieldname: 'item_code',
                     fieldtype: 'Link',
                     options: 'Item',
                     hidden: 1
                 }
             ],
+
             primary_action_label: 'Submit',
             primary_action(values) {
 
                 if (!values.item_code) {
                     frappe.msgprint(__('Item not found for selected Expense Type'));
+                    return;
+                }
+
+                if (values.payment_type === "Payment Now" && !values.mode_of_payment) {
+                    frappe.msgprint(__('Mode of Payment is required for Payment Now'));
                     return;
                 }
 
@@ -211,7 +319,9 @@ frappe.ui.form.on('Job', {
                         amount: values.amount,
                         supplier: values.supplier,
                         taxes_template: values.taxes_template,
-                        item_code: values.item_code,   // ✅ pass item
+                        item_code: values.item_code,
+                        payment_type: values.payment_type,
+                        mode_of_payment: values.mode_of_payment,
                         reference_doctype: frm.doc.doctype,
                         reference_name: frm.doc.name
                     },
@@ -229,43 +339,96 @@ frappe.ui.form.on('Job', {
         d.show();
     });
 }
-    
 
-		// if (frm.doc.status === 'Completed' && frm.doc.purchase_invoice_status !== 'Created') {
+
+
+
+        let outsource_rows = frm.doc.tasks.filter(row => row.employee__outsource === "Outsource");
+
+        // Show button
+        if (outsource_rows.length > 0 
+            && frm.doc.status === 'Completed' 
+            && frm.doc.purchase_invoice_status !== 'Created') {
+
+            frm.add_custom_button(__('Create Purchase Invoice'), function () {
+
+                // -------------------------
+                // Payment Type Check
+                // -------------------------
+                if (!frm.doc.payment_pi) {
+                    frappe.msgprint(__('Please select Payment Type'));
+                    return;
+                }
+
+                if (frm.doc.payment_pi === "Payment Now" && !frm.doc.mode_of_payment_pi) {
+                    frappe.msgprint(__('Mode of Payment is required for Payment Now'));
+                    return;
+                }
+
+                // -------------------------
+                // Tax Template Popup
+                // -------------------------
+                let d = new frappe.ui.Dialog({
+                    title: 'Select Purchase Tax Template',
+                    fields: [
+                        {
+                            label: 'Taxes and Charges Template',
+                            fieldname: 'tax_template',
+                            fieldtype: 'Link',
+                            options: 'Purchase Taxes and Charges Template'
+                        }
+                    ],
+                    primary_action_label: 'Create',
+                    primary_action(values) {
+
+                        cur_frm.call({
+                            doc: cur_frm.doc,
+                            method: "create_pinvoice",
+                            args: {
+                                tax_template: values.tax_template
+                            },
+                            callback: function (r) {
+                                if (r.message) {
+                                    frappe.msgprint(
+                                        "Purchase Invoice Created: <b>" + r.message.join(", ") + "</b>"
+                                    );
+                                    frm.reload_doc();
+                                }
+                            }
+                        });
+
+                        d.hide();
+                    }
+                });
+
+                d.show();
+
+            });
+        }
+
+
+
+		// let outsource_rows = frm.doc.tasks.filter(row => row.employee__outsource === "Outsource");
+
+        // // Only show button if there are outsource rows
+        // if (outsource_rows.length > 0 && frm.doc.status === 'Completed' && frm.doc.purchase_invoice_status !== 'Created') {
         //     frm.add_custom_button(__('Create Purchase Invoice'), function () {
-		// 		cur_frm.call({
+        //         cur_frm.call({
         //             doc: cur_frm.doc,
         //             method: "create_pinvoice",
         //             args: {},
         //             callback: function (r) {
         //                 if (r.message) {
-		// 					frappe.msgprint("Invoice Created: <b>" + r.message + "</b>");
+        //                     frappe.msgprint("Invoice Created: <b>" + r.message + "</b>");
         //                 }
         //             }
         //         });
         //     });
-
-		let outsource_rows = frm.doc.tasks.filter(row => row.employee__outsource === "Outsource");
-
-        // Only show button if there are outsource rows
-        if (outsource_rows.length > 0 && frm.doc.status === 'Completed' && frm.doc.purchase_invoice_status !== 'Created') {
-            frm.add_custom_button(__('Create Purchase Invoice'), function () {
-                cur_frm.call({
-                    doc: cur_frm.doc,
-                    method: "create_pinvoice",
-                    args: {},
-                    callback: function (r) {
-                        if (r.message) {
-                            frappe.msgprint("Invoice Created: <b>" + r.message + "</b>");
-                        }
-                    }
-                });
-            });
         // }
 
 		
         
-        }
+      
 
 
 		// Set filter for job nature based on job type
@@ -410,7 +573,7 @@ frappe.ui.form.on('Job Task', {
         }
     },
 });
-
+ 
 // Child table event for Job Item
 frappe.ui.form.on('Job Item', {
 	work_template: function(frm, cdt, cdn) {

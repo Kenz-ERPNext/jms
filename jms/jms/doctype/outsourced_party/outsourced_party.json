@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "field:party_name",
- "creation": "2025-12-05 10:00:00.000000",
+ "creation": "2025-12-05 10:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -44,7 +44,8 @@
    "fieldname": "linked_supplier",
    "fieldtype": "Link",
    "label": "Linked Supplier",
-   "options": "Supplier"
+   "options": "Supplier",
+   "reqd": 1
   },
   {
    "default": "1",
@@ -72,7 +73,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-05 10:00:00.000000",
+ "modified": "2026-02-17 14:27:22.360077",
  "modified_by": "Administrator",
  "module": "Jms",
  "name": "Outsourced Party",
@@ -92,6 +93,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
