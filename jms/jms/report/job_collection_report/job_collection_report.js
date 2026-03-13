@@ -32,7 +32,7 @@ frappe.query_reports["Job Collection Report"] = {
             label: __("Agent"),
             fieldtype: "Link",
             options: "Agent"
-        },
+        }, 
         // {
         //     fieldname: "invoice_filter",
         //     label: __("Sales Invoice Status"),

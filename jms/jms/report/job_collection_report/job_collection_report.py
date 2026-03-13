@@ -42,6 +42,14 @@ def get_columns():
             "fieldname": "job_status",
             "width": 120
         },
+
+        {
+            "label": "Mode Of Payment",
+            "fieldname": "mode_of_payment",
+            "fieldtype": "Link",
+            "options": "Mode of Payment",
+            "width": 160
+        },
         {
             "label": "Sales Invoice",
             "fieldname": "sales_invoice",
@@ -75,7 +83,7 @@ def get_columns():
             "width": 140
         }
     ]
-
+ 
 
 def get_data(filters):
     conditions = []
@@ -120,6 +128,7 @@ def get_data(filters):
             j.name AS job,
             j.customer,
             j.agent,
+            j.mode_of_payment,
             j.status AS job_status,
 
             si.name AS sales_invoice,
