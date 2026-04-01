@@ -272,7 +272,7 @@ class Job(Document):
 			# -------------------------------
 			# Account Fetch
 			# -------------------------------
-			if self.mode_of_payment in ["Bank", "Bank Draft", "Bank Transfer"]:
+			if self.mode_of_payment in ["Bank", "Bank Draft", "Bank Transfer", "RIYAD BANK"]:
 
 				default_bank_account = frappe.db.get_value(
 					"Company",
@@ -576,7 +576,7 @@ class Job(Document):
 		return payment_entry.name
 
 
-
+ 
 	@frappe.whitelist()
 	def create_expense(
 		self,
