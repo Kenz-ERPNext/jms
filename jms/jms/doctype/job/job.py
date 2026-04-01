@@ -211,7 +211,7 @@ class Job(Document):
 			"in_progress_tasks": len([task for task in job.tasks if task.status == "In Progress"])
 		}
 
-
+# PAYMNET ENTRY CREATION CODE 
 
 	@frappe.whitelist()
 	def create_invoice(self, tax_template=None, payment_type=None, partial_amount=None):
