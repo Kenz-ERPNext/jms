@@ -646,7 +646,7 @@ frappe.ui.form.on('Job Item', {
 
 
 });
-
+ 
 
 function set_job_status(frm) {
     if (!frm.doc.tasks || frm.doc.tasks.length === 0) return;

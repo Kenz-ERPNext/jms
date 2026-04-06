@@ -21,6 +21,10 @@ class Job(Document):
 
 
 
+
+
+
+
 	def after_insert(self):
 		pass 
 
@@ -338,7 +342,7 @@ class Job(Document):
 
 			return payment_entry.name
 
-	
+ 	
 
 
 	@frappe.whitelist()
