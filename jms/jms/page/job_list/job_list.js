@@ -191,6 +191,17 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 // ===================================================
 // GLOBAL STATE (IMPORTANT ✅)
 // ===================================================
@@ -284,7 +295,7 @@ function render_job_cards() {
                 "date"
             ],
             order_by: `name ${current_sort_order}`, // ✅ dynamic sorting
-            limit_page_length: 50
+            limit_page_length: 0
         },
         callback: function (r) {
 
@@ -406,6 +417,22 @@ function bind_task_buttons() {
         frappe.set_route(["task-list", job_id]);
     });
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
