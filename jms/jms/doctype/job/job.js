@@ -107,11 +107,11 @@ frappe.ui.form.on('Job', {
 
 
 
-
-
-        if (frm.doc.status === 'Completed' || 
-            frm.doc.status === 'Supervisor Approved' || 
-            frm.doc.status === 'MD Approved' && frm.doc.sales_invoice_status !== 'Created') {
+        if (
+            frm.doc.status === 'Completed' ||
+            frm.doc.status === 'Supervisor Approved' ||
+            (frm.doc.status === 'MD Approved' && frm.doc.sales_invoice_status !== 'Created')
+        ) {
 
             frm.add_custom_button(__('Create Sales Invoice'), function () {
 
@@ -137,24 +137,28 @@ frappe.ui.form.on('Job', {
                 }
 
                 // ----------------------------
-                // Popup
+                // Dynamic Fields
                 // ----------------------------
-                frappe.prompt(
-                    [
-                        {
-                            fieldname: "tax_template",
-                            label: "Sales Taxes and Charges Template",
-                            fieldtype: "Link",
-                            options: "Sales Taxes and Charges Template",
-                            reqd: 1
-                        },
-                        {
-                            fieldname: "invoice_total",
-                            label: "Total Invoice Amount",
-                            fieldtype: "Currency",
-                            default: total_amount,
-                            read_only: 1
-                        },
+                let fields = [
+                    {
+                        fieldname: "tax_template",
+                        label: "Sales Taxes and Charges Template",
+                        fieldtype: "Link",
+                        options: "Sales Taxes and Charges Template",
+                        reqd: 1
+                    },
+                    {
+                        fieldname: "invoice_total",
+                        label: "Total Invoice Amount",
+                        fieldtype: "Currency",
+                        default: total_amount,
+                        read_only: 1
+                    }
+                ];
+
+                // 👉 Only add payment fields if NOT Credit
+                if (frm.doc.payment !== "Credit") {
+                    fields.push(
                         {
                             fieldname: "payment_type",
                             label: "Payment Type",
@@ -168,18 +172,28 @@ frappe.ui.form.on('Job', {
                             fieldtype: "Currency",
                             depends_on: "eval:doc.payment_type=='Partially Paid'"
                         }
-                    ],
+                    );
+                }
+
+                // ----------------------------
+                // Popup
+                // ----------------------------
+                frappe.prompt(
+                    fields,
                     function (data) {
 
-                        // Validation
-                        if (data.payment_type === "Partially Paid" && !data.partial_amount) {
-                            frappe.msgprint("Please enter Partial Amount");
-                            return;
-                        }
+                        // Validation only for non-credit
+                        if (frm.doc.payment !== "Credit") {
 
-                        if (data.payment_type === "Partially Paid" && data.partial_amount > data.invoice_total) {
-                            frappe.msgprint("Partial amount cannot exceed Invoice Total");
-                            return;
+                            if (data.payment_type === "Partially Paid" && !data.partial_amount) {
+                                frappe.msgprint("Please enter Partial Amount");
+                                return;
+                            }
+
+                            if (data.payment_type === "Partially Paid" && data.partial_amount > data.invoice_total) {
+                                frappe.msgprint("Partial amount cannot exceed Invoice Total");
+                                return;
+                            }
                         }
 
                         cur_frm.call({
@@ -187,8 +201,8 @@ frappe.ui.form.on('Job', {
                             method: "create_invoice",
                             args: {
                                 tax_template: data.tax_template,
-                                payment_type: data.payment_type,
-                                partial_amount: data.partial_amount
+                                payment_type: data.payment_type || "Credit",
+                                partial_amount: data.partial_amount || 0
                             },
                             callback: function (r) {
                                 if (r.message) {
@@ -203,6 +217,106 @@ frappe.ui.form.on('Job', {
 
             });
         }
+
+
+
+
+
+
+        // if (frm.doc.status === 'Completed' || 
+        //     frm.doc.status === 'Supervisor Approved' || 
+        //     frm.doc.status === 'MD Approved' && frm.doc.sales_invoice_status !== 'Created') {
+
+        //     frm.add_custom_button(__('Create Sales Invoice'), function () {
+
+        //         if (!frm.doc.payment) {
+        //             frappe.msgprint(__('Payment is required before creating Sales Invoice.'));
+        //             return;
+        //         }
+
+        //         if (frm.doc.sales_invoice_status === 'Created') {
+        //             frappe.msgprint(__('Sales Invoice already created for this Job.'));
+        //             return;
+        //         }
+
+        //         // ----------------------------
+        //         // Calculate Total Invoice Amount
+        //         // ----------------------------
+        //         let total_amount = 0;
+
+        //         if (frm.doc.items) {
+        //             frm.doc.items.forEach(row => {
+        //                 total_amount += flt(row.total_without_tax || 0);
+        //             });
+        //         }
+
+        //         // ----------------------------
+        //         // Popup
+        //         // ----------------------------
+        //         frappe.prompt(
+        //             [
+        //                 {
+        //                     fieldname: "tax_template",
+        //                     label: "Sales Taxes and Charges Template",
+        //                     fieldtype: "Link",
+        //                     options: "Sales Taxes and Charges Template",
+        //                     reqd: 1
+        //                 },
+        //                 {
+        //                     fieldname: "invoice_total",
+        //                     label: "Total Invoice Amount",
+        //                     fieldtype: "Currency",
+        //                     default: total_amount,
+        //                     read_only: 1
+        //                 },
+        //                 {
+        //                     fieldname: "payment_type",
+        //                     label: "Payment Type",
+        //                     fieldtype: "Select",
+        //                     options: "Full Paid\nPartially Paid",
+        //                     reqd: 1
+        //                 },
+        //                 {
+        //                     fieldname: "partial_amount",
+        //                     label: "Partial Amount",
+        //                     fieldtype: "Currency",
+        //                     depends_on: "eval:doc.payment_type=='Partially Paid'"
+        //                 }
+        //             ],
+        //             function (data) {
+
+        //                 // Validation
+        //                 if (data.payment_type === "Partially Paid" && !data.partial_amount) {
+        //                     frappe.msgprint("Please enter Partial Amount");
+        //                     return;
+        //                 }
+
+        //                 if (data.payment_type === "Partially Paid" && data.partial_amount > data.invoice_total) {
+        //                     frappe.msgprint("Partial amount cannot exceed Invoice Total");
+        //                     return;
+        //                 }
+
+        //                 cur_frm.call({
+        //                     doc: cur_frm.doc,
+        //                     method: "create_invoice",
+        //                     args: {
+        //                         tax_template: data.tax_template,
+        //                         payment_type: data.payment_type,
+        //                         partial_amount: data.partial_amount
+        //                     },
+        //                     callback: function (r) {
+        //                         if (r.message) {
+        //                             frappe.msgprint("Process Completed: <b>" + r.message + "</b>");
+        //                         }
+        //                     }
+        //                 });
+        //             },
+        //             __("Create Invoice & Payment"),
+        //             __("Submit")
+        //         );
+
+        //     });
+        // }
 
 
 
