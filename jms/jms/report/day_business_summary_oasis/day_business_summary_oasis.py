@@ -261,7 +261,7 @@ def get_cash_bank_summary(filters):
             AND account IN ('Cash', 'Bank')
         GROUP BY account
     """, filters, as_dict=True)
-
+ 
 
 def get_sales_details(filters):
     return frappe.db.sql("""
@@ -321,12 +321,11 @@ def get_sales_return_details(filters):
             AND si.company = %(company)s
     """, filters, as_dict=True)
 
-
 def get_purchase_details(filters):
     return frappe.db.sql("""
         SELECT
             row_number() over() AS sl_no,
-            pi.name AS voucher_no,
+            CONCAT(pi.name, ' / ', IFNULL(pi.job, '')) AS voucher_no,
             pi.supplier AS particulars,
             pi.bill_no AS reference,
             0 AS cash,
@@ -340,6 +339,25 @@ def get_purchase_details(filters):
             AND pi.posting_date = %(posting_date)s
             AND pi.company = %(company)s
     """, filters, as_dict=True)
+
+# def get_purchase_details(filters):
+#     return frappe.db.sql("""
+#         SELECT
+#             row_number() over() AS sl_no,
+#             pi.name AS voucher_no,
+#             pi.supplier AS particulars,
+#             pi.bill_no AS reference,
+#             0 AS cash,
+#             0 AS bank,
+#             0 AS cheque,
+#             pi.grand_total AS total,
+#             '' AS account
+#         FROM `tabPurchase Invoice` pi
+#         WHERE pi.docstatus = 1
+#             AND pi.is_return = 0
+#             AND pi.posting_date = %(posting_date)s
+#             AND pi.company = %(company)s
+#     """, filters, as_dict=True)
 
 
 def get_purchase_return(filters):
@@ -361,45 +379,86 @@ def get_purchase_return(filters):
             AND pi.company = %(company)s
     """, filters, as_dict=True)
 
-
 def get_receipt_details(filters):
     return frappe.db.sql("""
         SELECT
             row_number() over() AS sl_no,
-            pe.name AS voucher_no,
+            CONCAT(pe.name, ' / ', IFNULL(si.job, pi.job, '')) AS voucher_no,
             pe.party AS particulars,
-            '' AS reference,
+            per.reference_name AS reference,
             CASE WHEN pe.paid_to LIKE '%%Cash%%' THEN pe.paid_amount ELSE 0 END AS cash,
             CASE WHEN pe.paid_to LIKE '%%Bank%%' THEN pe.paid_amount ELSE 0 END AS bank,
             0 AS cheque,
             pe.paid_amount AS total,
             pe.paid_to AS account
         FROM `tabPayment Entry` pe
+        LEFT JOIN `tabPayment Entry Reference` per ON per.parent = pe.name
+        LEFT JOIN `tabSales Invoice` si ON si.name = per.reference_name
+        LEFT JOIN `tabPurchase Invoice` pi ON pi.name = per.reference_name
         WHERE pe.docstatus = 1
             AND pe.payment_type = 'Receive'
             AND pe.posting_date = %(posting_date)s
             AND pe.company = %(company)s
     """, filters, as_dict=True)
-
+# def get_receipt_details(filters):
+#     return frappe.db.sql("""
+#         SELECT
+#             row_number() over() AS sl_no,
+#             pe.name AS voucher_no,
+#             pe.party AS particulars,
+#             '' AS reference,
+#             CASE WHEN pe.paid_to LIKE '%%Cash%%' THEN pe.paid_amount ELSE 0 END AS cash,
+#             CASE WHEN pe.paid_to LIKE '%%Bank%%' THEN pe.paid_amount ELSE 0 END AS bank,
+#             0 AS cheque,
+#             pe.paid_amount AS total,
+#             pe.paid_to AS account
+#         FROM `tabPayment Entry` pe
+#         WHERE pe.docstatus = 1
+#             AND pe.payment_type = 'Receive'
+#             AND pe.posting_date = %(posting_date)s
+#             AND pe.company = %(company)s
+#     """, filters, as_dict=True)
 
 def get_payment_details(filters):
     return frappe.db.sql("""
         SELECT
             row_number() over() AS sl_no,
-            pe.name AS voucher_no,
+            CONCAT(pe.name, ' / ', IFNULL(si.job, pi.job, '')) AS voucher_no,
             pe.party AS particulars,
-            '' AS reference,
+            per.reference_name AS reference,
             CASE WHEN pe.paid_from LIKE '%%Cash%%' THEN pe.paid_amount ELSE 0 END AS cash,
             CASE WHEN pe.paid_from LIKE '%%Bank%%' THEN pe.paid_amount ELSE 0 END AS bank,
             0 AS cheque,
             pe.paid_amount AS total,
             pe.paid_from AS account
         FROM `tabPayment Entry` pe
+        LEFT JOIN `tabPayment Entry Reference` per ON per.parent = pe.name
+        LEFT JOIN `tabSales Invoice` si ON si.name = per.reference_name
+        LEFT JOIN `tabPurchase Invoice` pi ON pi.name = per.reference_name
         WHERE pe.docstatus = 1
             AND pe.payment_type = 'Pay'
             AND pe.posting_date = %(posting_date)s
             AND pe.company = %(company)s
     """, filters, as_dict=True)
+    
+# def get_payment_details(filters):
+#     return frappe.db.sql("""
+#         SELECT
+#             row_number() over() AS sl_no,
+#             pe.name AS voucher_no,
+#             pe.party AS particulars,
+#             '' AS reference,
+#             CASE WHEN pe.paid_from LIKE '%%Cash%%' THEN pe.paid_amount ELSE 0 END AS cash,
+#             CASE WHEN pe.paid_from LIKE '%%Bank%%' THEN pe.paid_amount ELSE 0 END AS bank,
+#             0 AS cheque,
+#             pe.paid_amount AS total,
+#             pe.paid_from AS account
+#         FROM `tabPayment Entry` pe
+#         WHERE pe.docstatus = 1
+#             AND pe.payment_type = 'Pay'
+#             AND pe.posting_date = %(posting_date)s
+#             AND pe.company = %(company)s
+#     """, filters, as_dict=True)
 
 
 def get_contra_details(filters):

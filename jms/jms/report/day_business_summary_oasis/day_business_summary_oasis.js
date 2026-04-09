@@ -34,4 +34,4 @@ frappe.query_reports["Day Business Summary Oasis"] = {
 
 	]
 };
- 
+  
