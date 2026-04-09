@@ -30,6 +30,7 @@
   "customer",
   "customer_name",
   "customer_mobile",
+  "vat_no",
   "column_break_10",
   "receivable_from",
   "agent",
@@ -138,6 +139,7 @@
    "fieldname": "customer",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Customer",
    "options": "Customer"
   },
@@ -152,6 +154,8 @@
    "fetch_from": "customer.mobile_no",
    "fieldname": "customer_mobile",
    "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Customer Mobile",
    "read_only": 1
   },
@@ -565,6 +569,15 @@
    "label": "Mode of Payment",
    "mandatory_depends_on": "eval:doc.payment_pi === \"Payment Now\"",
    "options": "Mode of Payment"
+  },
+  {
+   "fetch_from": "customer.tax_id",
+   "fieldname": "vat_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "VAT No",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -590,7 +603,7 @@
    "link_fieldname": "job"
   }
  ],
- "modified": "2026-04-07 10:31:43.580506",
+ "modified": "2026-04-09 11:53:56.938642",
  "modified_by": "Administrator",
  "module": "Jms",
  "name": "Job",
@@ -620,6 +633,7 @@
   }
  ],
  "row_format": "Dynamic",
+ "search_fields": "customer,vat_no,customer_mobile",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
