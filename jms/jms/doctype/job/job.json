@@ -31,6 +31,7 @@
   "customer_name",
   "customer_mobile",
   "vat_no",
+  "iqama_no",
   "column_break_10",
   "receivable_from",
   "agent",
@@ -151,7 +152,7 @@
    "read_only": 1
   },
   {
-   "fetch_from": "customer.mobile_no",
+   "fetch_from": "customer.custom_phone_number",
    "fieldname": "customer_mobile",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -579,6 +580,15 @@
    "in_standard_filter": 1,
    "label": "VAT No",
    "read_only": 1
+  },
+  {
+   "fetch_from": "customer.custom_iqama_no",
+   "fieldname": "iqama_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "IQAMA No",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -604,7 +614,7 @@
    "link_fieldname": "job"
   }
  ],
- "modified": "2026-04-10 08:20:51.270243",
+ "modified": "2026-04-11 14:03:07.195307",
  "modified_by": "Administrator",
  "module": "Jms",
  "name": "Job",

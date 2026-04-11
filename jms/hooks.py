@@ -4,7 +4,7 @@ app_publisher = "sammish"
 app_description = "Job Management System"
 app_email = "sammish.thundiyil@gmail.com"
 app_license = "mit"
-
+ 
 # Apps
 # ------------------
 
@@ -269,7 +269,9 @@ fixtures = [
                 "Payment Entry-custom_job",
                 "Task-custom_job",
                 "Company-custom_purchase_taxes_and_charges_template",
-                "Purchase Invoice-custom_job"
+                "Purchase Invoice-custom_job",
+                "Customer-custom_phone_number",
+                "Customer-custom_iqama_no"
          
  
                 
