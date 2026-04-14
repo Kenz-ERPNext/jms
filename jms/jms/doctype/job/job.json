@@ -474,8 +474,7 @@
    "fieldname": "sales_invoice_status",
    "fieldtype": "Select",
    "label": "Sales Invoice Status",
-   "options": "\nCreated",
-   "read_only": 1
+   "options": "\nCreated"
   },
   {
    "fieldname": "purchase_invoice_status",
@@ -614,7 +613,7 @@
    "link_fieldname": "job"
   }
  ],
- "modified": "2026-04-11 14:03:07.195307",
+ "modified": "2026-04-14 14:44:29.118187",
  "modified_by": "Administrator",
  "module": "Jms",
  "name": "Job",
