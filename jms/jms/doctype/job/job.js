@@ -68,6 +68,54 @@ frappe.ui.form.on('Job', {
         });
 
 
+        frm.add_custom_button(__('Advance Receipt'), function () {
+
+            frappe.prompt(
+                [
+                    {
+                        fieldname: "advance_amount",
+                        label: "Advance Amount",
+                        fieldtype: "Currency",
+                        reqd: 1
+                    },
+                    {
+                        fieldname: "mode_of_payment",
+                        label: "Mode of Payment",
+                        fieldtype: "Link",
+                        options: "Mode of Payment",
+                        reqd: 1
+                    }
+                ],
+                function(data) {
+
+                    frappe.call({
+                        doc: frm.doc,
+                        method: "create_advance_receipt",
+                        args: {
+                            amount: data.advance_amount,
+                            mode_of_payment: data.mode_of_payment
+                        },
+                        callback: function(r) {
+
+                            if (r.message) {
+
+                                frappe.msgprint(
+                                    __("Advance Payment Entry Created: " + r.message)
+                                );
+
+                                frm.reload_doc();
+                            }
+                        }
+                    });
+
+                },
+                __("Create Advance Receipt"),
+                __("Create")
+            );
+
+        });
+
+
 
 
 

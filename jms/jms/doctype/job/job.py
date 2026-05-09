@@ -3,6 +3,7 @@
  
 import frappe
 from frappe import _
+from frappe.utils import flt
 from frappe.model.document import Document
 from frappe.utils import add_days, date_diff, getdate, today, nowdate
 
@@ -217,8 +218,465 @@ class Job(Document):
 
 # PAYMNET ENTRY CREATION CODE 
 
+	# @frappe.whitelist()
+	# def create_invoice(self, tax_template=None, payment_type=None, partial_amount=None):
+
+	# 	sales_invoice = frappe.new_doc("Sales Invoice")
+
+	# 	if self.receivable_from == "Customer":
+	# 		sales_invoice.customer = self.customer
+	# 	else:
+	# 		sales_invoice.customer = self.agent_customer
+
+	# 	sales_invoice.company = frappe.defaults.get_user_default("company")
+	# 	sales_invoice.posting_date = frappe.utils.nowdate()
+	# 	sales_invoice.due_date = frappe.utils.add_days(frappe.utils.nowdate(), 30)
+	# 	sales_invoice.custom_job = self.name
+	# 	sales_invoice.disable_rounded_total = 1
+	# 	# if sales_invoice.job:
+	# 	sales_invoice.job = self.name
+
+	# 	if tax_template:
+	# 		sales_invoice.taxes_and_charges = tax_template
+
+	# 		sales_invoice.set_taxes()    
+
+	# 	if self.items:
+	# 		for row in self.items:
+	# 			sales_invoice.append("items", {
+	# 				"item_code": row.item_code,
+	# 				"description": row.description,
+	# 				"qty": row.job_qty,
+	# 				"rate": row.total_without_tax,
+	# 				"job": self.name 
+	# 			})
+
+	# 	sales_invoice.run_method("calculate_taxes_and_totals")
+
+	# 	sales_invoice.insert(ignore_permissions=True)
+	# 	sales_invoice.submit()
+
+	# 	self.sales_invoice_status = "Created"
+	# 	self.linked_invoice = sales_invoice.name   
+	# 	self.save(ignore_permissions=True)
+
+
+
+	# 	if self.payment == "Payment Now":
+
+	# 		payment_entry = frappe.new_doc("Payment Entry")
+	# 		payment_entry.payment_type = "Receive"
+	# 		payment_entry.company = sales_invoice.company
+	# 		payment_entry.posting_date = frappe.utils.nowdate()
+	# 		payment_entry.mode_of_payment = self.mode_of_payment
+	# 		payment_entry.party_type = "Customer"
+	# 		payment_entry.party = sales_invoice.customer
+	# 		payment_entry.custom_job = self.name
+	# 		payment_entry.job = self.name
+
+	# 		# -------------------------------
+	# 		# Account Fetch
+	# 		# -------------------------------
+	# 		if self.mode_of_payment in ["Bank", "Bank Draft", "Bank Transfer", "RIYAD BANK"]:
+
+	# 			default_bank_account = frappe.db.get_value(
+	# 				"Company",
+	# 				sales_invoice.company,
+	# 				"default_bank_account"
+	# 			)
+
+	# 			if not default_bank_account:
+	# 				frappe.throw(f"Default bank account is not set for company: {sales_invoice.company}")
+
+	# 			payment_entry.paid_to = default_bank_account
+	# 			payment_entry.reference_no = self.name
+	# 			payment_entry.reference_date = frappe.utils.nowdate()
+
+	# 		else:
+	# 			payment_entry.paid_to = frappe.db.get_value(
+	# 				"Mode of Payment Account",
+	# 				{"parent": self.mode_of_payment, "company": sales_invoice.company},
+	# 				"default_account"
+	# 			)
+
+	# 			if not payment_entry.paid_to:
+	# 				frappe.throw(f"No account found for Mode of Payment: {self.mode_of_payment}")
+
+	# 		# -------------------------------
+	# 		# Amount Logic
+	# 		# -------------------------------
+
+	# 		if payment_type == "Partially Paid":
+	# 			paid_amount = float(partial_amount or 0)
+
+	# 			if paid_amount <= 0:
+	# 				frappe.throw("Partial amount must be greater than 0")
+
+	# 			if paid_amount > sales_invoice.grand_total:
+	# 				frappe.throw("Partial amount cannot exceed Invoice Total")
+
+	# 		else:
+	# 			# Full Paid
+	# 			paid_amount = sales_invoice.grand_total
+
+	# 		# -------------------------------
+	# 		# References
+	# 		# -------------------------------
+	# 		payment_entry.append("references", {
+	# 			"reference_doctype": "Sales Invoice",
+	# 			"reference_name": sales_invoice.name,
+	# 			"total_amount": sales_invoice.grand_total,
+	# 			"outstanding_amount": sales_invoice.outstanding_amount,
+	# 			"allocated_amount": paid_amount,
+	# 			"job": self.name
+	# 		})
+
+	# 		payment_entry.paid_amount = paid_amount
+	# 		payment_entry.received_amount = paid_amount
+
+	# 		payment_entry.insert(ignore_permissions=True)
+	# 		payment_entry.submit()
+
+	# 		# Link Payment Entry
+	# 		self.sales_invoice_payment_entry = payment_entry.name
+	# 		self.save(ignore_permissions=True)
+
+	# 		return payment_entry.name
+
+
+
+
+
+
+
+
+
+
+
+
+
+	# @frappe.whitelist()
+	# def create_invoice(self, tax_template=None, payment_type=None, partial_amount=None):
+
+	# 	# ------------------------------------------------
+	# 	# CREATE SALES INVOICE
+	# 	# ------------------------------------------------
+
+	# 	sales_invoice = frappe.new_doc("Sales Invoice")
+
+	# 	if self.receivable_from == "Customer":
+	# 		sales_invoice.customer = self.customer
+	# 	else:
+	# 		sales_invoice.customer = self.agent_customer
+
+	# 	sales_invoice.company = frappe.defaults.get_user_default("company")
+	# 	sales_invoice.posting_date = frappe.utils.nowdate()
+
+	# 	sales_invoice.due_date = frappe.utils.add_days(
+	# 		frappe.utils.nowdate(),
+	# 		30
+	# 	)
+
+	# 	sales_invoice.custom_job = self.name
+	# 	sales_invoice.disable_rounded_total = 1
+	# 	sales_invoice.job = self.name
+
+	# 	# ------------------------------------------------
+	# 	# TAX TEMPLATE
+	# 	# ------------------------------------------------
+
+	# 	if tax_template:
+	# 		sales_invoice.taxes_and_charges = tax_template
+	# 		sales_invoice.set_taxes()
+
+	# 	# ------------------------------------------------
+	# 	# ITEMS
+	# 	# ------------------------------------------------
+
+	# 	if self.items:
+
+	# 		for row in self.items:
+
+	# 			sales_invoice.append("items", {
+	# 				"item_code": row.item_code,
+	# 				"description": row.description,
+	# 				"qty": row.job_qty,
+	# 				"rate": row.total_without_tax,
+	# 				"job": self.name
+	# 			})
+
+	# 	# ------------------------------------------------
+	# 	# CALCULATE TOTALS
+	# 	# ------------------------------------------------
+
+	# 	sales_invoice.run_method("calculate_taxes_and_totals")
+
+	# 	sales_invoice.insert(ignore_permissions=True)
+	# 	sales_invoice.submit()
+
+	# 	# ------------------------------------------------
+	# 	# FETCH ADVANCE PAYMENT ENTRIES
+	# 	# ------------------------------------------------
+
+	# 	advance_entries = frappe.get_all(
+	# 		"Payment Entry",
+	# 		filters={
+	# 			"party_type": "Customer",
+	# 			"party": sales_invoice.customer,
+	# 			"docstatus": 1,
+	# 			"payment_type": "Receive",
+	# 			"unallocated_amount": [">", 0]
+	# 		},
+	# 		fields=[
+	# 			"name",
+	# 			"unallocated_amount"
+	# 		]
+	# 	)
+
+	# 	total_allocated_advance = 0
+
+	# 	# ------------------------------------------------
+	# 	# ALLOCATE ADVANCE PAYMENTS
+	# 	# ------------------------------------------------
+
+	# 	for adv in advance_entries:
+
+	# 		remaining_invoice_amount = (
+	# 			flt(sales_invoice.grand_total)
+	# 			- flt(total_allocated_advance)
+	# 		)
+
+	# 		if remaining_invoice_amount <= 0:
+	# 			break
+
+	# 		allocate_amount = min(
+	# 			flt(adv.unallocated_amount),
+	# 			remaining_invoice_amount
+	# 		)
+
+	# 		if allocate_amount <= 0:
+	# 			continue
+
+	# 		# Prevent duplicate allocation
+	# 		exists = frappe.db.exists(
+	# 			"Payment Entry Reference",
+	# 			{
+	# 				"parent": adv.name,
+	# 				"reference_name": sales_invoice.name
+	# 			}
+	# 		)
+
+	# 		if exists:
+	# 			continue
+
+	# 		# ------------------------------------------------
+	# 		# INSERT REFERENCE ROW
+	# 		# ------------------------------------------------
+
+	# 		per = frappe.new_doc("Payment Entry Reference")
+
+	# 		per.reference_doctype = "Sales Invoice"
+	# 		per.reference_name = sales_invoice.name
+
+	# 		per.total_amount = sales_invoice.grand_total
+
+	# 		per.outstanding_amount = remaining_invoice_amount
+
+	# 		per.allocated_amount = allocate_amount
+
+	# 		per.parent = adv.name
+	# 		per.parenttype = "Payment Entry"
+	# 		per.parentfield = "references"
+
+	# 		per.insert(ignore_permissions=True)
+
+	# 		# ------------------------------------------------
+	# 		# UPDATE PAYMENT ENTRY VALUES
+	# 		# ------------------------------------------------
+
+	# 		frappe.db.sql("""
+	# 			UPDATE `tabPayment Entry`
+	# 			SET
+	# 				total_allocated_amount =
+	# 					IFNULL(total_allocated_amount, 0) + %s,
+
+	# 				unallocated_amount =
+	# 					IFNULL(unallocated_amount, 0) - %s
+
+	# 			WHERE name = %s
+	# 		""", (
+	# 			allocate_amount,
+	# 			allocate_amount,
+	# 			adv.name
+	# 		))
+
+	# 		total_allocated_advance += allocate_amount
+
+	# 		frappe.db.commit()
+
+	# 	# ------------------------------------------------
+	# 	# REMAINING BALANCE
+	# 	# ------------------------------------------------
+
+	# 	remaining_amount = (
+	# 		flt(sales_invoice.grand_total)
+	# 		- flt(total_allocated_advance)
+	# 	)
+
+	# 	if remaining_amount < 0:
+	# 		remaining_amount = 0
+
+	# 	# ------------------------------------------------
+	# 	# UPDATE JOB
+	# 	# ------------------------------------------------
+
+	# 	self.sales_invoice_status = "Created"
+	# 	self.linked_invoice = sales_invoice.name
+
+	# 	self.save(ignore_permissions=True)
+
+	# 	# ------------------------------------------------
+	# 	# CREATE PAYMENT ENTRY FOR BALANCE
+	# 	# ------------------------------------------------
+
+	# 	if (
+	# 		self.payment == "Payment Now"
+	# 		and remaining_amount > 0
+	# 	):
+
+	# 		payment_entry = frappe.new_doc("Payment Entry")
+
+	# 		payment_entry.payment_type = "Receive"
+
+	# 		payment_entry.company = sales_invoice.company
+
+	# 		payment_entry.posting_date = frappe.utils.nowdate()
+
+	# 		payment_entry.mode_of_payment = self.mode_of_payment
+
+	# 		payment_entry.party_type = "Customer"
+
+	# 		payment_entry.party = sales_invoice.customer
+
+	# 		payment_entry.custom_job = self.name
+
+	# 		payment_entry.job = self.name
+
+	# 		# ------------------------------------------------
+	# 		# ACCOUNT FETCH
+	# 		# ------------------------------------------------
+
+	# 		if self.mode_of_payment in [
+	# 			"Bank",
+	# 			"Bank Draft",
+	# 			"Bank Transfer",
+	# 			"RIYAD BANK"
+	# 		]:
+
+	# 			default_bank_account = frappe.db.get_value(
+	# 				"Company",
+	# 				sales_invoice.company,
+	# 				"default_bank_account"
+	# 			)
+
+	# 			if not default_bank_account:
+
+	# 				frappe.throw(
+	# 					f"Default bank account is not set "
+	# 					f"for company: {sales_invoice.company}"
+	# 				)
+
+	# 			payment_entry.paid_to = default_bank_account
+
+	# 			payment_entry.reference_no = self.name
+
+	# 			payment_entry.reference_date = frappe.utils.nowdate()
+
+	# 		else:
+
+	# 			payment_entry.paid_to = frappe.db.get_value(
+	# 				"Mode of Payment Account",
+	# 				{
+	# 					"parent": self.mode_of_payment,
+	# 					"company": sales_invoice.company
+	# 				},
+	# 				"default_account"
+	# 			)
+
+	# 			if not payment_entry.paid_to:
+
+	# 				frappe.throw(
+	# 					f"No account found for Mode of Payment: "
+	# 					f"{self.mode_of_payment}"
+	# 				)
+
+	# 		# ------------------------------------------------
+	# 		# PAYMENT AMOUNT
+	# 		# ------------------------------------------------
+
+	# 		if payment_type == "Partially Paid":
+
+	# 			paid_amount = flt(partial_amount or 0)
+
+	# 			if paid_amount <= 0:
+
+	# 				frappe.throw(
+	# 					"Partial amount must be greater than 0"
+	# 				)
+
+	# 			if paid_amount > remaining_amount:
+
+	# 				frappe.throw(
+	# 					"Partial amount cannot exceed "
+	# 					"Remaining Amount"
+	# 				)
+
+	# 		else:
+
+	# 			paid_amount = remaining_amount
+
+	# 		# ------------------------------------------------
+	# 		# REFERENCE
+	# 		# ------------------------------------------------
+
+	# 		payment_entry.append("references", {
+	# 			"reference_doctype": "Sales Invoice",
+	# 			"reference_name": sales_invoice.name,
+	# 			"total_amount": sales_invoice.grand_total,
+	# 			"outstanding_amount": remaining_amount,
+	# 			"allocated_amount": paid_amount,
+	# 			"job": self.name
+	# 		})
+
+	# 		payment_entry.paid_amount = paid_amount
+
+	# 		payment_entry.received_amount = paid_amount
+
+	# 		payment_entry.insert(ignore_permissions=True)
+
+	# 		payment_entry.submit()
+
+	# 		# ------------------------------------------------
+	# 		# UPDATE JOB PAYMENT ENTRY
+	# 		# ------------------------------------------------
+
+	# 		self.sales_invoice_payment_entry = payment_entry.name
+
+	# 		self.save(ignore_permissions=True)
+
+	# 		return payment_entry.name
+
+	# 	return sales_invoice.name
+
+ 	
+
+	
 	@frappe.whitelist()
 	def create_invoice(self, tax_template=None, payment_type=None, partial_amount=None):
+
+		# ------------------------------------------------
+		# CREATE SALES INVOICE
+		# ------------------------------------------------
 
 		sales_invoice = frappe.new_doc("Sales Invoice")
 
@@ -228,55 +686,158 @@ class Job(Document):
 			sales_invoice.customer = self.agent_customer
 
 		sales_invoice.company = frappe.defaults.get_user_default("company")
+
 		sales_invoice.posting_date = frappe.utils.nowdate()
-		sales_invoice.due_date = frappe.utils.add_days(frappe.utils.nowdate(), 30)
+
+		sales_invoice.due_date = frappe.utils.add_days(
+			frappe.utils.nowdate(),
+			30
+		)
+
 		sales_invoice.custom_job = self.name
+
 		sales_invoice.disable_rounded_total = 1
-		# if sales_invoice.job:
+
 		sales_invoice.job = self.name
 
+		# ------------------------------------------------
+		# TAX TEMPLATE
+		# ------------------------------------------------
+
 		if tax_template:
+
 			sales_invoice.taxes_and_charges = tax_template
 
-			sales_invoice.set_taxes()    
+			sales_invoice.set_taxes()
+
+		# ------------------------------------------------
+		# ITEMS
+		# ------------------------------------------------
 
 		if self.items:
+
 			for row in self.items:
+
 				sales_invoice.append("items", {
 					"item_code": row.item_code,
 					"description": row.description,
 					"qty": row.job_qty,
 					"rate": row.total_without_tax,
-					"job": self.name 
+					"job": self.name
 				})
+
+		# ------------------------------------------------
+		# CALCULATE TOTALS
+		# ------------------------------------------------
 
 		sales_invoice.run_method("calculate_taxes_and_totals")
 
+		# ------------------------------------------------
+		# INSERT ONLY
+		# ------------------------------------------------
+
 		sales_invoice.insert(ignore_permissions=True)
+
+		# ------------------------------------------------
+		# FETCH ADVANCE PAYMENTS
+		# ------------------------------------------------
+
+		sales_invoice.set_advances()
+
+		total_allocated_advance = 0
+
+		if sales_invoice.advances:
+
+			for row in sales_invoice.advances:
+
+				if flt(row.advance_amount) <= 0:
+					continue
+
+				remaining_amount = (
+					flt(sales_invoice.grand_total)
+					- flt(total_allocated_advance)
+				)
+
+				if remaining_amount <= 0:
+					break
+
+				allocated_amount = min(
+					flt(row.advance_amount),
+					remaining_amount
+				)
+
+				row.allocated_amount = allocated_amount
+
+				total_allocated_advance += allocated_amount
+
+		# ------------------------------------------------
+		# SAVE ADVANCE ROWS
+		# ------------------------------------------------
+
+		sales_invoice.save(ignore_permissions=True)
+
+		# ------------------------------------------------
+		# SUBMIT INVOICE
+		# ------------------------------------------------
+
 		sales_invoice.submit()
 
+		# ------------------------------------------------
+		# REMAINING BALANCE
+		# ------------------------------------------------
+
+		remaining_amount = flt(sales_invoice.grand_total) - flt(total_allocated_advance)
+
+		if remaining_amount < 0:
+			remaining_amount = 0
+
+		# ------------------------------------------------
+		# UPDATE JOB
+		# ------------------------------------------------
+
 		self.sales_invoice_status = "Created"
-		self.linked_invoice = sales_invoice.name   
+
+		self.linked_invoice = sales_invoice.name
+
 		self.save(ignore_permissions=True)
 
+		# ------------------------------------------------
+		# CREATE BALANCE PAYMENT ENTRY
+		# ------------------------------------------------
 
-
-		if self.payment == "Payment Now":
+		if (
+			self.payment == "Payment Now"
+			and remaining_amount > 0
+		):
 
 			payment_entry = frappe.new_doc("Payment Entry")
+
 			payment_entry.payment_type = "Receive"
+
 			payment_entry.company = sales_invoice.company
+
 			payment_entry.posting_date = frappe.utils.nowdate()
+
 			payment_entry.mode_of_payment = self.mode_of_payment
+
 			payment_entry.party_type = "Customer"
+
 			payment_entry.party = sales_invoice.customer
+
 			payment_entry.custom_job = self.name
+
 			payment_entry.job = self.name
 
-			# -------------------------------
-			# Account Fetch
-			# -------------------------------
-			if self.mode_of_payment in ["Bank", "Bank Draft", "Bank Transfer", "RIYAD BANK"]:
+			# ------------------------------------------------
+			# ACCOUNT FETCH
+			# ------------------------------------------------
+
+			if self.mode_of_payment in [
+				"Bank",
+				"Bank Draft",
+				"Bank Transfer",
+				"RIYAD BANK"
+			]:
 
 				default_bank_account = frappe.db.get_value(
 					"Company",
@@ -285,64 +846,105 @@ class Job(Document):
 				)
 
 				if not default_bank_account:
-					frappe.throw(f"Default bank account is not set for company: {sales_invoice.company}")
+
+					frappe.throw(
+						f"Default bank account is not set "
+						f"for company: {sales_invoice.company}"
+					)
 
 				payment_entry.paid_to = default_bank_account
+
 				payment_entry.reference_no = self.name
+
 				payment_entry.reference_date = frappe.utils.nowdate()
 
 			else:
+
 				payment_entry.paid_to = frappe.db.get_value(
 					"Mode of Payment Account",
-					{"parent": self.mode_of_payment, "company": sales_invoice.company},
+					{
+						"parent": self.mode_of_payment,
+						"company": sales_invoice.company
+					},
 					"default_account"
 				)
 
 				if not payment_entry.paid_to:
-					frappe.throw(f"No account found for Mode of Payment: {self.mode_of_payment}")
 
-			# -------------------------------
-			# Amount Logic
-			# -------------------------------
+					frappe.throw(
+						f"No account found for Mode of Payment: "
+						f"{self.mode_of_payment}"
+					)
+
+			# ------------------------------------------------
+			# PAYMENT AMOUNT
+			# ------------------------------------------------
 
 			if payment_type == "Partially Paid":
-				paid_amount = float(partial_amount or 0)
+
+				paid_amount = flt(partial_amount or 0)
 
 				if paid_amount <= 0:
-					frappe.throw("Partial amount must be greater than 0")
 
-				if paid_amount > sales_invoice.grand_total:
-					frappe.throw("Partial amount cannot exceed Invoice Total")
+					frappe.throw(
+						"Partial amount must be greater than 0"
+					)
+
+				if paid_amount > remaining_amount:
+
+					frappe.throw(
+						"Partial amount cannot exceed "
+						"Remaining Amount"
+					)
 
 			else:
-				# Full Paid
-				paid_amount = sales_invoice.grand_total
 
-			# -------------------------------
-			# References
-			# -------------------------------
+				paid_amount = remaining_amount
+
+			# ------------------------------------------------
+			# REFERENCE
+			# ------------------------------------------------
+
 			payment_entry.append("references", {
 				"reference_doctype": "Sales Invoice",
 				"reference_name": sales_invoice.name,
 				"total_amount": sales_invoice.grand_total,
-				"outstanding_amount": sales_invoice.outstanding_amount,
+				"outstanding_amount": remaining_amount,
 				"allocated_amount": paid_amount,
 				"job": self.name
 			})
 
 			payment_entry.paid_amount = paid_amount
+
 			payment_entry.received_amount = paid_amount
 
 			payment_entry.insert(ignore_permissions=True)
+
 			payment_entry.submit()
 
-			# Link Payment Entry
+			# ------------------------------------------------
+			# UPDATE JOB PAYMENT ENTRY
+			# ------------------------------------------------
+
 			self.sales_invoice_payment_entry = payment_entry.name
+
 			self.save(ignore_permissions=True)
 
 			return payment_entry.name
 
- 	
+		return sales_invoice.name
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 	@frappe.whitelist()
@@ -744,6 +1346,81 @@ class Job(Document):
 
 			pe.insert(ignore_permissions=True)
 			pe.submit()
+
+
+
+	@frappe.whitelist()
+	def create_advance_receipt(self, amount, mode_of_payment):
+
+		if not amount:
+			frappe.throw("Amount is required")
+
+		customer = self.customer
+
+		pe = frappe.new_doc("Payment Entry")
+
+		pe.payment_type = "Receive"
+		pe.party_type = "Customer"
+		pe.party = customer
+
+		pe.company = self.company
+		pe.posting_date = frappe.utils.nowdate()
+
+		pe.mode_of_payment = mode_of_payment
+
+		pe.custom_job = self.name
+		pe.job = self.name
+
+		# ------------------------------------------------
+		# Account Fetch
+		# ------------------------------------------------
+
+		if mode_of_payment in [
+			"Bank",
+			"Bank Draft",
+			"Bank Transfer",
+			"RIYAD BANK"
+		]:
+
+			pe.paid_to = frappe.db.get_value(
+				"Company",
+				self.company,
+				"default_bank_account"
+			)
+
+			pe.reference_no = self.name
+			pe.reference_date = frappe.utils.nowdate()
+
+		else:
+
+			pe.paid_to = frappe.db.get_value(
+				"Mode of Payment Account",
+				{
+					"parent": mode_of_payment,
+					"company": self.company
+				},
+				"default_account"
+			)
+
+		if not pe.paid_to:
+			frappe.throw(
+				f"No account found for Mode of Payment: {mode_of_payment}"
+			)
+
+		# ------------------------------------------------
+		# Amount
+		# ------------------------------------------------
+
+		pe.paid_amount = amount
+		pe.received_amount = amount
+
+		# IMPORTANT
+		pe.unallocated_amount = amount
+
+		pe.insert(ignore_permissions=True)
+		pe.submit()
+
+		return pe.name
 
 
  
