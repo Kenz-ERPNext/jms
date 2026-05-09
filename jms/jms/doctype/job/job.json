@@ -496,14 +496,12 @@
    "label": "Sales"
   },
   {
-   "depends_on": "eval:doc.status == 'Completed' || doc.status == 'Supervisor Approved' ||\n    doc.status == 'MD Approved' && doc.sales_invoice_status !== 'Created'",
    "fieldname": "payment",
    "fieldtype": "Select",
    "label": "Payment",
    "options": "\nPayment Now\nCredit"
   },
   {
-   "depends_on": "eval:doc.payment && doc.payment != \"Credit\" && doc.status == 'Completed' || doc.status == 'Supervisor Approved' ||\n    doc.status == 'MD Approved' && doc.sales_invoice_status !== 'Created'",
    "fieldname": "mode_of_payment",
    "fieldtype": "Link",
    "label": "Mode of Payment",
@@ -557,14 +555,12 @@
    "label": "Purchase"
   },
   {
-   "depends_on": "eval:doc.status == 'Completed' || doc.status == 'Supervisor Approved' ||\n    doc.status == 'MD Approved' && doc.purchase_invoice_status !== 'Created'",
    "fieldname": "payment_pi",
    "fieldtype": "Select",
    "label": "Payment",
    "options": "\nPayment Now\nCredit"
   },
   {
-   "depends_on": "eval:doc.payment_pi && doc.payment_pi != \"Credit\" && doc.status == 'Completed' || doc.status == 'Supervisor Approved' ||\n    doc.status == 'MD Approved' && doc.sales_invoice_status !== 'Created'",
    "fieldname": "mode_of_payment_pi",
    "fieldtype": "Link",
    "label": "Mode of Payment",
@@ -613,7 +609,7 @@
    "link_fieldname": "job"
   }
  ],
- "modified": "2026-04-14 14:44:29.118187",
+ "modified": "2026-05-09 09:38:27.368101",
  "modified_by": "Administrator",
  "module": "Jms",
  "name": "Job",
