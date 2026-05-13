@@ -1423,7 +1423,157 @@ class Job(Document):
 		return pe.name
 
 
- 
+
+	@frappe.whitelist()
+	def create_outsource_advance_payment(self, suppliers, mode_of_payment):
+
+		import json
+
+		# ----------------------------------------
+		# PARSE JSON
+		# ----------------------------------------
+
+		if isinstance(suppliers, str):
+			suppliers = json.loads(suppliers)
+
+		if not suppliers:
+			frappe.throw("No supplier rows found")
+
+		created_entries = []
+
+		# ----------------------------------------
+		# LOOP ROWS
+		# ----------------------------------------
+
+		for row in suppliers:
+
+			supplier = row.get("supplier")
+
+			amount = flt(row.get("advance_amount"))
+
+			if not supplier:
+				continue
+
+			if amount <= 0:
+				continue
+
+			# ----------------------------------------
+			# CREATE PAYMENT ENTRY
+			# ----------------------------------------
+
+			pe = frappe.new_doc("Payment Entry")
+
+			pe.payment_type = "Pay"
+
+			pe.party_type = "Supplier"
+
+			pe.party = supplier
+
+			pe.company = self.company
+
+			pe.posting_date = frappe.utils.nowdate()
+
+			pe.mode_of_payment = mode_of_payment
+
+			pe.custom_job = self.name
+
+			pe.job = self.name
+
+			# ----------------------------------------
+			# FETCH MODE OF PAYMENT ACCOUNT
+			# ----------------------------------------
+
+			paid_from = frappe.db.get_value(
+				"Mode of Payment Account",
+				{
+					"parent": mode_of_payment,
+					"company": self.company
+				},
+				"default_account"
+			)
+
+			if not paid_from:
+
+				frappe.throw(
+					f"No default account found for "
+					f"Mode of Payment {mode_of_payment}"
+				)
+
+			pe.paid_from = paid_from
+
+			# ----------------------------------------
+			# SUPPLIER PAYABLE ACCOUNT
+			# ----------------------------------------
+
+			paid_to = frappe.db.get_value(
+				"Party Account",
+				{
+					"parenttype": "Supplier",
+					"parent": supplier,
+					"company": self.company
+				},
+				"account"
+			)
+
+			if not paid_to:
+
+				paid_to = frappe.get_value(
+					"Company",
+					self.company,
+					"default_payable_account"
+				)
+
+			if not paid_to:
+
+				frappe.throw(
+					f"No payable account found "
+					f"for supplier {supplier}"
+				)
+
+			pe.paid_to = paid_to
+
+			# ----------------------------------------
+			# ACCOUNT CURRENCY
+			# ----------------------------------------
+
+			account_currency = frappe.db.get_value(
+				"Account",
+				paid_from,
+				"account_currency"
+			)
+
+			pe.paid_from_account_currency = account_currency
+
+			# ----------------------------------------
+			# AMOUNT
+			# ----------------------------------------
+
+			pe.paid_amount = amount
+
+			pe.received_amount = amount
+
+			# IMPORTANT
+			# ADVANCE / UNALLOCATED PAYMENT
+			pe.unallocated_amount = amount
+
+			# ----------------------------------------
+			# SAVE
+			# ----------------------------------------
+
+			pe.insert(ignore_permissions=True)
+
+			pe.submit()
+
+			created_entries.append(pe.name)
+
+		# ----------------------------------------
+		# RETURN
+		# ----------------------------------------
+
+		return created_entries
+
+
+	
 
 
 

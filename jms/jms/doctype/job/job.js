@@ -68,6 +68,153 @@ frappe.ui.form.on('Job', {
         });
 
 
+
+        // --------------------------------------------------
+        // OUTSOURCE ADVANCE PAYMENT
+        // --------------------------------------------------
+
+        let outsource_advance_rows = frm.doc.tasks.filter(
+            row =>
+                row.employee__outsource === "Outsource"
+                && row.outsource_supplier
+        );
+
+        if (outsource_advance_rows.length > 0) {
+
+            frm.add_custom_button(__('Outsource Advance Payment'), function () {
+
+                // -----------------------------------------
+                // UNIQUE SUPPLIERS
+                // -----------------------------------------
+
+                let supplier_map = {};
+
+                outsource_advance_rows.forEach(row => {
+
+                    if (!supplier_map[row.outsource_supplier]) {
+
+                        supplier_map[row.outsource_supplier] = {
+                            supplier: row.outsource_supplier
+                        };
+                    }
+                });
+
+                let table_data = [];
+
+                Object.keys(supplier_map).forEach(key => {
+
+                    table_data.push({
+                        supplier: key,
+                        advance_amount: 0
+                    });
+
+                });
+
+                // -----------------------------------------
+                // DIALOG
+                // -----------------------------------------
+
+                let d = new frappe.ui.Dialog({
+
+                    title: "Create Outsource Advance Payment",
+
+                    fields: [
+
+                        {
+                            fieldname: "mode_of_payment",
+                            label: "Mode of Payment",
+                            fieldtype: "Link",
+                            options: "Mode of Payment",
+                            reqd: 1
+                        },
+
+                        {
+                            fieldname: "suppliers",
+                            label: "Supplier Details",
+                            fieldtype: "Table",
+                            cannot_add_rows: true,
+                            in_place_edit: true,
+                            data: table_data,
+
+                            fields: [
+
+                                {
+                                    fieldname: "supplier",
+                                    label: "Supplier",
+                                    fieldtype: "Link",
+                                    options: "Supplier",
+                                    in_list_view: 1,
+                                    read_only: 1
+                                },
+
+                                {
+                                    fieldname: "advance_amount",
+                                    label: "Advance Amount",
+                                    fieldtype: "Currency",
+                                    in_list_view: 1,
+                                    reqd: 1
+                                }
+
+                            ]
+                        }
+
+                    ],
+
+                    primary_action_label: "Create",
+
+                    primary_action(values) {
+
+                        let valid_rows = values.suppliers.filter(
+                            row => flt(row.advance_amount) > 0
+                        );
+
+                        if (!valid_rows.length) {
+
+                            frappe.msgprint(
+                                __("Please enter at least one advance amount")
+                            );
+
+                            return;
+                        }
+
+                        frappe.call({
+
+                            doc: frm.doc,
+
+                            method: "create_outsource_advance_payment",
+
+                            args: {
+                                suppliers: valid_rows,
+                                mode_of_payment: values.mode_of_payment
+                            },
+
+                            callback: function(r) {
+
+                                if (r.message) {
+
+                                    frappe.msgprint({
+                                        title: __("Success"),
+                                        message:
+                                            __("Payment Entries Created:<br>")
+                                            + r.message.join("<br>"),
+                                        indicator: "green"
+                                    });
+
+                                    frm.reload_doc();
+
+                                    d.hide();
+                                }
+                            }
+                        });
+                    }
+                });
+
+                d.show();
+
+            });
+        }
+
+
         frm.add_custom_button(__('Advance Receipt'), function () {
 
             frappe.prompt(
