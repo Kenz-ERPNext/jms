@@ -828,6 +828,10 @@ class Job(Document):
 
 			payment_entry.job = self.name
 
+			payment_entry.reference_no = self.name
+
+			payment_entry.reference_date = frappe.utils.nowdate()
+
 			# ------------------------------------------------
 			# ACCOUNT FETCH
 			# ------------------------------------------------
@@ -1141,6 +1145,8 @@ class Job(Document):
 		payment_entry.party_type = "Customer"
 		payment_entry.party = sales_invoice.customer
 		payment_entry.custom_job = self.name
+		payment_entry.reference_no = self.name
+		payment_entry.reference_date = frappe.utils.nowdate()
 
 		# Fetch account based on mode of payment
 		if mode_of_payment in ["Bank", "Bank Draft", "Bank Transfer"]:
