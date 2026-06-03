@@ -2,6 +2,7 @@
  "actions": [],
  "creation": "2025-12-05 10:00:00",
  "doctype": "DocType",
+ "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "work_template",
