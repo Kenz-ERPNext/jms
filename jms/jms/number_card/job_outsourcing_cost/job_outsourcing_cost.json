@@ -1,0 +1,20 @@
+{
+ "color": "#9c6644",
+ "creation": "2026-06-03 00:00:00",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "filters_json": "[]",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "Outsourcing Costs",
+ "method": "jms.jms.dashboard_api.card_outsourcing_cost",
+ "modified": "2026-06-03 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Jms",
+ "name": "Job - Outsourcing Cost",
+ "owner": "Administrator",
+ "show_percentage_stats": 0,
+ "stats_time_interval": "Daily",
+ "type": "Custom"
+}

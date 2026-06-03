@@ -1,0 +1,20 @@
+{
+ "color": "#a4161a",
+ "creation": "2026-06-03 00:00:00",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "filters_json": "[]",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "Outstanding to Receive",
+ "method": "jms.jms.dashboard_api.card_outstanding",
+ "modified": "2026-06-03 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Jms",
+ "name": "Job - Outstanding",
+ "owner": "Administrator",
+ "show_percentage_stats": 0,
+ "stats_time_interval": "Daily",
+ "type": "Custom"
+}

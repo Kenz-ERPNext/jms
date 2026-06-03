@@ -1,0 +1,13 @@
+{
+ "creation": "2026-06-03 00:00:00",
+ "docstatus": 0,
+ "doctype": "Dashboard Chart Source",
+ "idx": 0,
+ "modified": "2026-06-03 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Jms",
+ "name": "Job Profitability Trend",
+ "owner": "Administrator",
+ "source_name": "Job Profitability Trend",
+ "timeseries": 0
+}
