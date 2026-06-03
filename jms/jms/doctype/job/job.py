@@ -1087,6 +1087,10 @@ class Job(Document):
 
 			pi.disable_rounded_total = 1
 
+			# Route outsourcing cost to its dedicated expense account so it
+			# splits cleanly from general expenses in the profit reports.
+			outsourcing_account = get_outsourcing_cost_account(pi.company)
+
 			if tax_template:
 
 				pi.taxes_and_charges = tax_template
@@ -1115,7 +1119,7 @@ class Job(Document):
 						f"for {row.item_code}"
 					)
 
-				pi.append("items", {
+				item_row = {
 
 					"item_code":
 						matching_item.item_code,
@@ -1125,7 +1129,12 @@ class Job(Document):
 
 					"rate":
 						row.outsource_charge or 0
-				})
+				}
+
+				if outsourcing_account:
+					item_row["expense_account"] = outsourcing_account
+
+				pi.append("items", item_row)
 
 			# -------------------------
 			# TAX TEMPLATE
@@ -2141,6 +2150,170 @@ class Job(Document):
 		# ----------------------------------------
 
 		return created_entries
+
+	# --------------------------------------------------------
+	# JOB PROFIT & PAYMENT TRACKING
+	# --------------------------------------------------------
+
+	@frappe.whitelist()
+	def get_financials(self):
+		"""Return per-job financial metrics from the GL (Job accounting
+		dimension), Payment Entries and Sales Invoices. Profit is EX-VAT
+		(tax accounts are Liability/Asset and are excluded automatically);
+		Agent Commission is NOT subtracted from Net Profit. Each metric is
+		flagged visible/hidden per JMS Settings."""
+
+		company = self.company or frappe.defaults.get_user_default("company")
+		settings = frappe.get_cached_doc("JMS Settings")
+		outsourcing_acct = get_outsourcing_cost_account(company)
+		job = self.name
+
+		def _gl_sum(root_type=None, account=None, exclude_account=None):
+			conditions = "gle.job = %(job)s AND gle.is_cancelled = 0"
+			params = {"job": job}
+			if root_type:
+				conditions += " AND a.root_type = %(root_type)s"
+				params["root_type"] = root_type
+			if account:
+				conditions += " AND gle.account = %(account)s"
+				params["account"] = account
+			if exclude_account:
+				conditions += " AND gle.account != %(exclude_account)s"
+				params["exclude_account"] = exclude_account
+			sign = "gle.credit - gle.debit" if root_type == "Income" else "gle.debit - gle.credit"
+			return flt(frappe.db.sql(
+				f"""SELECT COALESCE(SUM({sign}), 0)
+					FROM `tabGL Entry` gle
+					JOIN `tabAccount` a ON a.name = gle.account
+					WHERE {conditions}""",
+				params,
+			)[0][0])
+
+		# 1. Total Job Amount (ex-VAT) = net income posted for the job
+		total_job_amount = _gl_sum(root_type="Income")
+
+		# 5. Outsourcing Costs = the dedicated account
+		outsourcing_cost = _gl_sum(account=outsourcing_acct) if outsourcing_acct else 0.0
+
+		# 4. Total Expenses = all expense accounts EXCEPT outsourcing
+		total_expenses = _gl_sum(root_type="Expense", exclude_account=outsourcing_acct)
+
+		# 6. Net Profit = #1 - #4 - #5  (commission excluded by decision)
+		net_profit = total_job_amount - total_expenses - outsourcing_cost
+
+		# 2. Total Amount Received (Payment Entry, Receive; includes advances)
+		total_received = flt(frappe.db.sql(
+			"""SELECT COALESCE(SUM(pe.paid_amount), 0)
+				FROM `tabPayment Entry` pe
+				WHERE pe.job = %(job)s AND pe.docstatus = 1
+				  AND pe.payment_type = 'Receive'""",
+			{"job": job},
+		)[0][0])
+
+		# Customer vs Agent split (agents pay via their linked customer, so
+		# compare party to agent_customer — party_type is always 'Customer')
+		received_from_agent = 0.0
+		if self.agent_customer:
+			received_from_agent = flt(frappe.db.sql(
+				"""SELECT COALESCE(SUM(pe.paid_amount), 0)
+					FROM `tabPayment Entry` pe
+					WHERE pe.job = %(job)s AND pe.docstatus = 1
+					  AND pe.payment_type = 'Receive'
+					  AND pe.party = %(party)s""",
+				{"job": job, "party": self.agent_customer},
+			)[0][0])
+		received_from_customer = total_received - received_from_agent
+
+		# 3. Outstanding to Receive (Sales Invoice outstanding by job)
+		outstanding = flt(frappe.db.sql(
+			"""SELECT COALESCE(SUM(si.outstanding_amount), 0)
+				FROM `tabSales Invoice` si
+				WHERE si.job = %(job)s AND si.docstatus = 1""",
+			{"job": job},
+		)[0][0])
+
+		# Paid out on expenses + outsourcing (pay-side allocations to job PIs)
+		paid_out = flt(frappe.db.sql(
+			"""SELECT COALESCE(SUM(per.allocated_amount), 0)
+				FROM `tabPayment Entry Reference` per
+				JOIN `tabPayment Entry` pe
+					ON pe.name = per.parent AND pe.docstatus = 1
+					AND pe.payment_type = 'Pay'
+				JOIN `tabPurchase Invoice` pi
+					ON pi.name = per.reference_name
+					AND per.reference_doctype = 'Purchase Invoice'
+				WHERE pi.job = %(job)s""",
+			{"job": job},
+		)[0][0])
+
+		# 7. Profit Balance = realized cash profit so far
+		profit_balance = total_received - paid_out
+
+		# Unpaid payables (Exp. Pending indicator)
+		payable_outstanding = flt(frappe.db.sql(
+			"""SELECT COALESCE(SUM(pi.outstanding_amount), 0)
+				FROM `tabPurchase Invoice` pi
+				WHERE pi.job = %(job)s AND pi.docstatus = 1""",
+			{"job": job},
+		)[0][0])
+
+		currency = frappe.get_cached_value("Company", company, "default_currency") if company else None
+
+		metric_defs = [
+			("total_job_amount", "Total Job Amount", total_job_amount, settings.show_total_job_amount),
+			("total_received", "Total Amount Received", total_received, settings.show_total_received),
+			("outstanding", "Outstanding to Receive", outstanding, settings.show_outstanding),
+			("total_expenses", "Total Expenses", total_expenses, settings.show_total_expenses),
+			("outsourcing_cost", "Outsourcing Costs", outsourcing_cost, settings.show_outsourcing_cost),
+			("net_profit", "Net Profit", net_profit, settings.show_net_profit),
+			("profit_balance", "Profit Balance", profit_balance, settings.show_profit_balance),
+		]
+
+		return {
+			"currency": currency,
+			"metrics": [
+				{"key": k, "label": l, "value": v, "visible": bool(vis)}
+				for (k, l, v, vis) in metric_defs
+			],
+			"received_from": self.receivable_from,
+			"received_from_customer": received_from_customer,
+			"received_from_agent": received_from_agent,
+			"indicators": {
+				"show": bool(settings.show_status_indicators),
+				"amount_pending": bool(outstanding > 0) and bool(settings.enable_amount_pending_indicator),
+				"exp_pending": bool(payable_outstanding > 0) and bool(settings.enable_exp_pending_indicator),
+			},
+		}
+
+
+# ============================================================
+# MODULE-LEVEL HELPERS (Job Profit & Payment Tracking)
+# ============================================================
+
+def get_outsourcing_cost_account(company):
+	"""Return the dedicated Outsourcing Cost expense account for a company.
+
+	Prefers JMS Settings (when configured); falls back to lookup by the
+	standard account name created by the Phase 1 setup patch. Returns None
+	if not found, in which case ERPNext uses the item's default expense
+	account (preserves prior behaviour).
+	"""
+	account = None
+	if frappe.db.exists("DocType", "JMS Settings"):
+		account = frappe.db.get_single_value(
+			"JMS Settings", "outsourcing_cost_account"
+		)
+	if not account:
+		account = frappe.db.get_value(
+			"Account",
+			{
+				"account_name": "Outsourcing Cost",
+				"company": company,
+				"is_group": 0,
+			},
+			"name",
+		)
+	return account
 
 
 	

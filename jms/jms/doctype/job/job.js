@@ -58,6 +58,8 @@ frappe.ui.form.on('Job', {
 
 		salesInvoiceMessage(frm);
 
+		renderJobFinancials(frm);
+
 		frm.set_query("customer", function() {
             return {
                 filters: {
@@ -1971,5 +1973,119 @@ function salesInvoiceMessage(frm) {
     }
 
     frm.fields_dict.message.$wrapper.html(html);
+}
+
+
+// ============================================================
+// JOB PROFIT & PAYMENT TRACKING — financial summary card
+// Palette: dark green / dark gold / cream
+// ============================================================
+function renderJobFinancials(frm) {
+    if (!frm.fields_dict.financial_details) {
+        return;
+    }
+    if (frm.is_new()) {
+        frm.fields_dict.financial_details.$wrapper.html("");
+        return;
+    }
+
+    // Dashboard indicators (Amount / Exp Pending)
+    frm.dashboard.clear_headline && frm.dashboard.clear_headline();
+
+    frappe.call({
+        doc: frm.doc,
+        method: "get_financials",
+        callback: function (r) {
+            if (!r || !r.message) {
+                return;
+            }
+            const fin = r.message;
+            const currency = fin.currency || frappe.defaults.get_default("currency");
+            const fmt = (v) => format_currency(v, currency);
+
+            const labels = {
+                total_job_amount: "Total Job Amount",
+                total_received: "Total Amount Received",
+                outstanding: "Outstanding to Receive",
+                total_expenses: "Total Expenses",
+                outsourcing_cost: "Outsourcing Costs",
+                net_profit: "Net Profit",
+                profit_balance: "Profit Balance"
+            };
+
+            const GREEN = "#1b4332";
+            const GOLD = "#b8860b";
+            const CREAM = "#faf8f1";
+
+            let rows = "";
+            (fin.metrics || []).forEach((m) => {
+                if (!m.visible) return;
+                const isProfit = m.key === "net_profit";
+                const negative = m.value < 0;
+                const valColor = isProfit
+                    ? (negative ? "#a4161a" : GREEN)
+                    : "#2b2b2b";
+                const weight = isProfit ? "700" : "500";
+                rows += `
+                    <div style="display:flex;justify-content:space-between;align-items:center;
+                                padding:7px 14px;border-bottom:1px solid #eee5cf;">
+                        <span style="color:#5c5343;font-size:12px;">${labels[m.key] || m.key}</span>
+                        <span style="color:${valColor};font-weight:${weight};font-size:13px;">${fmt(m.value)}</span>
+                    </div>`;
+            });
+
+            // Received split (customer vs agent)
+            let split = "";
+            if ((fin.received_from_agent || 0) > 0 || fin.received_from === "Agent") {
+                split = `
+                    <div style="padding:6px 14px;font-size:11px;color:#7a6f59;background:#f3edda;">
+                        Received From: <b>${frappe.utils.escape_html(fin.received_from || "—")}</b>
+                        &nbsp;·&nbsp; Customer: ${fmt(fin.received_from_customer || 0)}
+                        &nbsp;·&nbsp; Agent: ${fmt(fin.received_from_agent || 0)}
+                    </div>`;
+            }
+
+            // Status badges
+            let badges = "";
+            const ind = fin.indicators || {};
+            if (ind.show) {
+                if (ind.amount_pending) {
+                    badges += `<span style="background:#a4161a;color:#fff;border-radius:10px;
+                        padding:2px 10px;font-size:11px;margin-right:6px;">Amount Pending</span>`;
+                }
+                if (ind.exp_pending) {
+                    badges += `<span style="background:${GOLD};color:#fff;border-radius:10px;
+                        padding:2px 10px;font-size:11px;">Exp. Pending</span>`;
+                }
+            }
+            const badgeBar = badges
+                ? `<div style="padding:8px 14px;background:${CREAM};">${badges}</div>`
+                : "";
+
+            const html = `
+                <div style="border:1px solid #e0d6b8;border-left:4px solid ${GOLD};
+                            border-radius:8px;overflow:hidden;max-width:520px;background:#fff;">
+                    <div style="background:${GREEN};color:${CREAM};padding:9px 14px;
+                                font-weight:600;font-size:13px;letter-spacing:.3px;">
+                        Job Financial Summary
+                    </div>
+                    ${rows}
+                    ${split}
+                    ${badgeBar}
+                </div>`;
+
+            frm.fields_dict.financial_details.$wrapper.html(html);
+
+            // Form dashboard indicators too
+            if (ind.show) {
+                if (ind.amount_pending) {
+                    frm.dashboard.add_indicator(__("Amount Pending"), "red");
+                }
+                if (ind.exp_pending) {
+                    frm.dashboard.add_indicator(__("Exp. Pending"), "orange");
+                }
+            }
+        }
+    });
 }
 

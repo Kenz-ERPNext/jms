@@ -1,0 +1,157 @@
+{
+ "actions": [],
+ "creation": "2026-06-03 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "profit_metrics_section",
+  "show_total_job_amount",
+  "show_total_received",
+  "show_outstanding",
+  "show_net_profit",
+  "metrics_column_break",
+  "show_total_expenses",
+  "show_outsourcing_cost",
+  "show_profit_balance",
+  "show_status_indicators",
+  "accounting_section",
+  "outsourcing_cost_account",
+  "accounting_column_break",
+  "default_company",
+  "status_section",
+  "enable_amount_pending_indicator",
+  "enable_exp_pending_indicator"
+ ],
+ "fields": [
+  {
+   "fieldname": "profit_metrics_section",
+   "fieldtype": "Section Break",
+   "label": "Profit Tracking — Visible Metrics"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_total_job_amount",
+   "fieldtype": "Check",
+   "label": "Show Total Job Amount"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_total_received",
+   "fieldtype": "Check",
+   "label": "Show Total Amount Received"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_outstanding",
+   "fieldtype": "Check",
+   "label": "Show Outstanding to Receive"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_net_profit",
+   "fieldtype": "Check",
+   "label": "Show Net Profit"
+  },
+  {
+   "fieldname": "metrics_column_break",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_total_expenses",
+   "fieldtype": "Check",
+   "label": "Show Total Expenses"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_outsourcing_cost",
+   "fieldtype": "Check",
+   "label": "Show Outsourcing Costs"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_profit_balance",
+   "fieldtype": "Check",
+   "label": "Show Profit Balance"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_status_indicators",
+   "fieldtype": "Check",
+   "label": "Show Status Indicators (Amount / Exp Pending)"
+  },
+  {
+   "fieldname": "accounting_section",
+   "fieldtype": "Section Break",
+   "label": "Accounting"
+  },
+  {
+   "description": "Dedicated expense account used to split outsourcing cost from general expenses. Created by the Job Profit setup patch (e.g. 'Outsourcing Cost').",
+   "fieldname": "outsourcing_cost_account",
+   "fieldtype": "Link",
+   "label": "Outsourcing Cost Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "accounting_column_break",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "default_company",
+   "fieldtype": "Link",
+   "label": "Default Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "status_section",
+   "fieldtype": "Section Break",
+   "label": "Status Indicators"
+  },
+  {
+   "default": "1",
+   "description": "Show a red 'Amount Pending' indicator when there is an outstanding receivable.",
+   "fieldname": "enable_amount_pending_indicator",
+   "fieldtype": "Check",
+   "label": "Enable Amount Pending Indicator"
+  },
+  {
+   "default": "1",
+   "description": "Show an orange 'Exp. Pending' indicator when there is an unpaid expense/outsourcing payable.",
+   "fieldname": "enable_exp_pending_indicator",
+   "fieldtype": "Check",
+   "label": "Enable Exp. Pending Indicator"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-06-03 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Jms",
+ "name": "JMS Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
