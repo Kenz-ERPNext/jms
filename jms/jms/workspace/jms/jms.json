@@ -1,6 +1,11 @@
 {
- "charts": [],
- "content": "[{\"id\":\"_8gD31fUOw\",\"type\":\"header\",\"data\":{\"text\":\"<span style=\\\"font-size: 18px; letter-spacing: 0.18px;\\\"><b>Service Business Management</b></span>\",\"col\":12}},{\"id\":\"yOx9zpZc1Y\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"SBM Portal\",\"col\":3}},{\"id\":\"0FcOvbQ5b6\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Masters</b></span>\",\"col\":12}},{\"id\":\"gy0OjE5NQy\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job\",\"col\":3}},{\"id\":\"_IxUJZpTGK\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Type\",\"col\":3}},{\"id\":\"CaBbF-vqfD\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Agent\",\"col\":3}},{\"id\":\"4pCY6jmK0E\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Customer\",\"col\":3}},{\"id\":\"TiVBZLcVBT\",\"type\":\"card\",\"data\":{\"card_name\":\"Masters\",\"col\":4}},{\"id\":\"FPmTiHC4jV\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"k5Z0lKupyr\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Collection Report\",\"col\":3}},{\"id\":\"8PgSfC8f7d\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Supplier Payment Report\",\"col\":3}},{\"id\":\"cIiAj6Bmpb\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Day Business Summary\",\"col\":3}},{\"id\":\"tpHWYoTiNM\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Journal Entry\",\"col\":3}}]",
+ "charts": [
+  {
+   "chart_name": "Job Profit Trend",
+   "label": "Job Profit Trend"
+  }
+ ],
+ "content": "[{\"id\":\"_8gD31fUOw\",\"type\":\"header\",\"data\":{\"text\":\"<span style=\\\"font-size: 18px; letter-spacing: 0.18px;\\\"><b>Service Business Management</b></span>\",\"col\":12}},{\"id\":\"yOx9zpZc1Y\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"SBM Portal\",\"col\":3}},{\"id\":\"0FcOvbQ5b6\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Masters</b></span>\",\"col\":12}},{\"id\":\"gy0OjE5NQy\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job\",\"col\":3}},{\"id\":\"_IxUJZpTGK\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Type\",\"col\":3}},{\"id\":\"CaBbF-vqfD\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Agent\",\"col\":3}},{\"id\":\"4pCY6jmK0E\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Customer\",\"col\":3}},{\"id\":\"TiVBZLcVBT\",\"type\":\"card\",\"data\":{\"card_name\":\"Masters\",\"col\":4}},{\"id\":\"FPmTiHC4jV\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"jpRptJobProf\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Profitability\",\"col\":3}},{\"id\":\"k5Z0lKupyr\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Collection Report\",\"col\":3}},{\"id\":\"8PgSfC8f7d\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Supplier Payment Report\",\"col\":3}},{\"id\":\"cIiAj6Bmpb\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Day Business Summary\",\"col\":3}},{\"id\":\"tpHWYoTiNM\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Journal Entry\",\"col\":3}},{\"id\":\"hdrProf01\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Profitability</b></span>\",\"col\":12}},{\"id\":\"scDash01\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Profitability Dashboard\",\"col\":3}},{\"id\":\"ncJobAmt\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Job - Total Job Amount\",\"col\":4}},{\"id\":\"ncRecv\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Job - Total Received\",\"col\":4}},{\"id\":\"ncOut\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Job - Outstanding\",\"col\":4}},{\"id\":\"ncExp\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Job - Total Expenses\",\"col\":4}},{\"id\":\"ncOsrc\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Job - Outsourcing Cost\",\"col\":4}},{\"id\":\"ncNet\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Job - Net Profit\",\"col\":4}},{\"id\":\"chTrend\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Job Profit Trend\",\"col\":12}}]",
  "creation": "2025-12-04 20:00:00",
  "custom_blocks": [],
  "custom_open_dashboard": 0,
@@ -82,11 +87,36 @@
    "type": "Link"
   }
  ],
- "modified": "2026-04-09 15:32:22.679110",
+ "modified": "2026-06-04 10:00:00.000000",
  "modified_by": "Administrator",
  "module": "Jms",
  "name": "JMS",
- "number_cards": [],
+ "number_cards": [
+  {
+   "label": "Total Job Amount",
+   "number_card_name": "Job - Total Job Amount"
+  },
+  {
+   "label": "Total Received",
+   "number_card_name": "Job - Total Received"
+  },
+  {
+   "label": "Outstanding",
+   "number_card_name": "Job - Outstanding"
+  },
+  {
+   "label": "Total Expenses",
+   "number_card_name": "Job - Total Expenses"
+  },
+  {
+   "label": "Outsourcing",
+   "number_card_name": "Job - Outsourcing Cost"
+  },
+  {
+   "label": "Net Profit",
+   "number_card_name": "Job - Net Profit"
+  }
+ ],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
@@ -100,6 +130,21 @@
    "label": "Day Business Summary",
    "link_to": "Day Business Summary Oasis",
    "report_ref_doctype": "GL Entry",
+   "type": "Report"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Profitability Dashboard",
+   "link_to": "Job Profitability",
+   "type": "Dashboard"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "label": "Job Profitability",
+   "link_to": "Job Profitability",
+   "report_ref_doctype": "Job",
    "type": "Report"
   },
   {
