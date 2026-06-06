@@ -1,158 +1,74 @@
+# Copyright (c) 2026, Kenz and contributors
+# Job Collection Report — full date-wise collection / financial statement
+# per job (NOT just pending). Figures from the Job accounting dimension.
+
 import frappe
+
+from jms.jms.jms_report_utils import get_job_financials_map
 
 
 def execute(filters=None):
-    filters = filters or {}
-    columns = get_columns()
-    data = get_data(filters)
-    return columns, data
+	filters = filters or {}
+	return get_columns(), get_data(filters)
 
 
 def get_columns():
-    return [
-        {
-            "label": "Date",
-            "fieldname": "date",
-            "fieldtype": "Date",
-            "width": 180
-        },
-        {
-            "label": "Job ID",
-            "fieldname": "job",
-            "fieldtype": "Link",
-            "options": "Job",
-            "width": 200
-        },
-        {
-            "label": "Customer",
-            "fieldname": "customer",
-            "fieldtype": "Link",
-            "options": "Customer",
-            "width": 180
-        },
-        {
-            "label": "Agent",
-            "fieldname": "agent",
-            "fieldtype": "Link",
-            "options": "Agent",
-            "width": 140
-        },
-        {
-            "label": "Job Status",
-            "fieldname": "job_status",
-            "width": 120
-        },
+	return [
+		{"label": "Date", "fieldname": "date", "fieldtype": "Date", "width": 95},
+		{"label": "Job ID", "fieldname": "job", "fieldtype": "Link", "options": "Job", "width": 130},
+		{"label": "Customer", "fieldname": "customer", "fieldtype": "Link", "options": "Customer", "width": 160},
+		{"label": "Agent", "fieldname": "agent", "fieldtype": "Link", "options": "Agent", "width": 120},
+		{"label": "Status", "fieldname": "job_status", "fieldtype": "Data", "width": 100},
+		{"label": "Mode of Payment", "fieldname": "mode_of_payment", "fieldtype": "Link", "options": "Mode of Payment", "width": 130},
+		{"label": "Job Amount", "fieldname": "job_amount", "fieldtype": "Currency", "width": 120},
+		{"label": "Received", "fieldname": "received", "fieldtype": "Currency", "width": 120},
+		{"label": "Outstanding", "fieldname": "outstanding", "fieldtype": "Currency", "width": 120},
+		{"label": "Expenses", "fieldname": "expenses", "fieldtype": "Currency", "width": 110},
+		{"label": "Outsourcing", "fieldname": "outsourcing", "fieldtype": "Currency", "width": 110},
+		{"label": "Net Profit", "fieldname": "net_profit", "fieldtype": "Currency", "width": 120},
+	]
 
-        {
-            "label": "Mode Of Payment",
-            "fieldname": "mode_of_payment",
-            "fieldtype": "Link",
-            "options": "Mode of Payment",
-            "width": 160
-        },
-        {
-            "label": "Sales Invoice",
-            "fieldname": "sales_invoice",
-            "fieldtype": "Link",
-            "options": "Sales Invoice",
-            "width": 190
-        },
-        {
-            "label": "Invoice Amount",
-            "fieldname": "si_amount",
-            "fieldtype": "Currency",
-            "width": 140
-        },
-        {
-            "label": "Balance Amount",
-            "fieldname": "si_outstanding",
-            "fieldtype": "Currency",
-            "width": 140
-        },
-        {
-            "label": "Payment Entry",
-            "fieldname": "payment_entry",
-            "fieldtype": "Link",
-            "options": "Payment Entry",
-            "width": 190
-        },
-        {
-            "label": "Paid Amount",
-            "fieldname": "paid_amount",
-            "fieldtype": "Currency",
-            "width": 140
-        }
-    ]
- 
 
 def get_data(filters):
-    conditions = []
-    values = {}
+	conditions = ["j.docstatus < 2"]
+	values = {}
+	if filters.get("from_date"):
+		conditions.append("j.date >= %(from_date)s"); values["from_date"] = filters["from_date"]
+	if filters.get("to_date"):
+		conditions.append("j.date <= %(to_date)s"); values["to_date"] = filters["to_date"]
+	if filters.get("job"):
+		conditions.append("j.name = %(job)s"); values["job"] = filters["job"]
+	if filters.get("customer"):
+		conditions.append("j.customer = %(customer)s"); values["customer"] = filters["customer"]
+	if filters.get("agent"):
+		conditions.append("j.agent = %(agent)s"); values["agent"] = filters["agent"]
+	if filters.get("status"):
+		conditions.append("j.status = %(status)s"); values["status"] = filters["status"]
 
-    # Only Completed Jobs
-    conditions.append("j.status = 'Completed'")
+	jobs = frappe.db.sql(
+		f"""SELECT j.name AS job, j.date, j.customer, j.agent,
+				j.status AS job_status, j.mode_of_payment
+			FROM `tabJob` j
+			WHERE {' AND '.join(conditions)}
+			ORDER BY j.date DESC, j.name DESC""",
+		values, as_dict=True,
+	)
+	fin = get_job_financials_map([j.job for j in jobs])
 
-    if filters.get("from_date"):
-        conditions.append("j.date >= %(from_date)s")
-        values["from_date"] = filters["from_date"]
-
-    if filters.get("to_date"):
-        conditions.append("j.date <= %(to_date)s")
-        values["to_date"] = filters["to_date"]
-
-    if filters.get("job"):
-        conditions.append("j.name = %(job)s")
-        values["job"] = filters["job"]
-
-    if filters.get("customer"):
-        conditions.append("j.customer = %(customer)s")
-        values["customer"] = filters["customer"]
-
-    if filters.get("agent"):
-        conditions.append("j.agent = %(agent)s")
-        values["agent"] = filters["agent"]
-
-    invoice_filter = filters.get("invoice_filter")
-
-    if invoice_filter == "Sales Invoice Not Created":
-        conditions.append("si.name IS NULL")
-
-    if invoice_filter == "SI Created but Amount Not Collected":
-        conditions.append("si.name IS NOT NULL AND si.outstanding_amount > 0")
-
-    condition_str = " AND ".join(conditions)
-
-    query = f"""
-        SELECT
-            j.date,
-            j.name AS job,
-            j.customer,
-            j.agent,
-            j.mode_of_payment,
-            j.status AS job_status,
-
-            si.name AS sales_invoice,
-            si.grand_total AS si_amount,
-            si.outstanding_amount AS si_outstanding,
-
-            pe.name AS payment_entry,
-            pe.total_allocated_amount AS paid_amount
-
-        FROM `tabJob` j
-
-        LEFT JOIN `tabSales Invoice` si
-            ON si.job = j.name
-            AND si.docstatus = 1
-
-        LEFT JOIN `tabPayment Entry Reference` per
-            ON per.reference_name = si.name
-
-        LEFT JOIN `tabPayment Entry` pe
-            ON pe.name = per.parent
-            AND pe.docstatus = 1
-
-        WHERE {condition_str}
-        ORDER BY j.date DESC
-    """
-
-    return frappe.db.sql(query, values, as_dict=True)
+	rows = []
+	only_pending = filters.get("only_pending")
+	for j in jobs:
+		f = fin.get(j.job, {})
+		row = dict(j)
+		row.update(
+			job_amount=f.get("job_amount", 0),
+			received=f.get("received", 0),
+			outstanding=f.get("outstanding", 0),
+			expenses=f.get("expenses", 0),
+			outsourcing=f.get("outsourcing", 0),
+			net_profit=f.get("net_profit", 0),
+		)
+		if only_pending and not (row["outstanding"] > 0):
+			continue
+		rows.append(row)
+	return rows
