@@ -487,6 +487,16 @@ class Job(Document):
 
 	# 	return sales_invoice.name
 
+	def _resolve_company(self):
+		"""Company for documents created from this Job. Prefer the Job's own
+		company so creation does not depend on the logged-in user having a
+		default company set (a common cause of failures for non-admin users)."""
+		return (
+			self.company
+			or frappe.defaults.get_user_default("company")
+			or frappe.db.get_single_value("Global Defaults", "default_company")
+		)
+
 	@frappe.whitelist()
 	def create_invoice(
 		self,
@@ -523,9 +533,7 @@ class Job(Document):
 				)
 			)
 
-		sales_invoice.company = frappe.defaults.get_user_default(
-			"company"
-		)
+		sales_invoice.company = self._resolve_company()
 
 		sales_invoice.posting_date = frappe.utils.nowdate()
 
@@ -1085,9 +1093,7 @@ class Job(Document):
 
 			pi.supplier = supplier
 
-			pi.company = frappe.defaults.get_user_default(
-				"company"
-			)
+			pi.company = self._resolve_company()
 
 			pi.posting_date = frappe.utils.nowdate()
 
@@ -1598,10 +1604,7 @@ class Job(Document):
 				"Item is mandatory to create Expense"
 			)
 
-		company = (
-			self.company
-			or frappe.defaults.get_user_default("Company")
-		)
+		company = self._resolve_company()
 
 		# -----------------------
 		# CREATE PURCHASE INVOICE
