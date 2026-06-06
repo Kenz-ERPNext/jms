@@ -511,6 +511,18 @@ class Job(Document):
 
 			sales_invoice.customer = self.agent_customer
 
+		if not sales_invoice.customer:
+
+			frappe.throw(
+				"Cannot create Sales Invoice: no Customer is set on this Job. "
+				"Receivable From is '{0}' but the {1} is empty.".format(
+					self.receivable_from or "(blank)",
+					"Agent's linked Customer"
+					if self.receivable_from == "Agent"
+					else "Customer",
+				)
+			)
+
 		sales_invoice.company = frappe.defaults.get_user_default(
 			"company"
 		)
