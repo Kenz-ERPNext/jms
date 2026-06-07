@@ -87,7 +87,6 @@ def get_data(filters, settings):
 	gl = _gl_by_job(job_names, outsourcing_accounts)
 	received = _received_by_job(job_names)
 	outstanding = _outstanding_by_job(job_names)
-	paid_out = _paid_out_by_job(job_names)
 
 	rows = []
 	for j in jobs:
@@ -98,7 +97,8 @@ def get_data(filters, settings):
 		net_profit = income - expenses - outsourcing
 		recv = flt(received.get(j.job))
 		outst = flt(outstanding.get(j.job))
-		profit_balance = recv - flt(paid_out.get(j.job))
+		# Profit Balance = remaining receivable minus remaining payable
+		profit_balance = outst - flt(g.get("payable_outstanding"))
 
 		states = []
 		if settings.enable_amount_pending_indicator and outst > 0:
@@ -189,21 +189,3 @@ def _outstanding_by_job(job_names):
 		as_dict=True,
 	)
 	return {r.job: r.outstanding for r in rows}
-
-
-def _paid_out_by_job(job_names):
-	rows = frappe.db.sql(
-		"""
-		SELECT pi.job, COALESCE(SUM(per.allocated_amount), 0) AS paid_out
-		FROM `tabPayment Entry Reference` per
-		JOIN `tabPayment Entry` pe
-			ON pe.name = per.parent AND pe.docstatus = 1 AND pe.payment_type = 'Pay'
-		JOIN `tabPurchase Invoice` pi
-			ON pi.name = per.reference_name AND per.reference_doctype = 'Purchase Invoice'
-		WHERE pi.job IN %(jobs)s
-		GROUP BY pi.job
-		""",
-		{"jobs": job_names},
-		as_dict=True,
-	)
-	return {r.job: r.paid_out for r in rows}

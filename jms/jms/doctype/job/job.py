@@ -2247,30 +2247,28 @@ class Job(Document):
 			{"job": job},
 		)[0][0])
 
-		# Paid out on expenses + outsourcing (pay-side allocations to job PIs)
+		# Paid Out for this job = ALL pay-side Payment Entries (incl. unallocated
+		# supplier / agent advances), not only those allocated to Purchase
+		# Invoices — otherwise outgoing advance payments are invisible.
 		paid_out = flt(frappe.db.sql(
-			"""SELECT COALESCE(SUM(per.allocated_amount), 0)
-				FROM `tabPayment Entry Reference` per
-				JOIN `tabPayment Entry` pe
-					ON pe.name = per.parent AND pe.docstatus = 1
-					AND pe.payment_type = 'Pay'
-				JOIN `tabPurchase Invoice` pi
-					ON pi.name = per.reference_name
-					AND per.reference_doctype = 'Purchase Invoice'
-				WHERE pi.job = %(job)s""",
+			"""SELECT COALESCE(SUM(pe.paid_amount), 0)
+				FROM `tabPayment Entry` pe
+				WHERE pe.job = %(job)s AND pe.docstatus = 1
+				  AND pe.payment_type = 'Pay'""",
 			{"job": job},
 		)[0][0])
 
-		# 7. Profit Balance = realized cash profit so far
-		profit_balance = total_received - paid_out
-
-		# Unpaid payables (Exp. Pending indicator)
+		# Unpaid payables (Exp. Pending indicator + Profit Balance)
 		payable_outstanding = flt(frappe.db.sql(
 			"""SELECT COALESCE(SUM(pi.outstanding_amount), 0)
 				FROM `tabPurchase Invoice` pi
 				WHERE pi.job = %(job)s AND pi.docstatus = 1""",
 			{"job": job},
 		)[0][0])
+
+		# 7. Profit Balance = profit still to settle = remaining receivable minus
+		# remaining payable. Trends to zero as the job is fully collected/paid.
+		profit_balance = outstanding - payable_outstanding
 
 		currency = frappe.get_cached_value("Company", company, "default_currency") if company else None
 
@@ -2280,6 +2278,7 @@ class Job(Document):
 			("outstanding", "Outstanding to Receive", outstanding, settings.show_outstanding),
 			("total_expenses", "Total Expenses", total_expenses, settings.show_total_expenses),
 			("outsourcing_cost", "Outsourcing Costs", outsourcing_cost, settings.show_outsourcing_cost),
+			("paid_out", "Paid Out (Supplier/Agent)", paid_out, getattr(settings, "show_paid_out", 1)),
 			("net_profit", "Net Profit", net_profit, settings.show_net_profit),
 			("profit_balance", "Profit Balance", profit_balance, settings.show_profit_balance),
 		]

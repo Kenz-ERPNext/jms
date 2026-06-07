@@ -13,6 +13,7 @@
   "metrics_column_break",
   "show_total_expenses",
   "show_outsourcing_cost",
+  "show_paid_out",
   "show_profit_balance",
   "show_status_indicators",
   "accounting_section",
@@ -68,6 +69,12 @@
    "fieldname": "show_outsourcing_cost",
    "fieldtype": "Check",
    "label": "Show Outsourcing Costs"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_paid_out",
+   "fieldtype": "Check",
+   "label": "Show Paid Out (Supplier/Agent)"
   },
   {
    "default": "1",

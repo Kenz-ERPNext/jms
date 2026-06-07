@@ -73,13 +73,13 @@ def get_job_financials_map(job_names):
 	):
 		result[r.job]["outstanding"] = flt(r.v)
 
-	# --- Supplier Paid (Payment Entry Pay -> Purchase Invoice) ---
+	# --- Supplier Paid = ALL pay-side Payment Entries for the job (incl.
+	# unallocated supplier / agent advances, not only PI-allocated payments) ---
 	for r in frappe.db.sql(
-		"""SELECT pi.job, COALESCE(SUM(per.allocated_amount), 0) v
-			FROM `tabPayment Entry Reference` per
-			JOIN `tabPayment Entry` pe ON pe.name=per.parent AND pe.docstatus=1 AND pe.payment_type='Pay'
-			JOIN `tabPurchase Invoice` pi ON pi.name=per.reference_name AND per.reference_doctype='Purchase Invoice'
-			WHERE pi.job IN %(jobs)s GROUP BY pi.job""",
+		"""SELECT pe.job, COALESCE(SUM(pe.paid_amount), 0) v
+			FROM `tabPayment Entry` pe
+			WHERE pe.job IN %(jobs)s AND pe.docstatus=1 AND pe.payment_type='Pay'
+			GROUP BY pe.job""",
 		{"jobs": job_names}, as_dict=True,
 	):
 		result[r.job]["supplier_paid"] = flt(r.v)

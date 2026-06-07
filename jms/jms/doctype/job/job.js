@@ -60,6 +60,9 @@ frappe.ui.form.on('Job', {
 
 		renderJobFinancials(frm);
 
+		// Group all action buttons under a single "Create" dropdown
+		const addCreate = (label, action) => frm.add_custom_button(__(label), action, __('Create'));
+
 		frm.set_query("customer", function() {
             return {
                 filters: {
@@ -83,7 +86,7 @@ frappe.ui.form.on('Job', {
 
         if (outsource_advance_rows.length > 0) {
 
-            frm.add_custom_button(__('Outsource Advance Payment'), function () {
+            addCreate('Outsource Advance Payment', function () {
 
                 // -----------------------------------------
                 // UNIQUE SUPPLIERS
@@ -291,7 +294,7 @@ frappe.ui.form.on('Job', {
 
 
 
-        frm.add_custom_button(__('Advance Receipt'), function () {
+        addCreate('Advance Receipt', function () {
 
         let d = new frappe.ui.Dialog({
 
@@ -427,7 +430,7 @@ frappe.ui.form.on('Job', {
 		if (frm.doc.sales_invoice_payment_entry === '' 
             // &&frm.doc.sales_invoice_status === 'Created'
         ) {
-            frm.add_custom_button(__('SI Payment'), function () {
+            addCreate('SI Payment', function () {
 
                 frappe.prompt(
                     [
@@ -570,7 +573,7 @@ frappe.ui.form.on('Job', {
         // });
 
 
-        frm.add_custom_button(__('Create Sales Invoice'), function () {
+        addCreate('Create Sales Invoice', function () {
 
             if (!frm.doc.payment) {
 
@@ -1030,7 +1033,7 @@ frappe.ui.form.on('Job', {
 
 
 {
-    frm.add_custom_button(__('Create Expense'), function () {
+    addCreate('Create Expense', function () {
 
         let d = new frappe.ui.Dialog({
 
@@ -1418,8 +1421,8 @@ frappe.ui.form.on('Job', {
             && frm.doc.purchase_invoice_status !== 'Created'
         ) {
 
-            frm.add_custom_button(
-                __('Create Purchase Invoice'),
+            addCreate(
+                'Create Purchase Invoice',
                 function () {
 
                     // -------------------------
@@ -2009,6 +2012,7 @@ function renderJobFinancials(frm) {
                 outstanding: "Outstanding to Receive",
                 total_expenses: "Total Expenses",
                 outsourcing_cost: "Outsourcing Costs",
+                paid_out: "Paid Out (Supplier/Agent)",
                 net_profit: "Net Profit",
                 profit_balance: "Profit Balance"
             };
