@@ -497,6 +497,44 @@ class Job(Document):
 			or frappe.db.get_single_value("Global Defaults", "default_company")
 		)
 
+	def _apply_job_advances(self, doc):
+		"""Auto-reconcile this Job's unallocated advance Payment Entries against
+		the given (draft) Sales/Purchase Invoice. Only advances tagged to THIS
+		job are applied, up to the invoice total. Call AFTER
+		calculate_taxes_and_totals and BEFORE insert/submit. Returns the amount
+		applied."""
+		party = doc.supplier if doc.doctype == "Purchase Invoice" else doc.customer
+		if not party:
+			return 0.0
+
+		doc.set("advances", [])
+		try:
+			doc.set_advances()
+		except Exception:
+			# never block invoice creation if advance lookup fails
+			frappe.clear_last_message()
+			return 0.0
+
+		# keep only advances whose Payment Entry is tagged to this job
+		job_rows = []
+		for adv in (doc.get("advances") or []):
+			if adv.reference_type == "Payment Entry" and frappe.db.get_value(
+				"Payment Entry", adv.reference_name, "job"
+			) == self.name:
+				job_rows.append(adv)
+		doc.set("advances", job_rows)
+		if not job_rows:
+			return 0.0
+
+		remaining = flt(doc.grand_total)
+		applied = 0.0
+		for adv in job_rows:
+			alloc = min(flt(adv.advance_amount), remaining)
+			adv.allocated_amount = alloc
+			applied += alloc
+			remaining -= alloc
+		return applied
+
 	@frappe.whitelist()
 	def create_invoice(
 		self,
@@ -594,36 +632,12 @@ class Job(Document):
 		sales_invoice.insert(ignore_permissions=True)
 
 		# ------------------------------------------------
-		# FETCH ADVANCE PAYMENTS
+		# AUTO-RECONCILE THIS JOB'S CUSTOMER ADVANCES
+		# (only advances tagged to this job — not the
+		#  customer's advances from other jobs)
 		# ------------------------------------------------
 
-		sales_invoice.set_advances()
-
-		total_allocated_advance = 0
-
-		if sales_invoice.advances:
-
-			for row in sales_invoice.advances:
-
-				if flt(row.advance_amount) <= 0:
-					continue
-
-				remaining_amount = (
-					flt(sales_invoice.grand_total)
-					- flt(total_allocated_advance)
-				)
-
-				if remaining_amount <= 0:
-					break
-
-				allocated_amount = min(
-					flt(row.advance_amount),
-					remaining_amount
-				)
-
-				row.allocated_amount = allocated_amount
-
-				total_allocated_advance += allocated_amount
+		total_allocated_advance = self._apply_job_advances(sales_invoice)
 
 		# ------------------------------------------------
 		# SAVE ADVANCE ROWS
@@ -1177,6 +1191,13 @@ class Job(Document):
 			)
 
 			# -------------------------
+			# AUTO-RECONCILE THIS JOB'S
+			# SUPPLIER ADVANCES
+			# -------------------------
+
+			self._apply_job_advances(pi)
+
+			# -------------------------
 			# SAVE PI
 			# -------------------------
 
@@ -1184,13 +1205,15 @@ class Job(Document):
 
 			pi.submit()
 
+			pi.reload()
+
 			created_pis.append(pi.name)
 
 			# -------------------------
 			# PAYMENT ENTRY CREATION
 			# -------------------------
 
-			if self.payment_pi == "Payment Now":
+			if self.payment_pi == "Payment Now" and flt(pi.outstanding_amount) > 0:
 
 				if not self.mode_of_payment_pi:
 
@@ -1352,9 +1375,9 @@ class Job(Document):
 				# AMOUNTS
 				# -------------------------
 
-				pe.paid_amount = pi.grand_total
+				pe.paid_amount = flt(pi.outstanding_amount)
 
-				pe.received_amount = pi.grand_total
+				pe.received_amount = flt(pi.outstanding_amount)
 
 				pe.source_exchange_rate = 1
 
@@ -1375,8 +1398,11 @@ class Job(Document):
 					"total_amount":
 						pi.grand_total,
 
+					"outstanding_amount":
+						flt(pi.outstanding_amount),
+
 					"allocated_amount":
-						pi.grand_total
+						flt(pi.outstanding_amount)
 				})
 
 				# -------------------------

@@ -1,0 +1,8 @@
+# testctl config for the JMS app.
+# Run from this directory: testctl run   (or /testctl:test-all)
+# NOTE: point `site` at a TEST/restored site with allow_tests enabled — never live data.
+stacks:
+  frappe:
+    benchPath: /Users/sammishthundiyil/frappe-bench-kenz
+    site: oasis.local
+    apps: [jms]
