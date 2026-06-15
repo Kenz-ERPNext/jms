@@ -2,6 +2,7 @@
 # See license.txt
 
 import frappe
+from frappe.utils import nowdate
 from frappe.tests.utils import FrappeTestCase
 
 from jms.patches.v1_2.repair_naming_series import _TRAILING_NUM
@@ -108,3 +109,144 @@ class TestNamingSeriesRepairParsing(FrappeTestCase):
 
 	def test_name_without_trailing_digits_does_not_match(self):
 		self.assertIsNone(_TRAILING_NUM.match("NO-DIGITS-HERE"))
+
+
+def _first(doctype, filters=None):
+	rows = frappe.get_all(doctype, filters=filters or {}, pluck="name", limit=1)
+	return rows[0] if rows else None
+
+
+class TestJobFinancialsNumbers(FrappeTestCase):
+	"""Numeric end-to-end check of get_financials against self-built documents
+	(reuses existing masters — never creates a Company, which would re-trigger
+	ERPNext's Cost Center fixture autoname). All docs are rolled back by
+	FrappeTestCase. Profit Balance = SI outstanding - PI outstanding; Paid Out =
+	submitted 'Pay' Payment Entries for the job."""
+
+	def _make_job(self, company, customer):
+		job = frappe.new_doc("Job")
+		job.job_title = "testctl numeric job"
+		job.date = nowdate()
+		job.start_date = nowdate()
+		job.status = "Created"
+		job.job_type = _first("Job Type")
+		job.receivable_from = "Customer"
+		job.customer = customer
+		job.company = company
+		job.insert(ignore_permissions=True)
+		return job
+
+	def test_profit_balance_1000_and_paid_out_500(self):
+		company = _first("Company")
+		customer = _first("Customer")
+		supplier = _first("Supplier")
+		item = _first("Item", {"is_stock_item": 0})
+		job_type = _first("Job Type")
+		if not all([company, customer, supplier, item, job_type]):
+			self.skipTest("missing a required master (company/customer/supplier/service item/job type)")
+
+		cash = frappe.get_cached_value("Company", company, "default_cash_account") \
+			or frappe.get_cached_value("Company", company, "default_bank_account")
+		payable = frappe.get_cached_value("Company", company, "default_payable_account")
+		if not (cash and payable):
+			self.skipTest("company has no default cash/bank or payable account")
+
+		job = self._make_job(company, customer)
+
+		# Sales Invoice with outstanding 1000 (one line, rate 1000, no tax) → profit_balance = 1000
+		si = frappe.new_doc("Sales Invoice")
+		si.customer = customer
+		si.company = company
+		si.due_date = nowdate()
+		si.append("items", {"item_code": item, "qty": 1, "rate": 1000})
+		si.set("job", job.name)
+		si.insert(ignore_permissions=True)
+		si.submit()
+
+		# Payment Entry, Pay 500, tagged to the job → paid_out = 500
+		pe = frappe.new_doc("Payment Entry")
+		pe.payment_type = "Pay"
+		pe.company = company
+		pe.party_type = "Supplier"
+		pe.party = supplier
+		pe.paid_from = cash
+		pe.paid_to = payable
+		pe.paid_amount = 500
+		pe.received_amount = 500
+		pe.set("job", job.name)
+		pe.insert(ignore_permissions=True)
+		pe.submit()
+
+		fin = job.get_financials()
+		metrics = {m["key"]: m["value"] for m in fin["metrics"]}
+		self.assertEqual(metrics["profit_balance"], 1000.0)
+		self.assertEqual(metrics["paid_out"], 500.0)
+
+
+def _non_bank_mode_of_payment(company):
+	"""A Mode of Payment that has an account for `company` and is not Bank type
+	(so no reference no/date is required), or None."""
+	for r in frappe.get_all(
+		"Mode of Payment Account", filters={"company": company}, fields=["parent"], limit=20
+	):
+		if frappe.db.get_value("Mode of Payment", r.parent, "type") != "Bank":
+			return r.parent
+	return None
+
+
+class TestJobAdvances(FrappeTestCase):
+	"""Contract tests for the advance helpers: each creates a SUBMITTED Payment
+	Entry of the right type/party/amount, tagged to the job. (Reconciliation
+	amounts are out of scope — this just protects the creation contract.)
+	All docs roll back; reuses existing masters, never creates a Company."""
+
+	def _job(self, company, customer):
+		job = frappe.new_doc("Job")
+		job.job_title = "testctl advance job"
+		job.date = nowdate()
+		job.start_date = nowdate()
+		job.status = "Created"
+		job.job_type = _first("Job Type")
+		job.receivable_from = "Customer"
+		job.customer = customer
+		job.company = company
+		job.insert(ignore_permissions=True)
+		return job
+
+	def test_create_advance_receipt_makes_submitted_receive_pe(self):
+		company = _first("Company")
+		customer = _first("Customer")
+		mop = _non_bank_mode_of_payment(company) if company else None
+		if not all([company, customer, _first("Job Type"), mop]):
+			self.skipTest("missing company/customer/job type or a non-bank Mode of Payment account")
+
+		job = self._job(company, customer)
+		pe_name = job.create_advance_receipt(25, mop)
+		pe = frappe.get_doc("Payment Entry", pe_name)
+		self.assertEqual(pe.docstatus, 1)
+		self.assertEqual(pe.payment_type, "Receive")
+		self.assertEqual(pe.party_type, "Customer")
+		self.assertEqual(pe.party, customer)
+		self.assertEqual(pe.get("job"), job.name)
+		self.assertEqual(pe.paid_amount, 25)
+
+	def test_create_outsource_advance_payment_makes_submitted_pay_pe(self):
+		company = _first("Company")
+		customer = _first("Customer")
+		supplier = _first("Supplier")
+		mop = _non_bank_mode_of_payment(company) if company else None
+		if not all([company, customer, supplier, _first("Job Type"), mop]):
+			self.skipTest("missing company/customer/supplier/job type or a non-bank Mode of Payment account")
+
+		job = self._job(company, customer)
+		names = job.create_outsource_advance_payment(
+			[{"supplier": supplier, "advance_amount": 750}], mop
+		)
+		self.assertEqual(len(names), 1)
+		pe = frappe.get_doc("Payment Entry", names[0])
+		self.assertEqual(pe.docstatus, 1)
+		self.assertEqual(pe.payment_type, "Pay")
+		self.assertEqual(pe.party_type, "Supplier")
+		self.assertEqual(pe.party, supplier)
+		self.assertEqual(pe.get("job"), job.name)
+		self.assertEqual(pe.paid_amount, 750)

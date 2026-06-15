@@ -6,3 +6,7 @@ stacks:
     benchPath: /Users/sammishthundiyil/frappe-bench-kenz
     site: oasis.local
     apps: [jms]
+    # Scope to specific test modules — avoids the heavy ERPNext --app
+    # test-record bootstrap that crashes on this restored site.
+    modules:
+      - jms.jms.doctype.job.test_job

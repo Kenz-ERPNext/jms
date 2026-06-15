@@ -169,7 +169,7 @@ app_license = "mit"
 # Testing
 # -------
 
-# before_tests = "jms.install.before_tests"
+before_tests = "jms.install.before_tests"
 
 # Overriding Methods
 # ------------------------------
