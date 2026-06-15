@@ -789,7 +789,7 @@ frappe.ui.form.on('Job', {
                                     if (r.message) {
 
                                         frappe.msgprint(
-                                            "Process Completed: <b>"
+                                            "Sales Invoice Created: <b>"
                                             + r.message +
                                             "</b>"
                                         );
@@ -827,7 +827,7 @@ frappe.ui.form.on('Job', {
                                 if (r.message) {
 
                                     frappe.msgprint(
-                                        "Process Completed: <b>"
+                                        "Sales Invoice Created: <b>"
                                         + r.message +
                                         "</b>"
                                     );
