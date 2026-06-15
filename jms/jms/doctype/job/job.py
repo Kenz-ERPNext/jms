@@ -7,6 +7,8 @@ from frappe.utils import flt
 from frappe.model.document import Document
 from frappe.utils import add_days, date_diff, getdate, today, nowdate
 
+from jms.compat import patch_round_floats_in
+
 
 class Job(Document):
 	def validate(self):
@@ -545,6 +547,8 @@ class Job(Document):
 		reference_date=None
 	):
 
+		patch_round_floats_in()
+
 		# ------------------------------------------------
 		# CREATE SALES INVOICE
 		# ------------------------------------------------
@@ -1055,6 +1059,8 @@ class Job(Document):
 		reference_no=None,
 		reference_date=None
 	):
+
+		patch_round_floats_in()
 
 		# -------------------------
 		# FILTER OUTSOURCE ROWS
@@ -1623,6 +1629,8 @@ class Job(Document):
 		reference_doctype=None,
 		reference_name=None
 	):
+
+		patch_round_floats_in()
 
 		if not item_code:
 

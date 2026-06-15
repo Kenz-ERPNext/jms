@@ -196,7 +196,9 @@ before_tests = "jms.install.before_tests"
 
 # Request Events
 # ----------------
-# before_request = ["jms.utils.before_request"]
+# Compat shim for frappe<->erpnext version skew (round_floats_in). No-op once
+# frappe is updated to match erpnext. See jms/compat.py.
+before_request = ["jms.compat.patch_round_floats_in"]
 # after_request = ["jms.utils.after_request"]
 
 # Job Events
