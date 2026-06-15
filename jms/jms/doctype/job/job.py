@@ -1921,7 +1921,8 @@ class Job(Document):
 		amount,
 		mode_of_payment,
 		reference_no=None,
-		reference_date=None
+		reference_date=None,
+		allocations=None
 	):
 
 		if not amount:
@@ -2010,7 +2011,29 @@ class Job(Document):
 
 		pe.received_amount = amount
 
-		pe.unallocated_amount = amount
+		# ------------------------------------------------
+		# ALLOCATE TO OPEN SALES INVOICES (optional)
+		# Any remainder stays as an unallocated advance.
+		# ------------------------------------------------
+
+		import json
+
+		if isinstance(allocations, str):
+			allocations = json.loads(allocations or "[]")
+
+		for row in (allocations or []):
+			inv = row.get("invoice")
+			alloc = flt(row.get("allocated_amount"))
+			if not inv or alloc <= 0:
+				continue
+			pe.append("references", {
+				"reference_doctype": "Sales Invoice",
+				"reference_name": inv,
+				"allocated_amount": alloc,
+			})
+
+		# Let ERPNext compute total_allocated_amount / unallocated_amount from
+		# the references on validate (don't hard-set unallocated_amount).
 
 		pe.insert(ignore_permissions=True)
 
@@ -2199,6 +2222,51 @@ class Job(Document):
 		# ----------------------------------------
 
 		return created_entries
+
+	# --------------------------------------------------------
+	# RECONCILIATION HELPERS (for allocation dialogs)
+	# --------------------------------------------------------
+
+	@frappe.whitelist()
+	def get_job_open_invoices(self, invoice_type, party=None):
+		"""Open invoices (outstanding > 0) for this job, to allocate a payment
+		against. invoice_type = 'Sales Invoice' or 'Purchase Invoice'."""
+		party_field = "customer" if invoice_type == "Sales Invoice" else "supplier"
+		conditions = "job = %(job)s AND docstatus = 1 AND outstanding_amount > 0"
+		params = {"job": self.name}
+		if party:
+			conditions += f" AND `{party_field}` = %(party)s"
+			params["party"] = party
+		return frappe.db.sql(
+			f"""SELECT name, posting_date, grand_total, outstanding_amount,
+					`{party_field}` AS party
+				FROM `tab{invoice_type}`
+				WHERE {conditions}
+				ORDER BY posting_date, name""",
+			params,
+			as_dict=True,
+		)
+
+	@frappe.whitelist()
+	def get_job_unallocated_payments(self, payment_type, party=None):
+		"""Unallocated advance Payment Entries for this job, to apply to an
+		invoice. payment_type = 'Receive' (customer) or 'Pay' (supplier)."""
+		conditions = (
+			"job = %(job)s AND docstatus = 1 AND payment_type = %(pt)s "
+			"AND unallocated_amount > 0"
+		)
+		params = {"job": self.name, "pt": payment_type}
+		if party:
+			conditions += " AND party = %(party)s"
+			params["party"] = party
+		return frappe.db.sql(
+			"""SELECT name, posting_date, party, paid_amount, unallocated_amount
+				FROM `tabPayment Entry`
+				WHERE """ + conditions + """
+				ORDER BY posting_date, name""",
+			params,
+			as_dict=True,
+		)
 
 	# --------------------------------------------------------
 	# JOB PROFIT & PAYMENT TRACKING

@@ -306,7 +306,10 @@ frappe.ui.form.on('Job', {
                     fieldname: "advance_amount",
                     label: "Advance Amount",
                     fieldtype: "Currency",
-                    reqd: 1
+                    reqd: 1,
+                    onchange: function () {
+                        jmsAutofillAllocation(d, "allocation_html", () => d.get_value("advance_amount"));
+                    }
                 },
 
                 {
@@ -382,6 +385,16 @@ frappe.ui.form.on('Job', {
                     label: "Reference Date",
                     fieldtype: "Date",
                     hidden: 1
+                },
+
+                {
+                    fieldname: "alloc_sb",
+                    fieldtype: "Section Break",
+                    label: "Allocate to Open Sales Invoices (optional)"
+                },
+                {
+                    fieldname: "allocation_html",
+                    fieldtype: "HTML"
                 }
 
             ],
@@ -390,6 +403,9 @@ frappe.ui.form.on('Job', {
 
             primary_action(values) {
 
+                const allocations = jmsCollectAllocations(d, "allocation_html")
+                    .map(a => ({ invoice: a.key, allocated_amount: a.allocated_amount }));
+
                 frappe.call({
                     doc: frm.doc,
                     method: "create_advance_receipt",
@@ -397,7 +413,8 @@ frappe.ui.form.on('Job', {
                         amount: values.advance_amount,
                         mode_of_payment: values.mode_of_payment,
                         reference_no: values.reference_no,
-                        reference_date: values.reference_date
+                        reference_date: values.reference_date,
+                        allocations: allocations
                     },
                     callback: function(r) {
 
@@ -419,6 +436,20 @@ frappe.ui.form.on('Job', {
         });
 
         d.show();
+
+        frappe.call({
+            doc: frm.doc,
+            method: "get_job_open_invoices",
+            args: { invoice_type: "Sales Invoice" },
+            callback: function (r) {
+                const items = (r.message || []).map(o => ({
+                    key: o.name, outstanding: o.outstanding_amount
+                }));
+                jmsRenderAllocation(d, "allocation_html", items,
+                    () => d.get_value("advance_amount"),
+                    { key_label: "Sales Invoice", empty: "sales invoices" });
+            }
+        });
 
     });
 
@@ -2091,5 +2122,56 @@ function renderJobFinancials(frm) {
             }
         }
     });
+}
+
+
+// ============================================================
+// Reconciliation allocation table (shared by payment/invoice dialogs)
+// ============================================================
+function jmsRenderAllocation(d, html_fieldname, items, get_amount, opts) {
+    opts = opts || {};
+    const $w = d.fields_dict[html_fieldname].$wrapper;
+    if (!items || !items.length) {
+        $w.html('<div class="text-muted" style="padding:6px 2px;">No open '
+            + (opts.empty || 'items') + ' for this job.</div>');
+        return;
+    }
+    const rows = items.map(it => `
+        <tr>
+            <td>${frappe.utils.escape_html(it.key)}</td>
+            <td class="text-right">${format_currency(it.outstanding)}</td>
+            <td><input type="number" class="form-control input-xs jms-alloc"
+                 data-key="${frappe.utils.escape_html(it.key)}" data-out="${it.outstanding}"
+                 min="0" step="0.01" style="width:130px;"></td>
+        </tr>`).join("");
+    $w.html(`
+        <table class="table table-bordered" style="margin-bottom:4px;font-size:12px;">
+            <thead><tr>
+                <th>${opts.key_label || 'Document'}</th>
+                <th class="text-right">Outstanding</th>
+                <th>Allocate</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+        </table>`);
+    jmsAutofillAllocation(d, html_fieldname, get_amount);
+}
+
+function jmsAutofillAllocation(d, html_fieldname, get_amount) {
+    let remaining = flt(get_amount && get_amount());
+    d.fields_dict[html_fieldname].$wrapper.find(".jms-alloc").each(function () {
+        const out = parseFloat($(this).data("out")) || 0;
+        const alloc = Math.min(out, Math.max(0, remaining));
+        $(this).val(alloc ? alloc.toFixed(2) : "");
+        remaining = Math.max(0, remaining - alloc);
+    });
+}
+
+function jmsCollectAllocations(d, html_fieldname) {
+    const out = [];
+    d.fields_dict[html_fieldname].$wrapper.find(".jms-alloc").each(function () {
+        const amt = parseFloat($(this).val()) || 0;
+        if (amt > 0) out.push({ key: $(this).data("key"), allocated_amount: amt });
+    });
+    return out;
 }
 
