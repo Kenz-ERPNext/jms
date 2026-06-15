@@ -7,3 +7,4 @@
 jms.patches.v1_0.setup_job_profit_tracking
 jms.patches.v1_1.import_job_profitability_chart_source
 jms.patches.v1_2.repair_naming_series
+jms.patches.v1_3.clear_cancelled_invoice_links

@@ -137,13 +137,14 @@ app_license = "mit"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"Sales Invoice": {
+		"on_cancel": "jms.events.on_sales_invoice_cancel",
+	},
+	"Purchase Invoice": {
+		"on_cancel": "jms.events.on_purchase_invoice_cancel",
+	},
+}
 
 # Scheduled Tasks
 # ---------------
