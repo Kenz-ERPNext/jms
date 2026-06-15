@@ -2205,7 +2205,24 @@ class Job(Document):
 
 			pe.received_amount = amount
 
-			pe.unallocated_amount = amount
+			# ----------------------------------------
+			# ALLOCATE TO OPEN PURCHASE INVOICES (optional)
+			# Any remainder stays as an unallocated advance.
+			# ----------------------------------------
+
+			for alloc_row in (row.get("allocations") or []):
+				inv = alloc_row.get("invoice")
+				alloc = flt(alloc_row.get("allocated_amount"))
+				if not inv or alloc <= 0:
+					continue
+				pe.append("references", {
+					"reference_doctype": "Purchase Invoice",
+					"reference_name": inv,
+					"allocated_amount": alloc,
+				})
+
+			# Let ERPNext compute total_allocated_amount / unallocated_amount
+			# from the references on validate.
 
 			# ----------------------------------------
 			# SAVE

@@ -115,6 +115,10 @@ frappe.ui.form.on('Job', {
 
                 });
 
+                // open Purchase Invoices for this job, grouped by supplier,
+                // used to auto-allocate each supplier's advance (FIFO).
+                let openPIsBySupplier = {};
+
                 // -----------------------------------------
                 // DIALOG
                 // -----------------------------------------
@@ -248,6 +252,21 @@ frappe.ui.form.on('Job', {
                             return;
                         }
 
+                        // Auto-allocate each supplier's advance FIFO across that
+                        // supplier's open Purchase Invoices; remainder stays advance.
+                        valid_rows.forEach(row => {
+                            let remaining = flt(row.advance_amount);
+                            row.allocations = [];
+                            (openPIsBySupplier[row.supplier] || []).forEach(pi => {
+                                if (remaining <= 0) return;
+                                const alloc = Math.min(flt(pi.outstanding_amount), remaining);
+                                if (alloc > 0) {
+                                    row.allocations.push({ invoice: pi.name, allocated_amount: alloc });
+                                    remaining = flt(remaining - alloc);
+                                }
+                            });
+                        });
+
                         frappe.call({
 
                             doc: frm.doc,
@@ -283,6 +302,18 @@ frappe.ui.form.on('Job', {
                 });
 
                 d.show();
+
+                frappe.call({
+                    doc: frm.doc,
+                    method: "get_job_open_invoices",
+                    args: { invoice_type: "Purchase Invoice" },
+                    callback: function (r) {
+                        openPIsBySupplier = {};
+                        (r.message || []).forEach(pi => {
+                            (openPIsBySupplier[pi.party] = openPIsBySupplier[pi.party] || []).push(pi);
+                        });
+                    }
+                });
 
             });
         }
