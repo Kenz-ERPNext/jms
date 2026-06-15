@@ -690,6 +690,16 @@ frappe.ui.form.on('Job', {
                     fieldtype: "Currency",
                     default: total_amount,
                     read_only: 1
+                },
+
+                {
+                    fieldname: "advances_sb",
+                    fieldtype: "Section Break",
+                    label: "Customer Advances"
+                },
+                {
+                    fieldname: "advances_html",
+                    fieldtype: "HTML"
                 }
 
             ];
@@ -906,6 +916,15 @@ frappe.ui.form.on('Job', {
             });
 
             d.show();
+
+            frappe.call({
+                doc: frm.doc,
+                method: "get_job_unallocated_payments",
+                args: { payment_type: "Receive" },
+                callback: function (r) {
+                    jmsRenderAdvancesInfo(d, "advances_html", r.message || []);
+                }
+            });
 
             // -----------------------------------
             // SHOW / HIDE REFERENCE FIELDS
@@ -1541,6 +1560,16 @@ frappe.ui.form.on('Job', {
                                 fieldname: 'reference_date',
                                 fieldtype: 'Date',
                                 hidden: 1
+                            },
+
+                            {
+                                fieldname: 'advances_sb',
+                                fieldtype: 'Section Break',
+                                label: 'Supplier Advances'
+                            },
+                            {
+                                fieldname: 'advances_html',
+                                fieldtype: 'HTML'
                             }
 
                         ],
@@ -1672,6 +1701,15 @@ frappe.ui.form.on('Job', {
                     });
 
                     d.show();
+
+                    frappe.call({
+                        doc: frm.doc,
+                        method: "get_job_unallocated_payments",
+                        args: { payment_type: "Pay" },
+                        callback: function (r) {
+                            jmsRenderAdvancesInfo(d, "advances_html", r.message || []);
+                        }
+                    });
 
                     // -------------------------
                     // SHOW REFERENCE FIELDS
@@ -2204,5 +2242,26 @@ function jmsCollectAllocations(d, html_fieldname) {
         if (amt > 0) out.push({ key: $(this).data("key"), allocated_amount: amt });
     });
     return out;
+}
+
+// Read-only panel showing the unallocated advances that will be auto-applied
+// to the invoice being created (transparency on the invoice-first flow).
+function jmsRenderAdvancesInfo(d, html_fieldname, payments) {
+    const $w = d.fields_dict[html_fieldname].$wrapper;
+    if (!payments || !payments.length) {
+        $w.html('<div class="text-muted" style="padding:4px 2px;">No advance payments available to apply.</div>');
+        return;
+    }
+    const rows = payments.map(p => `<tr>
+        <td>${frappe.utils.escape_html(p.name)}</td>
+        <td>${frappe.utils.escape_html(p.party || '')}</td>
+        <td class="text-right">${format_currency(p.unallocated_amount)}</td>
+    </tr>`).join("");
+    $w.html(`
+        <div class="text-muted" style="margin-bottom:3px;">These advances will be auto-applied to the invoice (FIFO):</div>
+        <table class="table table-bordered" style="font-size:12px;">
+            <thead><tr><th>Payment</th><th>Party</th><th class="text-right">Available</th></tr></thead>
+            <tbody>${rows}</tbody>
+        </table>`);
 }
 
