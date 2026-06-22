@@ -5,7 +5,7 @@
    "label": "Job Profit Trend"
   }
  ],
- "content": "[{\"id\":\"chTrend\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Job Profit Trend\",\"col\":12}},{\"id\":\"_8gD31fUOw\",\"type\":\"header\",\"data\":{\"text\":\"<span style=\\\"font-size: 18px; letter-spacing: 0.18px;\\\"><b>Service Business Management</b></span>\",\"col\":12}},{\"id\":\"0FcOvbQ5b6\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Masters</b></span>\",\"col\":12}},{\"id\":\"gy0OjE5NQy\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job\",\"col\":3}},{\"id\":\"_IxUJZpTGK\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Type\",\"col\":3}},{\"id\":\"CaBbF-vqfD\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Agent\",\"col\":3}},{\"id\":\"4pCY6jmK0E\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Customer\",\"col\":3}},{\"id\":\"FPmTiHC4jV\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"jpRptJobProf\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Profitability\",\"col\":3}},{\"id\":\"k5Z0lKupyr\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Collection Report\",\"col\":3}},{\"id\":\"scDash01\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Profitability Dashboard\",\"col\":3}},{\"id\":\"8PgSfC8f7d\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Supplier Payment Report\",\"col\":3}},{\"id\":\"cIiAj6Bmpb\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Day Business Summary\",\"col\":3}},{\"id\":\"tpHWYoTiNM\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Journal Entry\",\"col\":3}},{\"id\":\"hdrProf01\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Profitability</b></span>\",\"col\":12}},{\"id\":\"TiVBZLcVBT\",\"type\":\"card\",\"data\":{\"card_name\":\"Masters\",\"col\":4}}]",
+ "content": "[{\"id\":\"chTrend\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Job Profit Trend\",\"col\":12}},{\"id\":\"_8gD31fUOw\",\"type\":\"header\",\"data\":{\"text\":\"<span style=\\\"font-size: 18px; letter-spacing: 0.18px;\\\"><b>Service Business Management</b></span>\",\"col\":12}},{\"id\":\"1loUgVSALx\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Portal\",\"col\":3}},{\"id\":\"0FcOvbQ5b6\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Masters</b></span>\",\"col\":12}},{\"id\":\"gy0OjE5NQy\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job\",\"col\":3}},{\"id\":\"_IxUJZpTGK\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Type\",\"col\":3}},{\"id\":\"CaBbF-vqfD\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Agent\",\"col\":3}},{\"id\":\"4pCY6jmK0E\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Customer\",\"col\":3}},{\"id\":\"FPmTiHC4jV\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Reports</b></span>\",\"col\":12}},{\"id\":\"jpRptJobProf\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Profitability\",\"col\":3}},{\"id\":\"k5Z0lKupyr\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Collection Report\",\"col\":3}},{\"id\":\"scDash01\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Profitability Dashboard\",\"col\":3}},{\"id\":\"8PgSfC8f7d\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Job Supplier Payment Report\",\"col\":3}},{\"id\":\"cIiAj6Bmpb\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Day Business Summary\",\"col\":3}},{\"id\":\"tpHWYoTiNM\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Journal Entry\",\"col\":3}},{\"id\":\"hdrProf01\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h5\\\"><b>Profitability</b></span>\",\"col\":12}},{\"id\":\"TiVBZLcVBT\",\"type\":\"card\",\"data\":{\"card_name\":\"Masters\",\"col\":4}}]",
  "creation": "2026-06-22 13:37:44.441990",
  "custom_blocks": [],
  "custom_open_dashboard": 0,
@@ -88,7 +88,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-06-22 14:20:14.643573",
+ "modified": "2026-06-22 18:17:45.088809",
  "modified_by": "Administrator",
  "module": "Jms",
  "name": "SBM",
@@ -107,6 +107,13 @@
    "link_to": "Day Business Summary Oasis",
    "report_ref_doctype": "GL Entry",
    "type": "Report"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Job Portal",
+   "link_to": "job-list",
+   "type": "Page"
   },
   {
    "color": "Green",
