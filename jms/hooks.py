@@ -1,5 +1,5 @@
 app_name = "jms"
-app_title = "Jms"
+app_title = "SBM"
 app_publisher = "sammish"
 app_description = "Job Management System"
 app_email = "sammish.thundiyil@gmail.com"
