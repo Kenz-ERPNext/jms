@@ -633,7 +633,13 @@ frappe.ui.form.on('Job', {
 
         addCreate('Create Sales Invoice', function () {
 
-            if (frm.doc.sales_invoice_status === 'Created') {
+            // Block ONLY if an active (submitted) Sales Invoice still exists.
+            // A cancelled invoice (docstatus=2) frees the Job to create a new
+            // one — checked live so a cancellation elsewhere is reflected even
+            // if the open form's cached sales_invoice_status is stale.
+            frappe.db.count("Sales Invoice", { job: frm.doc.name, docstatus: 1 }).then(active_si => {
+
+            if (active_si > 0) {
 
                 frappe.msgprint(
                     __('Sales Invoice already created for this Job.')
@@ -873,6 +879,8 @@ frappe.ui.form.on('Job', {
                     jmsRenderAdvancesInfo(d, "advances_html", r.message || []);
                 }
             });
+
+            });  // end frappe.db.count(...).then
 
         });
 
@@ -1407,12 +1415,27 @@ frappe.ui.form.on('Job', {
         if (
             outsource_rows.length > 0
             // && frm.doc.status === 'Completed'
-            && frm.doc.purchase_invoice_status !== 'Created'
         ) {
 
             addCreate(
                 'Create Purchase Invoice',
                 function () {
+
+                    // Block ONLY if the tracked outsource Purchase Invoice is
+                    // still active (submitted). A cancelled one (docstatus 2) —
+                    // or none — frees the Job to create a new one. Expense PIs
+                    // don't set this back-ref, so they never block here.
+                    let __pi_ref = frm.doc.purchase_invoice;
+                    let __pi_check = __pi_ref
+                        ? frappe.db.get_value("Purchase Invoice", __pi_ref, "docstatus")
+                            .then(r => r && r.message && r.message.docstatus === 1)
+                        : Promise.resolve(false);
+                    __pi_check.then(active_pi => {
+
+                    if (active_pi) {
+                        frappe.msgprint(__('Purchase Invoice already created for this Job.'));
+                        return;
+                    }
 
                     // -------------------------
                     // Tax Template + Payment Popup
@@ -1568,6 +1591,8 @@ frappe.ui.form.on('Job', {
                         }
                     });
 
+                    });  // end frappe.db.count(...).then
+
                 }
             );
         }
@@ -1697,8 +1722,27 @@ frappe.ui.form.on('Job', {
 	},
 
 	calculate_totals: function(frm) {
-		// This will be calculated on server side, just refresh
-		frm.save();
+		// Mirror the server-side calculate_amounts() so totals update LIVE
+		// without saving. No frm.save() here => the form no longer auto-scrolls
+		// to the top when items are added/edited. The server recomputes the
+		// same values on the next manual Save.
+		let gross = 0, net = 0;
+		(frm.doc.items || []).forEach(row => {
+			let qty = row.job_qty || 1;
+			let twt = ((row.fee_price || 0) + (row.extra || 0) + (row.surcharge || 0)) * qty;
+			let vat_amt = row.vat ? twt * (row.vat / 100) : 0;
+			let total = twt + vat_amt;
+			row.total_without_tax = twt;
+			row.vat_amount = vat_amt;
+			row.total = total;
+			row.cost = total;
+			gross += twt;
+			net += total;
+		});
+		frm.refresh_field('items');
+		frm.set_value('gross_amount', gross);
+		frm.set_value('net_amount', net);
+		frm.set_value('balance', net - (frm.doc.discount || 0));
 	},
 
 	calculate_balance: function(frm) {
@@ -1791,23 +1835,10 @@ frappe.ui.form.on('Job Item', {
 	
 
 	calculate_item_total: function(frm, cdt, cdn) {
-		let row = locals[cdt][cdn];
-
-		// Calculate item total
-		let item_total = (row.fee_price || 0) * (row.job_qty || 1);
-		item_total += (row.extra || 0) + (row.surcharge || 0);
-
-		// Apply VAT to item
-		if (row.vat) {
-			let vat_amount = item_total * (row.vat / 100);
-			item_total += vat_amount;
-		}
-
-		frappe.model.set_value(cdt, cdn, 'cost', item_total);
-		frappe.model.set_value(cdt, cdn, 'total', item_total);
-
-		// Refresh totals
-		setTimeout(() => frm.save(), 500);
+		// Recompute every row + the form totals live, client-side.
+		// (Previously this auto-saved the form on every edit, which scrolled
+		//  the page to the top — see calculate_totals.)
+		frm.trigger('calculate_totals');
 	}
 
 

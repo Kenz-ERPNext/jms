@@ -68,14 +68,28 @@ def get_totals(company=None):
 		si_params,
 	)[0][0])
 
+	# Total Job Amount = sum of each job's priced value (gross_amount, ex-VAT),
+	# matching the per-job Financial summary. Falls back to posted GL income if
+	# no jobs carry priced items.
+	job_cond = "j.status NOT IN ('Cancelled', 'Rejected')"
+	job_params = {}
+	if company:
+		job_cond += " AND j.company = %(company)s"
+		job_params["company"] = company
+	job_amount = flt(frappe.db.sql(
+		f"SELECT COALESCE(SUM(j.gross_amount), 0) FROM `tabJob` j WHERE {job_cond}",
+		job_params,
+	)[0][0])
+
 	income = flt(gl.income)
 	expenses = flt(gl.expenses)
 	outsourcing = flt(gl.outsourcing)
+	total_job_amount = job_amount or income
 	return {
-		"total_job_amount": income,
+		"total_job_amount": total_job_amount,
 		"total_expenses": expenses,
 		"outsourcing_cost": outsourcing,
-		"net_profit": income - expenses - outsourcing,
+		"net_profit": total_job_amount - expenses - outsourcing,
 		"total_received": received,
 		"outstanding": outstanding,
 	}

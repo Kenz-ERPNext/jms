@@ -272,7 +272,8 @@
   {
    "fieldname": "gross_amount",
    "fieldtype": "Currency",
-   "label": "Gross Amount"
+   "label": "Gross Amount",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_28",
@@ -287,12 +288,14 @@
   {
    "fieldname": "net_amount",
    "fieldtype": "Currency",
-   "label": "Net Amount"
+   "label": "Net Amount",
+   "read_only": 1
   },
   {
    "fieldname": "balance",
    "fieldtype": "Currency",
-   "label": "Balance"
+   "label": "Balance",
+   "read_only": 1
   },
   {
    "fieldname": "paid_up",

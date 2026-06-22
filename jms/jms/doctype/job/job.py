@@ -2375,8 +2375,12 @@ class Job(Document):
 				params,
 			)[0][0])
 
-		# 1. Total Job Amount (ex-VAT) = net income posted for the job
-		total_job_amount = _gl_sum(root_type="Income")
+		# 1. Total Job Amount (ex-VAT) = the job's billable value from its priced
+		# items (gross_amount = sum of line totals before VAT). This is known as
+		# soon as the job is priced, so it shows even before any Sales Invoice
+		# exists. Fall back to posted GL income only if the job carries no
+		# priced items (e.g. invoice raised directly without item pricing).
+		total_job_amount = flt(self.gross_amount) or _gl_sum(root_type="Income")
 
 		# 5. Outsourcing Costs = the dedicated account
 		outsourcing_cost = _gl_sum(account=outsourcing_acct) if outsourcing_acct else 0.0
