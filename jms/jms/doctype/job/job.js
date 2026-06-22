@@ -637,7 +637,7 @@ frappe.ui.form.on('Job', {
             // A cancelled invoice (docstatus=2) frees the Job to create a new
             // one — checked live so a cancellation elsewhere is reflected even
             // if the open form's cached sales_invoice_status is stale.
-            frappe.db.count("Sales Invoice", { job: frm.doc.name, docstatus: 1 }).then(active_si => {
+            frappe.db.count("Sales Invoice", { filters: { job: frm.doc.name, docstatus: 1 } }).then(active_si => {
 
             if (active_si > 0) {
 
