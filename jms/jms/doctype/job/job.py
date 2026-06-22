@@ -544,10 +544,18 @@ class Job(Document):
 		payment_type=None,
 		partial_amount=None,
 		reference_no=None,
-		reference_date=None
+		reference_date=None,
+		posting_date=None,
+		payment=None,
+		mode_of_payment=None
 	):
 
 		patch_round_floats_in()
+
+		# Payment intent + mode are now collected in the creation dialog; fall
+		# back to the values stored on the Job for backward compatibility.
+		payment = payment or self.payment
+		mode_of_payment = mode_of_payment or self.mode_of_payment
 
 		# ------------------------------------------------
 		# CREATE SALES INVOICE
@@ -577,10 +585,12 @@ class Job(Document):
 
 		sales_invoice.company = self._resolve_company()
 
-		sales_invoice.posting_date = frappe.utils.nowdate()
+		sales_invoice.set_posting_time = 1
+
+		sales_invoice.posting_date = posting_date or frappe.utils.nowdate()
 
 		sales_invoice.due_date = frappe.utils.add_days(
-			frappe.utils.nowdate(),
+			sales_invoice.posting_date,
 			30
 		)
 
@@ -683,7 +693,7 @@ class Job(Document):
 		# ------------------------------------------------
 
 		if (
-			self.payment == "Payment Now"
+			payment == "Payment Now"
 			and remaining_amount > 0
 		):
 
@@ -695,9 +705,11 @@ class Job(Document):
 
 			payment_entry.company = sales_invoice.company
 
-			payment_entry.posting_date = frappe.utils.nowdate()
+			payment_entry.set_posting_time = 1
 
-			payment_entry.mode_of_payment = self.mode_of_payment
+			payment_entry.posting_date = sales_invoice.posting_date
+
+			payment_entry.mode_of_payment = mode_of_payment
 
 			payment_entry.party_type = "Customer"
 
@@ -713,7 +725,7 @@ class Job(Document):
 
 			mop_type = frappe.db.get_value(
 				"Mode of Payment",
-				self.mode_of_payment,
+				mode_of_payment,
 				"type"
 			)
 
@@ -765,7 +777,7 @@ class Job(Document):
 				payment_entry.paid_to = frappe.db.get_value(
 					"Mode of Payment Account",
 					{
-						"parent": self.mode_of_payment,
+						"parent": mode_of_payment,
 						"company": sales_invoice.company
 					},
 					"default_account"
@@ -776,7 +788,7 @@ class Job(Document):
 					frappe.throw(
 						f"No account found for "
 						f"Mode of Payment: "
-						f"{self.mode_of_payment}"
+						f"{mode_of_payment}"
 					)
 
 			# ------------------------------------------------
@@ -1057,10 +1069,18 @@ class Job(Document):
 		self,
 		tax_template=None,
 		reference_no=None,
-		reference_date=None
+		reference_date=None,
+		posting_date=None,
+		payment_pi=None,
+		mode_of_payment_pi=None
 	):
 
 		patch_round_floats_in()
+
+		# Payment intent + mode now come from the creation dialog; fall back to
+		# the values stored on the Job for backward compatibility.
+		payment_pi = payment_pi or self.payment_pi
+		mode_of_payment_pi = mode_of_payment_pi or self.mode_of_payment_pi
 
 		# -------------------------
 		# FILTER OUTSOURCE ROWS
@@ -1115,7 +1135,9 @@ class Job(Document):
 
 			pi.company = self._resolve_company()
 
-			pi.posting_date = frappe.utils.nowdate()
+			pi.set_posting_time = 1
+
+			pi.posting_date = posting_date or frappe.utils.nowdate()
 
 			pi.custom_job = self.name
 
@@ -1219,9 +1241,9 @@ class Job(Document):
 			# PAYMENT ENTRY CREATION
 			# -------------------------
 
-			if self.payment_pi == "Payment Now" and flt(pi.outstanding_amount) > 0:
+			if payment_pi == "Payment Now" and flt(pi.outstanding_amount) > 0:
 
-				if not self.mode_of_payment_pi:
+				if not mode_of_payment_pi:
 
 					frappe.throw(
 						"Mode of Payment required "
@@ -1234,7 +1256,7 @@ class Job(Document):
 
 				mop_type = frappe.db.get_value(
 					"Mode of Payment",
-					self.mode_of_payment_pi,
+					mode_of_payment_pi,
 					"type"
 				)
 
@@ -1274,7 +1296,7 @@ class Job(Document):
 						"Mode of Payment Account",
 						{
 							"parent":
-								self.mode_of_payment_pi,
+								mode_of_payment_pi,
 
 							"company":
 								pi.company
@@ -1288,7 +1310,7 @@ class Job(Document):
 
 						f"No account set in "
 						f"Mode of Payment "
-						f"{self.mode_of_payment_pi}"
+						f"{mode_of_payment_pi}"
 					)
 
 				paid_from = mop_account
@@ -1351,10 +1373,12 @@ class Job(Document):
 
 				pe.company = pi.company
 
-				pe.posting_date = frappe.utils.nowdate()
+				pe.set_posting_time = 1
+
+				pe.posting_date = pi.posting_date
 
 				pe.mode_of_payment = (
-					self.mode_of_payment_pi
+					mode_of_payment_pi
 				)
 
 				pe.job = self.name
@@ -1627,7 +1651,8 @@ class Job(Document):
 		reference_date=None,
 		taxes_template=None,
 		reference_doctype=None,
-		reference_name=None
+		reference_name=None,
+		posting_date=None
 	):
 
 		patch_round_floats_in()
@@ -1650,7 +1675,9 @@ class Job(Document):
 
 		pi.company = company
 
-		pi.posting_date = frappe.utils.nowdate()
+		pi.set_posting_time = 1
+
+		pi.posting_date = posting_date or frappe.utils.nowdate()
 
 		pi.update_stock = 0
 
@@ -1842,7 +1869,9 @@ class Job(Document):
 
 			pe.company = company
 
-			pe.posting_date = frappe.utils.nowdate()
+			pe.set_posting_time = 1
+
+			pe.posting_date = pi.posting_date
 
 			pe.mode_of_payment = mode_of_payment
 
@@ -1922,13 +1951,31 @@ class Job(Document):
 		mode_of_payment,
 		reference_no=None,
 		reference_date=None,
-		allocations=None
+		allocations=None,
+		posting_date=None
 	):
 
 		if not amount:
 			frappe.throw("Amount is required")
 
-		customer = self.customer
+		# Book the advance against the SAME party the Sales Invoice will be
+		# raised to — for agent jobs that is the agent's linked customer, NOT
+		# self.customer. A mismatch leaves the advance unapplied and the job
+		# stuck showing "Amount Pending".
+		customer = (
+			self.agent_customer
+			if self.receivable_from == "Agent"
+			else self.customer
+		)
+
+		if not customer:
+			frappe.throw(
+				_("Cannot create Advance Receipt: no {0} is set on this Job.").format(
+					"Agent's linked Customer"
+					if self.receivable_from == "Agent"
+					else "Customer"
+				)
+			)
 
 		pe = frappe.new_doc("Payment Entry")
 
@@ -1940,7 +1987,9 @@ class Job(Document):
 
 		pe.company = self.company
 
-		pe.posting_date = frappe.utils.nowdate()
+		pe.set_posting_time = 1
+
+		pe.posting_date = posting_date or frappe.utils.nowdate()
 
 		pe.mode_of_payment = mode_of_payment
 
@@ -2051,7 +2100,8 @@ class Job(Document):
 		suppliers,
 		mode_of_payment,
 		reference_no=None,
-		reference_date=None
+		reference_date=None,
+		posting_date=None
 	):
 
 		import json
@@ -2098,7 +2148,9 @@ class Job(Document):
 
 			pe.company = self.company
 
-			pe.posting_date = frappe.utils.nowdate()
+			pe.set_posting_time = 1
+
+			pe.posting_date = posting_date or frappe.utils.nowdate()
 
 			pe.mode_of_payment = mode_of_payment
 
@@ -2385,9 +2437,34 @@ class Job(Document):
 			{"job": job},
 		)[0][0])
 
+		# Advances tagged to this job that are NOT yet applied to an invoice.
+		# A job whose advance simply wasn't auto-linked (e.g. party mismatch on
+		# older data) would otherwise stay flagged "pending" forever, so we net
+		# the unallocated advance against the gross invoice outstanding.
+		unallocated_received = flt(frappe.db.sql(
+			"""SELECT COALESCE(SUM(pe.unallocated_amount), 0)
+				FROM `tabPayment Entry` pe
+				WHERE pe.job = %(job)s AND pe.docstatus = 1
+				  AND pe.payment_type = 'Receive'""",
+			{"job": job},
+		)[0][0])
+		unallocated_paid = flt(frappe.db.sql(
+			"""SELECT COALESCE(SUM(pe.unallocated_amount), 0)
+				FROM `tabPayment Entry` pe
+				WHERE pe.job = %(job)s AND pe.docstatus = 1
+				  AND pe.payment_type = 'Pay'""",
+			{"job": job},
+		)[0][0])
+
+		# Net amounts still to collect / pay after offsetting those advances —
+		# the basis for the "Amount Pending" / "Exp. Pending" indicators and the
+		# Job Status Report "remaining" scenarios.
+		net_receivable = max(0.0, outstanding - unallocated_received)
+		net_payable = max(0.0, payable_outstanding - unallocated_paid)
+
 		# 7. Profit Balance = profit still to settle = remaining receivable minus
 		# remaining payable. Trends to zero as the job is fully collected/paid.
-		profit_balance = outstanding - payable_outstanding
+		profit_balance = net_receivable - net_payable
 
 		currency = frappe.get_cached_value("Company", company, "default_currency") if company else None
 
@@ -2411,10 +2488,12 @@ class Job(Document):
 			"received_from": self.receivable_from,
 			"received_from_customer": received_from_customer,
 			"received_from_agent": received_from_agent,
+			"net_receivable": net_receivable,
+			"net_payable": net_payable,
 			"indicators": {
 				"show": bool(settings.show_status_indicators),
-				"amount_pending": bool(outstanding > 0) and bool(settings.enable_amount_pending_indicator),
-				"exp_pending": bool(payable_outstanding > 0) and bool(settings.enable_exp_pending_indicator),
+				"amount_pending": bool(net_receivable > 0) and bool(settings.enable_amount_pending_indicator),
+				"exp_pending": bool(net_payable > 0) and bool(settings.enable_exp_pending_indicator),
 			},
 		}
 

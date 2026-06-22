@@ -3,32 +3,10 @@
  
 frappe.ui.form.on('Job', {
 
-
-    payment: function(frm) {
-        if (frm.doc.payment) {
-            frm.save();
-        }
-    },
-
-    mode_of_payment: function(frm) {
-        if (frm.doc.mode_of_payment) {
-            frm.save();
-        }
-    }, 
-
-    payment_pi: function(frm) {
-        if (frm.doc.payment) {
-            frm.save();
-        }
-    },
-
-    mode_of_payment_pi: function(frm) {
-        if (frm.doc.mode_of_payment) {
-            frm.save();
-        }
-    },
-
-
+	// NOTE: payment / mode_of_payment (and the _pi variants) are no longer
+	// auto-saved on change — that caused the form to save and jump to the top
+	// while selecting. These values are now chosen inside each creation dialog
+	// and passed straight to the server method.
 
 	onload(frm) {
 		salesInvoiceMessage(frm);
@@ -204,6 +182,14 @@ frappe.ui.form.on('Job', {
                         },
 
                         {
+                            fieldname: "posting_date",
+                            label: "Posting Date",
+                            fieldtype: "Date",
+                            default: frappe.datetime.get_today(),
+                            reqd: 1
+                        },
+
+                        {
                             fieldname: "suppliers",
                             label: "Supplier Details",
                             fieldtype: "Table",
@@ -277,7 +263,8 @@ frappe.ui.form.on('Job', {
                                 suppliers: valid_rows,
                                 mode_of_payment: values.mode_of_payment,
                                 reference_no: values.reference_no,
-                                reference_date: values.reference_date
+                                reference_date: values.reference_date,
+                                posting_date: values.posting_date
                             },
 
                             callback: function(r) {
@@ -419,6 +406,14 @@ frappe.ui.form.on('Job', {
                 },
 
                 {
+                    fieldname: "posting_date",
+                    label: "Posting Date",
+                    fieldtype: "Date",
+                    default: frappe.datetime.get_today(),
+                    reqd: 1
+                },
+
+                {
                     fieldname: "alloc_sb",
                     fieldtype: "Section Break",
                     label: "Allocate to Open Sales Invoices (optional)"
@@ -445,7 +440,8 @@ frappe.ui.form.on('Job', {
                         mode_of_payment: values.mode_of_payment,
                         reference_no: values.reference_no,
                         reference_date: values.reference_date,
-                        allocations: allocations
+                        allocations: allocations,
+                        posting_date: values.posting_date
                     },
                     callback: function(r) {
 
@@ -637,15 +633,6 @@ frappe.ui.form.on('Job', {
 
         addCreate('Create Sales Invoice', function () {
 
-            if (!frm.doc.payment) {
-
-                frappe.msgprint(
-                    __('Payment is required before creating Sales Invoice.')
-                );
-
-                return;
-            }
-
             if (frm.doc.sales_invoice_status === 'Created') {
 
                 frappe.msgprint(
@@ -677,6 +664,14 @@ frappe.ui.form.on('Job', {
             let fields = [
 
                 {
+                    fieldname: "posting_date",
+                    label: "Posting Date",
+                    fieldtype: "Date",
+                    default: frappe.datetime.get_today(),
+                    reqd: 1
+                },
+
+                {
                     fieldname: "tax_template",
                     label: "Sales Taxes and Charges Template",
                     fieldtype: "Link",
@@ -693,6 +688,58 @@ frappe.ui.form.on('Job', {
                 },
 
                 {
+                    fieldname: "payment",
+                    label: "Payment",
+                    fieldtype: "Select",
+                    options: "Credit\nPayment Now",
+                    default: frm.doc.payment || "Credit",
+                    reqd: 1
+                },
+
+                {
+                    fieldname: "mode_of_payment",
+                    label: "Mode of Payment",
+                    fieldtype: "Link",
+                    options: "Mode of Payment",
+                    default: frm.doc.mode_of_payment,
+                    depends_on: "eval:doc.payment=='Payment Now'",
+                    mandatory_depends_on: "eval:doc.payment=='Payment Now'",
+                    change() {
+                        jmsToggleReferenceFields(d, "mode_of_payment");
+                    }
+                },
+
+                {
+                    fieldname: "payment_type",
+                    label: "Payment Type",
+                    fieldtype: "Select",
+                    options: "Full Paid\nPartially Paid",
+                    depends_on: "eval:doc.payment=='Payment Now'",
+                    mandatory_depends_on: "eval:doc.payment=='Payment Now'"
+                },
+
+                {
+                    fieldname: "partial_amount",
+                    label: "Partial Amount",
+                    fieldtype: "Currency",
+                    depends_on: "eval:doc.payment=='Payment Now' && doc.payment_type=='Partially Paid'"
+                },
+
+                {
+                    fieldname: "reference_no",
+                    label: "Reference No",
+                    fieldtype: "Data",
+                    hidden: 1
+                },
+
+                {
+                    fieldname: "reference_date",
+                    label: "Reference Date",
+                    fieldtype: "Date",
+                    hidden: 1
+                },
+
+                {
                     fieldname: "advances_sb",
                     fieldtype: "Section Break",
                     label: "Customer Advances"
@@ -703,44 +750,6 @@ frappe.ui.form.on('Job', {
                 }
 
             ];
-
-            // 👉 Only add payment fields if NOT Credit
-
-            if (frm.doc.payment !== "Credit") {
-
-                fields.push(
-
-                    {
-                        fieldname: "payment_type",
-                        label: "Payment Type",
-                        fieldtype: "Select",
-                        options: "Full Paid\nPartially Paid",
-                        reqd: 1
-                    },
-
-                    {
-                        fieldname: "partial_amount",
-                        label: "Partial Amount",
-                        fieldtype: "Currency",
-                        depends_on: "eval:doc.payment_type=='Partially Paid'"
-                    },
-
-                    {
-                        fieldname: "reference_no",
-                        label: "Reference No",
-                        fieldtype: "Data",
-                        hidden: 1
-                    },
-
-                    {
-                        fieldname: "reference_date",
-                        label: "Reference Date",
-                        fieldtype: "Date",
-                        hidden: 1
-                    }
-
-                );
-            }
 
             // ----------------------------
             // Popup
@@ -756,21 +765,29 @@ frappe.ui.form.on('Job', {
 
                 primary_action(values) {
 
+                    let isNow = values.payment === "Payment Now";
+
                     // -----------------------------------
-                    // PARTIAL VALIDATION
+                    // PAYMENT-NOW VALIDATION
                     // -----------------------------------
 
-                    if (frm.doc.payment !== "Credit") {
+                    if (isNow) {
+
+                        if (!values.mode_of_payment) {
+                            frappe.msgprint(__("Please select Mode of Payment"));
+                            return;
+                        }
+
+                        if (!values.payment_type) {
+                            frappe.msgprint(__("Please select Payment Type"));
+                            return;
+                        }
 
                         if (
                             values.payment_type === "Partially Paid"
                             && !values.partial_amount
                         ) {
-
-                            frappe.msgprint(
-                                "Please enter Partial Amount"
-                            );
-
+                            frappe.msgprint("Please enter Partial Amount");
                             return;
                         }
 
@@ -778,104 +795,12 @@ frappe.ui.form.on('Job', {
                             values.payment_type === "Partially Paid"
                             && values.partial_amount > values.invoice_total
                         ) {
-
-                            frappe.msgprint(
-                                "Partial amount cannot exceed Invoice Total"
-                            );
-
+                            frappe.msgprint("Partial amount cannot exceed Invoice Total");
                             return;
                         }
                     }
 
-                    // -----------------------------------
-                    // CHECK MODE OF PAYMENT TYPE
-                    // -----------------------------------
-
-                    if (
-                        frm.doc.payment !== "Credit"
-                        && frm.doc.mode_of_payment
-                    ) {
-
-                        frappe.db.get_value(
-                            "Mode of Payment",
-                            frm.doc.mode_of_payment,
-                            "type"
-                        ).then(r => {
-
-                            let mop_type = r.message.type;
-
-                            // -----------------------------------
-                            // BANK VALIDATION
-                            // -----------------------------------
-
-                            if (mop_type === "Bank") {
-
-                                if (!values.reference_no) {
-
-                                    frappe.msgprint(
-                                        "Reference No is required"
-                                    );
-
-                                    return;
-                                }
-
-                                if (!values.reference_date) {
-
-                                    frappe.msgprint(
-                                        "Reference Date is required"
-                                    );
-
-                                    return;
-                                }
-                            }
-
-                            // -----------------------------------
-                            // CALL PYTHON
-                            // -----------------------------------
-
-                            cur_frm.call({
-
-                                doc: cur_frm.doc,
-
-                                method: "create_invoice",
-
-                                args: {
-
-                                    tax_template: values.tax_template,
-
-                                    payment_type:
-                                        values.payment_type || "Credit",
-
-                                    partial_amount:
-                                        values.partial_amount || 0,
-
-                                    reference_no:
-                                        values.reference_no,
-
-                                    reference_date:
-                                        values.reference_date
-                                },
-
-                                callback: function (r) {
-
-                                    if (r.message) {
-
-                                        frappe.msgprint(
-                                            "Sales Invoice Created: <b>"
-                                            + r.message +
-                                            "</b>"
-                                        );
-
-                                        frm.reload_doc();
-
-                                        d.hide();
-                                    }
-                                }
-                            });
-
-                        });
-
-                    } else {
+                    let submit = function () {
 
                         cur_frm.call({
 
@@ -884,32 +809,55 @@ frappe.ui.form.on('Job', {
                             method: "create_invoice",
 
                             args: {
-
                                 tax_template: values.tax_template,
-
-                                payment_type:
-                                    values.payment_type || "Credit",
-
-                                partial_amount:
-                                    values.partial_amount || 0
+                                posting_date: values.posting_date,
+                                payment: values.payment,
+                                mode_of_payment: isNow ? values.mode_of_payment : null,
+                                payment_type: isNow ? (values.payment_type || "Full Paid") : "Credit",
+                                partial_amount: values.partial_amount || 0,
+                                reference_no: values.reference_no,
+                                reference_date: values.reference_date
                             },
 
                             callback: function (r) {
-
                                 if (r.message) {
-
                                     frappe.msgprint(
-                                        "Sales Invoice Created: <b>"
-                                        + r.message +
-                                        "</b>"
+                                        "Sales Invoice Created: <b>" + r.message + "</b>"
                                     );
-
                                     frm.reload_doc();
-
                                     d.hide();
                                 }
                             }
                         });
+                    };
+
+                    // Bank mode requires reference no/date before submitting
+                    if (isNow && values.mode_of_payment) {
+
+                        frappe.db.get_value(
+                            "Mode of Payment",
+                            values.mode_of_payment,
+                            "type"
+                        ).then(r => {
+
+                            if (r.message && r.message.type === "Bank") {
+
+                                if (!values.reference_no) {
+                                    frappe.msgprint("Reference No is required");
+                                    return;
+                                }
+
+                                if (!values.reference_date) {
+                                    frappe.msgprint("Reference Date is required");
+                                    return;
+                                }
+                            }
+
+                            submit();
+                        });
+
+                    } else {
+                        submit();
                     }
                 }
 
@@ -925,56 +873,6 @@ frappe.ui.form.on('Job', {
                     jmsRenderAdvancesInfo(d, "advances_html", r.message || []);
                 }
             });
-
-            // -----------------------------------
-            // SHOW / HIDE REFERENCE FIELDS
-            // -----------------------------------
-
-            if (
-                frm.doc.payment !== "Credit"
-                && frm.doc.mode_of_payment
-            ) {
-
-                frappe.db.get_value(
-                    "Mode of Payment",
-                    frm.doc.mode_of_payment,
-                    "type"
-                ).then(r => {
-
-                    let mop_type = r.message.type;
-
-                    if (mop_type === "Bank") {
-
-                        d.set_df_property(
-                            "reference_no",
-                            "hidden",
-                            0
-                        );
-
-                        d.set_df_property(
-                            "reference_date",
-                            "hidden",
-                            0
-                        );
-
-                    } else {
-
-                        d.set_df_property(
-                            "reference_no",
-                            "hidden",
-                            1
-                        );
-
-                        d.set_df_property(
-                            "reference_date",
-                            "hidden",
-                            1
-                        );
-                    }
-
-                    d.refresh();
-                });
-            }
 
         });
 
@@ -1332,6 +1230,14 @@ frappe.ui.form.on('Job', {
                 },
 
                 {
+                    label: 'Posting Date',
+                    fieldname: 'posting_date',
+                    fieldtype: 'Date',
+                    default: frappe.datetime.get_today(),
+                    reqd: 1
+                },
+
+                {
                     fieldname: 'item_code',
                     fieldtype: 'Link',
                     options: 'Item',
@@ -1390,6 +1296,8 @@ frappe.ui.form.on('Job', {
                         reference_no: values.reference_no,
 
                         reference_date: values.reference_date,
+
+                        posting_date: values.posting_date,
 
                         reference_doctype: frm.doc.doctype,
 
@@ -1507,45 +1415,50 @@ frappe.ui.form.on('Job', {
                 function () {
 
                     // -------------------------
-                    // Payment Type Check
-                    // -------------------------
-
-                    if (!frm.doc.payment_pi) {
-
-                        frappe.msgprint(
-                            __('Please select Payment Type')
-                        );
-
-                        return;
-                    }
-
-                    if (
-                        frm.doc.payment_pi === "Payment Now"
-                        && !frm.doc.mode_of_payment_pi
-                    ) {
-
-                        frappe.msgprint(
-                            __('Mode of Payment is required for Payment Now')
-                        );
-
-                        return;
-                    }
-
-                    // -------------------------
-                    // Tax Template Popup
+                    // Tax Template + Payment Popup
                     // -------------------------
 
                     let d = new frappe.ui.Dialog({
 
-                        title: 'Select Purchase Tax Template',
+                        title: 'Create Purchase Invoice',
 
                         fields: [
+
+                            {
+                                label: 'Posting Date',
+                                fieldname: 'posting_date',
+                                fieldtype: 'Date',
+                                default: frappe.datetime.get_today(),
+                                reqd: 1
+                            },
 
                             {
                                 label: 'Taxes and Charges Template',
                                 fieldname: 'tax_template',
                                 fieldtype: 'Link',
                                 options: 'Purchase Taxes and Charges Template'
+                            },
+
+                            {
+                                label: 'Payment',
+                                fieldname: 'payment_pi',
+                                fieldtype: 'Select',
+                                options: 'Credit\nPayment Now',
+                                default: frm.doc.payment_pi || 'Credit',
+                                reqd: 1
+                            },
+
+                            {
+                                label: 'Mode of Payment',
+                                fieldname: 'mode_of_payment_pi',
+                                fieldtype: 'Link',
+                                options: 'Mode of Payment',
+                                default: frm.doc.mode_of_payment_pi,
+                                depends_on: "eval:doc.payment_pi=='Payment Now'",
+                                mandatory_depends_on: "eval:doc.payment_pi=='Payment Now'",
+                                change() {
+                                    jmsToggleReferenceFields(d, "mode_of_payment_pi");
+                                }
                             },
 
                             {
@@ -1578,93 +1491,14 @@ frappe.ui.form.on('Job', {
 
                         primary_action(values) {
 
-                            // -------------------------
-                            // CHECK MOP TYPE
-                            // -------------------------
+                            let isNow = values.payment_pi === "Payment Now";
 
-                            if (
-                                frm.doc.payment_pi === "Payment Now"
-                                && frm.doc.mode_of_payment_pi
-                            ) {
+                            if (isNow && !values.mode_of_payment_pi) {
+                                frappe.msgprint(__('Mode of Payment is required for Payment Now'));
+                                return;
+                            }
 
-                                frappe.db.get_value(
-                                    "Mode of Payment",
-                                    frm.doc.mode_of_payment_pi,
-                                    "type"
-                                ).then(r => {
-
-                                    let mop_type = r.message.type;
-
-                                    // -------------------------
-                                    // BANK VALIDATION
-                                    // -------------------------
-
-                                    if (mop_type === "Bank") {
-
-                                        if (!values.reference_no) {
-
-                                            frappe.msgprint(
-                                                __("Reference No is required")
-                                            );
-
-                                            return;
-                                        }
-
-                                        if (!values.reference_date) {
-
-                                            frappe.msgprint(
-                                                __("Reference Date is required")
-                                            );
-
-                                            return;
-                                        }
-                                    }
-
-                                    // -------------------------
-                                    // CALL PYTHON
-                                    // -------------------------
-
-                                    cur_frm.call({
-
-                                        doc: cur_frm.doc,
-
-                                        method: "create_pinvoice",
-
-                                        args: {
-
-                                            tax_template:
-                                                values.tax_template,
-
-                                            reference_no:
-                                                values.reference_no,
-
-                                            reference_date:
-                                                values.reference_date
-                                        },
-
-                                        callback: function (r) {
-
-                                            if (r.message) {
-
-                                                frappe.msgprint(
-
-                                                    "Purchase Invoice Created: <b>"
-
-                                                    + r.message.join(", ")
-
-                                                    + "</b>"
-                                                );
-
-                                                frm.reload_doc();
-                                            }
-                                        }
-                                    });
-
-                                    d.hide();
-
-                                });
-
-                            } else {
+                            let submit = function () {
 
                                 cur_frm.call({
 
@@ -1673,29 +1507,52 @@ frappe.ui.form.on('Job', {
                                     method: "create_pinvoice",
 
                                     args: {
-                                        tax_template:
-                                            values.tax_template
+                                        tax_template: values.tax_template,
+                                        posting_date: values.posting_date,
+                                        payment_pi: values.payment_pi,
+                                        mode_of_payment_pi: isNow ? values.mode_of_payment_pi : null,
+                                        reference_no: values.reference_no,
+                                        reference_date: values.reference_date
                                     },
 
                                     callback: function (r) {
-
                                         if (r.message) {
-
                                             frappe.msgprint(
-
-                                                "Purchase Invoice Created: <b>"
-
-                                                + r.message.join(", ")
-
-                                                + "</b>"
+                                                "Purchase Invoice Created: <b>" + r.message.join(", ") + "</b>"
                                             );
-
                                             frm.reload_doc();
+                                            d.hide();
                                         }
                                     }
                                 });
+                            };
 
-                                d.hide();
+                            if (isNow && values.mode_of_payment_pi) {
+
+                                frappe.db.get_value(
+                                    "Mode of Payment",
+                                    values.mode_of_payment_pi,
+                                    "type"
+                                ).then(r => {
+
+                                    if (r.message && r.message.type === "Bank") {
+
+                                        if (!values.reference_no) {
+                                            frappe.msgprint(__("Reference No is required"));
+                                            return;
+                                        }
+
+                                        if (!values.reference_date) {
+                                            frappe.msgprint(__("Reference Date is required"));
+                                            return;
+                                        }
+                                    }
+
+                                    submit();
+                                });
+
+                            } else {
+                                submit();
                             }
                         }
                     });
@@ -1710,56 +1567,6 @@ frappe.ui.form.on('Job', {
                             jmsRenderAdvancesInfo(d, "advances_html", r.message || []);
                         }
                     });
-
-                    // -------------------------
-                    // SHOW REFERENCE FIELDS
-                    // -------------------------
-
-                    if (
-                        frm.doc.payment_pi === "Payment Now"
-                        && frm.doc.mode_of_payment_pi
-                    ) {
-
-                        frappe.db.get_value(
-                            "Mode of Payment",
-                            frm.doc.mode_of_payment_pi,
-                            "type"
-                        ).then(r => {
-
-                            let mop_type = r.message.type;
-
-                            if (mop_type === "Bank") {
-
-                                d.set_df_property(
-                                    "reference_no",
-                                    "hidden",
-                                    0
-                                );
-
-                                d.set_df_property(
-                                    "reference_date",
-                                    "hidden",
-                                    0
-                                );
-
-                            } else {
-
-                                d.set_df_property(
-                                    "reference_no",
-                                    "hidden",
-                                    1
-                                );
-
-                                d.set_df_property(
-                                    "reference_date",
-                                    "hidden",
-                                    1
-                                );
-                            }
-
-                            d.refresh();
-                        });
-                    }
 
                 }
             );
@@ -2263,5 +2070,26 @@ function jmsRenderAdvancesInfo(d, html_fieldname, payments) {
             <thead><tr><th>Payment</th><th>Party</th><th class="text-right">Available</th></tr></thead>
             <tbody>${rows}</tbody>
         </table>`);
+}
+
+// Show the Reference No / Reference Date fields in a dialog only when the
+// selected Mode of Payment is of type "Bank". Used by the creation dialogs so
+// reference details are requested only when relevant.
+function jmsToggleReferenceFields(d, mop_fieldname) {
+    let mop = d.get_value(mop_fieldname || "mode_of_payment");
+    if (!mop) {
+        d.set_df_property("reference_no", "hidden", 1);
+        d.set_df_property("reference_date", "hidden", 1);
+        d.refresh();
+        return;
+    }
+    frappe.db.get_value("Mode of Payment", mop, "type").then(r => {
+        let isBank = r.message && r.message.type === "Bank";
+        d.set_df_property("reference_no", "hidden", isBank ? 0 : 1);
+        d.set_df_property("reference_date", "hidden", isBank ? 0 : 1);
+        d.set_df_property("reference_no", "reqd", isBank ? 1 : 0);
+        d.set_df_property("reference_date", "reqd", isBank ? 1 : 0);
+        d.refresh();
+    });
 }
 
