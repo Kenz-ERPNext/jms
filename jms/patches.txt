@@ -9,3 +9,4 @@ jms.patches.v1_1.import_job_profitability_chart_source
 jms.patches.v1_2.repair_naming_series
 jms.patches.v1_3.clear_cancelled_invoice_links
 jms.patches.v1_4.rename_jms_workspace_to_sbm
+jms.patches.v1_5.free_cancelled_invoice_jobs
