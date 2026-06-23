@@ -250,3 +250,111 @@ class TestJobAdvances(FrappeTestCase):
 		self.assertEqual(pe.party, supplier)
 		self.assertEqual(pe.get("job"), job.name)
 		self.assertEqual(pe.paid_amount, 750)
+
+	def test_advance_receipt_posts_to_selected_mode_account(self):
+		"""Guards the bank-account fix: the receipt must land in the SELECTED
+		Mode of Payment's account, not the company's default bank account."""
+		company = _first("Company")
+		customer = _first("Customer")
+		mop = _non_bank_mode_of_payment(company) if company else None
+		if not all([company, customer, _first("Job Type"), mop]):
+			self.skipTest("missing company/customer/job type or a non-bank Mode of Payment account")
+
+		mode_account = frappe.db.get_value(
+			"Mode of Payment Account", {"parent": mop, "company": company}, "default_account"
+		)
+		job = self._job(company, customer)
+		pe = frappe.get_doc("Payment Entry", job.create_advance_receipt(40, mop))
+		self.assertEqual(pe.paid_to, mode_account)
+
+
+class TestJobClosingRule(FrappeTestCase):
+	"""The strict 'Closed' rule: a Job may close only when every task is
+	Completed AND the full amount is received; closing_date is stamped on close
+	and cleared on re-open. Reuses existing masters; all docs roll back."""
+
+	def _job(self, company, customer, priced=False):
+		job = frappe.new_doc("Job")
+		job.job_title = "testctl closing job"
+		job.date = nowdate()
+		job.start_date = nowdate()
+		job.status = "Created"
+		job.job_type = _first("Job Type")
+		job.receivable_from = "Customer"
+		job.customer = customer
+		job.company = company
+		if priced:
+			job.append("items", {
+				"work_template": _first("Work Template"),
+				"item_code": _first("Item", {"is_stock_item": 0}),
+				"job_qty": 1,
+				"fee_price": 1000,
+			})
+		job.append("tasks", {"task_name": "t1", "status": "Pending", "employee__outsource": "Employee"})
+		job.insert(ignore_permissions=True)
+		return job
+
+	def test_block_close_when_tasks_pending(self):
+		company, customer = _first("Company"), _first("Customer")
+		if not all([company, customer, _first("Job Type")]):
+			self.skipTest("missing company/customer/job type")
+		job = self._job(company, customer)
+		job.status = "Closed"
+		self.assertRaises(frappe.ValidationError, job.save, ignore_permissions=True)
+
+	def test_block_close_when_not_fully_paid(self):
+		company, customer = _first("Company"), _first("Customer")
+		item = _first("Item", {"is_stock_item": 0})
+		if not all([company, customer, _first("Job Type"), item, _first("Work Template")]):
+			self.skipTest("missing company/customer/job type/service item/work template")
+		job = self._job(company, customer, priced=True)  # net_amount = 1000, unpaid
+		for t in job.tasks:
+			t.status = "Completed"
+		job.status = "Closed"
+		self.assertRaises(frappe.ValidationError, job.save, ignore_permissions=True)
+
+	def test_close_succeeds_and_stamps_then_reopen_clears(self):
+		company, customer = _first("Company"), _first("Customer")
+		if not all([company, customer, _first("Job Type")]):
+			self.skipTest("missing company/customer/job type")
+		job = self._job(company, customer)  # no priced items → net_amount 0 → paid trivially
+		for t in job.tasks:
+			t.status = "Completed"
+		job.status = "Closed"
+		job.save(ignore_permissions=True)
+		self.assertEqual(job.status, "Closed")
+		self.assertTrue(job.closing_date, "closing_date must be stamped on close")
+		# re-opening clears the recognition date
+		job.status = "In Progress"
+		job.save(ignore_permissions=True)
+		self.assertFalse(job.closing_date)
+
+
+class TestSbmReportsSmoke(FrappeTestCase):
+	"""Every SBM management report executes without error and exposes its
+	expected columns (run against whatever data the site has)."""
+
+	REPORTS = {
+		"jms.jms.report.closed_job_profit.closed_job_profit": {"name", "job_value", "cost", "profit", "closing_month"},
+		"jms.jms.report.monthly_profit.monthly_profit": {"month", "jobs", "job_value", "cost", "profit"},
+		"jms.jms.report.cash_collection.cash_collection": {"posting_date", "party", "job", "amount"},
+		"jms.jms.report.job_wip.job_wip": {"name", "job_value", "received", "pending", "completion"},
+		"jms.jms.report.pending_tasks.pending_tasks": {"job", "task_name", "status"},
+		"jms.jms.report.outsourcing_pending_tasks.outsourcing_pending_tasks": {"job", "vendor", "task_cost"},
+		"jms.jms.report.employee_task_report.employee_task_report": {"assigned_to", "job", "task_name"},
+		"jms.jms.report.outstanding_receivable.outstanding_receivable": {"name", "job_value", "outstanding"},
+		"jms.jms.report.job_status_report.job_status_report": {"name", "stage", "to_collect", "to_pay"},
+	}
+
+	def test_reports_execute_and_expose_columns(self):
+		import importlib
+
+		for mod, expected in self.REPORTS.items():
+			report = importlib.import_module(mod)
+			columns, data = report.execute({})
+			colnames = {c["fieldname"] for c in columns}
+			self.assertTrue(
+				expected.issubset(colnames),
+				msg=f"{mod}: missing columns {expected - colnames}",
+			)
+			self.assertIsInstance(data, list)
