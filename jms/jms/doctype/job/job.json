@@ -7,7 +7,9 @@
  "engine": "InnoDB",
  "field_order": [
   "company",
+  "pipeline_sb",
   "pipeline_html",
+  "pipeline_end_sb",
   "message",
   "sales_invoice_status",
   "purchase_invoice_status",
@@ -477,9 +479,17 @@
    "reqd": 1
   },
   {
+   "fieldname": "pipeline_sb",
+   "fieldtype": "Section Break"
+  },
+  {
    "fieldname": "pipeline_html",
    "fieldtype": "HTML",
    "label": "Job Pipeline"
+  },
+  {
+   "fieldname": "pipeline_end_sb",
+   "fieldtype": "Section Break"
   },
   {
    "fieldname": "message",
