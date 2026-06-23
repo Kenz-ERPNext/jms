@@ -243,6 +243,13 @@
    "label": "Completion Date"
   },
   {
+   "fieldname": "closing_date",
+   "fieldtype": "Date",
+   "label": "Closing Date",
+   "read_only": 1,
+   "description": "Set automatically when the Job is Closed. Profit is recognized in this month."
+  },
+  {
    "fieldname": "overdue_status",
    "fieldtype": "Select",
    "label": "Overdue Status",
@@ -355,7 +362,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Created\nIn Progress\nProcessing\nCompleted\nRejected\nCancelled\nSupervisor Approved\nMD Approved",
+   "options": "Created\nIn Progress\nProcessing\nCompleted\nRejected\nCancelled\nSupervisor Approved\nMD Approved\nClosed",
    "read_only": 1,
    "reqd": 1
   },

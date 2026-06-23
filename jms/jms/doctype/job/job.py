@@ -21,6 +21,7 @@ class Job(Document):
 		self.set_expected_completion_date()
 		self.check_overdue()
 		self.auto_create_tasks_from_items()
+		self.validate_closing()
 
 
 
@@ -46,6 +47,46 @@ class Job(Document):
 
 		if primary_count > 1:
 			frappe.throw(_("Only one staff member can be marked as Primary"))
+
+
+	def validate_closing(self):
+		"""Strict 'Closed' rule: a Job may be Closed only when every task
+		(internal AND outsourced) is Completed and the full job amount has been
+		received. On Close, stamp closing_date (profit is recognized in this
+		month by the management profit reports). Re-opening clears it."""
+		if self.status != "Closed":
+			# leaving Closed state — clear the recognition date
+			if self.closing_date:
+				self.closing_date = None
+			return
+
+		# 1) all tasks completed (outsourced tasks are rows here too)
+		pending = [t for t in (self.tasks or []) if (t.status or "") != "Completed"]
+		if pending:
+			frappe.throw(
+				_("Cannot close this Job: {0} task(s) are not yet Completed. "
+				  "All tasks (including outsourced) must be Completed first.").format(len(pending))
+			)
+
+		# 2) full job amount received (cash received >= billable net amount)
+		received = flt(frappe.db.sql(
+			"""SELECT COALESCE(SUM(paid_amount), 0)
+				FROM `tabPayment Entry`
+				WHERE job = %s AND docstatus = 1 AND payment_type = 'Receive'""",
+			self.name,
+		)[0][0])
+		billable = flt(self.net_amount)
+		if billable - received > 0.5:  # small tolerance for rounding
+			frappe.throw(
+				_("Cannot close this Job: full amount not yet received "
+				  "(received {0} of {1}). Collect the balance before closing.").format(
+					frappe.utils.fmt_money(received), frappe.utils.fmt_money(billable)
+				)
+			)
+
+		# satisfied → stamp the recognition date
+		if not self.closing_date:
+			self.closing_date = frappe.utils.nowdate()
 
 
 	def calculate_amounts(self):
