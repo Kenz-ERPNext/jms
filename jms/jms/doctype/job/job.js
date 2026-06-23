@@ -41,6 +41,28 @@ frappe.ui.form.on('Job', {
 		// Group all action buttons under a single "Create" dropdown
 		const addCreate = (label, action) => frm.add_custom_button(__(label), action, __('Create'));
 
+		// --------------------------------------------------
+		// CLOSE JOB (Status is read-only / auto-managed, so closing is an
+		// explicit action). The strict rule is enforced server-side in
+		// Job.validate_closing(): all tasks Completed AND full amount received.
+		// --------------------------------------------------
+		if (!frm.is_new() && !["Closed", "Cancelled", "Rejected"].includes(frm.doc.status)) {
+			frm.add_custom_button(__("Close Job"), function () {
+				frappe.confirm(
+					__("Close this Job? All tasks must be Completed and the full amount received."),
+					function () {
+						frm.set_value("status", "Closed");
+						frm.save().then(() => {
+							frappe.show_alert({ message: __("Job Closed"), indicator: "green" });
+						}).catch(() => {
+							// blocked by validate_closing — revert the in-memory status
+							frm.reload_doc();
+						});
+					}
+				);
+			}).addClass("btn-primary");
+		}
+
 		frm.set_query("customer", function() {
             return {
                 filters: {
