@@ -755,41 +755,25 @@ class Job(Document):
 			# ACCOUNT FETCH
 			# ------------------------------------------------
 
-			if mop_type == "Bank":
+			# Always use the SELECTED Mode of Payment's account (for this
+			# company), for Bank modes too — picking "RIYAD BANK" must post to
+			# its account, not the company's default bank account.
+			payment_entry.paid_to = frappe.db.get_value(
+				"Mode of Payment Account",
+				{
+					"parent": mode_of_payment,
+					"company": sales_invoice.company
+				},
+				"default_account"
+			)
 
-				default_bank_account = frappe.db.get_value(
-					"Company",
-					sales_invoice.company,
-					"default_bank_account"
+			if not payment_entry.paid_to:
+
+				frappe.throw(
+					f"No account found for "
+					f"Mode of Payment: "
+					f"{mode_of_payment}"
 				)
-
-				if not default_bank_account:
-
-					frappe.throw(
-						f"Default bank account is not set "
-						f"for company: {sales_invoice.company}"
-					)
-
-				payment_entry.paid_to = default_bank_account
-
-			else:
-
-				payment_entry.paid_to = frappe.db.get_value(
-					"Mode of Payment Account",
-					{
-						"parent": mode_of_payment,
-						"company": sales_invoice.company
-					},
-					"default_account"
-				)
-
-				if not payment_entry.paid_to:
-
-					frappe.throw(
-						f"No account found for "
-						f"Mode of Payment: "
-						f"{mode_of_payment}"
-					)
 
 			# ------------------------------------------------
 			# PAYMENT AMOUNT
@@ -1282,27 +1266,19 @@ class Job(Document):
 				# FETCH ACCOUNT
 				# -------------------------
 
-				if mop_type == "Bank":
+				# Always use the selected Mode of Payment's account (Bank too),
+				# not the company default bank account.
+				mop_account = frappe.db.get_value(
+					"Mode of Payment Account",
+					{
+						"parent":
+							mode_of_payment_pi,
 
-					mop_account = frappe.db.get_value(
-						"Company",
-						pi.company,
-						"default_bank_account"
-					)
-
-				else:
-
-					mop_account = frappe.db.get_value(
-						"Mode of Payment Account",
-						{
-							"parent":
-								mode_of_payment_pi,
-
-							"company":
-								pi.company
-						},
-						"default_account"
-					)
+						"company":
+							pi.company
+					},
+					"default_account"
+				)
 
 				if not mop_account:
 
@@ -1774,24 +1750,16 @@ class Job(Document):
 			# FETCH PAID ACCOUNT
 			# -----------------------
 
-			if mop_type == "Bank":
-
-				paid_account = frappe.db.get_value(
-					"Company",
-					company,
-					"default_bank_account"
-				)
-
-			else:
-
-				paid_account = frappe.db.get_value(
-					"Mode of Payment Account",
-					{
-						"parent": mode_of_payment,
-						"company": company
-					},
-					"default_account"
-				)
+			# Always use the selected Mode of Payment's account (Bank too),
+			# not the company default bank account.
+			paid_account = frappe.db.get_value(
+				"Mode of Payment Account",
+				{
+					"parent": mode_of_payment,
+					"company": company
+				},
+				"default_account"
+			)
 
 			if not paid_account:
 
@@ -2027,24 +1995,17 @@ class Job(Document):
 		# Account Fetch
 		# ------------------------------------------------
 
-		if mop_type == "Bank":
-
-			pe.paid_to = frappe.db.get_value(
-				"Company",
-				self.company,
-				"default_bank_account"
-			)
-
-		else:
-
-			pe.paid_to = frappe.db.get_value(
-				"Mode of Payment Account",
-				{
-					"parent": mode_of_payment,
-					"company": self.company
-				},
-				"default_account"
-			)
+		# Always use the SELECTED Mode of Payment's account (for this company),
+		# for Bank modes too — picking "RIYAD BANK" must post to its account
+		# (e.g. 1202 Riyadh), not the company's default bank account.
+		pe.paid_to = frappe.db.get_value(
+			"Mode of Payment Account",
+			{
+				"parent": mode_of_payment,
+				"company": self.company
+			},
+			"default_account"
+		)
 
 		if not pe.paid_to:
 
