@@ -1963,6 +1963,14 @@ function renderJobFinancials(frm) {
                 return;
             }
             const fin = r.message;
+
+            // Per-job pipeline stepper on the form dashboard (this job's own
+            // progress — lifecycle + work/money stage, current step highlighted)
+            try {
+                frm.dashboard.wrapper.find(".sbm-jobpipe").closest(".form-dashboard-section").remove();
+                frm.dashboard.add_section(buildJobPipeline(frm, fin), __("Job Pipeline"));
+            } catch (e) { /* dashboard section is non-critical */ }
+
             const currency = fin.currency || frappe.defaults.get_default("currency");
             const fmt = (v) => format_currency(v, currency);
 
@@ -2144,5 +2152,72 @@ function jmsToggleReferenceFields(d, mop_fieldname) {
         d.set_df_property("reference_date", "reqd", isBank ? 1 : 0);
         d.refresh();
     });
+}
+
+
+// Per-job pipeline stepper shown on the Job form dashboard. Highlights where
+// THIS job currently sits: row 1 = lifecycle (from status), row 2 = work/money
+// stage (tasks completion + net receivable/payable from get_financials).
+function buildJobPipeline(frm, fin) {
+    const dead = ["Cancelled", "Canceled", "Rejected"].includes(frm.doc.status);
+
+    // lifecycle position
+    const life = ["Created", "In Progress", "Completed", "Closed"];
+    let li = life.indexOf(frm.doc.status);
+    if (li === -1) {
+        if (frm.doc.status === "Closed") li = 3;
+        else if (["Processing", "Supervisor Approved", "MD Approved"].includes(frm.doc.status)) li = 1;
+        else li = 0;
+    }
+
+    // work/money stage
+    const tasks = frm.doc.tasks || [];
+    const tasksDone = tasks.length === 0 || tasks.every((t) => t.status === "Completed");
+    const stages = ["Processing Work", "Amount Pending", "Exp Pending", "Completed"];
+    let si;
+    if (!tasksDone) si = 0;
+    else if (flt(fin.net_receivable) > 0) si = 1;
+    else if (flt(fin.net_payable) > 0) si = 2;
+    else si = 3;
+
+    function rowHtml(title, steps, activeIdx) {
+        const cells = steps.map((label, i) => {
+            let cls = "future";
+            if (!dead) {
+                if (i < activeIdx) cls = "done";
+                else if (i === activeIdx) cls = "active";
+            }
+            const mark = cls === "done" ? "&#10003;" : cls === "active" ? "&#9679;" : "&#9675;";
+            const arrow = i < steps.length - 1 ? '<div class="jp-arrow">&#8594;</div>' : "";
+            return `<div class="jp-step ${cls}"><div class="jp-chk">${mark}</div>`
+                + `<div class="jp-lbl">${frappe.utils.escape_html(label)}</div></div>${arrow}`;
+        }).join("");
+        return `<div class="jp-rowtitle">${title}</div><div class="jp-stepper">${cells}</div>`;
+    }
+
+    const css = `<style>
+    .sbm-jobpipe .jp-rowtitle{font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin:8px 2px 6px;}
+    .sbm-jobpipe .jp-stepper{display:flex;align-items:center;flex-wrap:wrap;margin-bottom:6px;}
+    .sbm-jobpipe .jp-step{border-radius:8px;padding:8px 14px;min-width:118px;text-align:center;border:1px solid #e5e7eb;background:#f9fafb;}
+    .sbm-jobpipe .jp-step .jp-chk{width:18px;height:18px;line-height:18px;border-radius:50%;margin:0 auto 4px;font-size:11px;background:#d1d5db;color:#fff;}
+    .sbm-jobpipe .jp-step .jp-lbl{font-size:11.5px;color:#6b7280;font-weight:600;}
+    .sbm-jobpipe .jp-step.done{background:#e9f7ef;border-color:#c8ebd6;}
+    .sbm-jobpipe .jp-step.done .jp-chk{background:#16a34a;}
+    .sbm-jobpipe .jp-step.done .jp-lbl{color:#166848;}
+    .sbm-jobpipe .jp-step.active{background:#fff;border:2px solid #16a34a;box-shadow:0 2px 8px rgba(22,121,72,.15);}
+    .sbm-jobpipe .jp-step.active .jp-chk{background:#16a34a;}
+    .sbm-jobpipe .jp-step.active .jp-lbl{color:#14532d;font-weight:700;}
+    .sbm-jobpipe .jp-arrow{color:#9ca3af;padding:0 8px;}
+    .sbm-jobpipe .jp-dead{color:#a4161a;font-size:12px;margin:4px 2px;font-weight:600;}
+    </style>`;
+
+    let html = css + '<div class="sbm-jobpipe">';
+    if (dead) {
+        html += `<div class="jp-dead">${__("This job is")} ${frappe.utils.escape_html(frm.doc.status)}.</div>`;
+    }
+    html += rowHtml(__("Lifecycle"), life, li);
+    html += rowHtml(__("Work &amp; Money"), stages, si);
+    html += "</div>";
+    return html;
 }
 
