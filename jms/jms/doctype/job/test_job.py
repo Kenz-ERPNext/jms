@@ -329,6 +329,22 @@ class TestJobClosingRule(FrappeTestCase):
 		job.save(ignore_permissions=True)
 		self.assertFalse(job.closing_date)
 
+	def test_cancelling_linked_doc_reopens_closed_job(self):
+		company, customer = _first("Company"), _first("Customer")
+		if not all([company, customer, _first("Job Type")]):
+			self.skipTest("missing company/customer/job type")
+		job = self._job(company, customer)
+		# force-close (bypass the rule) then exercise the cancel-reopen helper
+		frappe.db.set_value(
+			"Job", job.name,
+			{"status": "Closed", "closing_date": nowdate()},
+			update_modified=False,
+		)
+		from jms.events import _reopen_job_if_closed
+		_reopen_job_if_closed(job.name)
+		self.assertEqual(frappe.db.get_value("Job", job.name, "status"), "Completed")
+		self.assertFalse(frappe.db.get_value("Job", job.name, "closing_date"))
+
 
 class TestSbmReportsSmoke(FrappeTestCase):
 	"""Every SBM management report executes without error and exposes its

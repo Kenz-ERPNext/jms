@@ -144,6 +144,9 @@ doc_events = {
 	"Purchase Invoice": {
 		"on_cancel": "jms.events.on_purchase_invoice_cancel",
 	},
+	"Payment Entry": {
+		"on_cancel": "jms.events.on_payment_entry_cancel",
+	},
 }
 
 # Scheduled Tasks
