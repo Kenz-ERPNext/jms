@@ -2191,13 +2191,15 @@ function buildJobPipeline(frm, fin) {
             return `<div class="jp-step ${cls}"><div class="jp-chk">${mark}</div>`
                 + `<div class="jp-lbl">${frappe.utils.escape_html(label)}</div></div>${arrow}`;
         }).join("");
-        return `<div class="jp-rowtitle">${title}</div><div class="jp-stepper">${cells}</div>`;
+        return `<div class="jp-col"><div class="jp-rowtitle">${title}</div><div class="jp-stepper">${cells}</div></div>`;
     }
 
     const css = `<style>
+    .sbm-jobpipe .jp-cols{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;}
+    .sbm-jobpipe .jp-col{flex:1 1 440px;min-width:0;}
     .sbm-jobpipe .jp-rowtitle{font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin:8px 2px 6px;}
-    .sbm-jobpipe .jp-stepper{display:flex;align-items:center;flex-wrap:wrap;margin-bottom:6px;}
-    .sbm-jobpipe .jp-step{border-radius:8px;padding:8px 14px;min-width:118px;text-align:center;border:1px solid #e5e7eb;background:#f9fafb;}
+    .sbm-jobpipe .jp-stepper{display:flex;align-items:stretch;flex-wrap:nowrap;margin-bottom:6px;}
+    .sbm-jobpipe .jp-step{flex:1 1 0;border-radius:8px;padding:8px 6px;min-width:0;text-align:center;border:1px solid #e5e7eb;background:#f9fafb;}
     .sbm-jobpipe .jp-step .jp-chk{width:18px;height:18px;line-height:18px;border-radius:50%;margin:0 auto 4px;font-size:11px;background:#d1d5db;color:#fff;}
     .sbm-jobpipe .jp-step .jp-lbl{font-size:11.5px;color:#6b7280;font-weight:600;}
     .sbm-jobpipe .jp-step.done{background:#e9f7ef;border-color:#c8ebd6;}
@@ -2206,7 +2208,7 @@ function buildJobPipeline(frm, fin) {
     .sbm-jobpipe .jp-step.active{background:#fff;border:2px solid #16a34a;box-shadow:0 2px 8px rgba(22,121,72,.15);}
     .sbm-jobpipe .jp-step.active .jp-chk{background:#16a34a;}
     .sbm-jobpipe .jp-step.active .jp-lbl{color:#14532d;font-weight:700;}
-    .sbm-jobpipe .jp-arrow{color:#9ca3af;padding:0 8px;}
+    .sbm-jobpipe .jp-arrow{color:#9ca3af;padding:0 4px;display:flex;align-items:center;}
     .sbm-jobpipe .jp-dead{color:#a4161a;font-size:12px;margin:4px 2px;font-weight:600;}
     </style>`;
 
@@ -2214,9 +2216,10 @@ function buildJobPipeline(frm, fin) {
     if (dead) {
         html += `<div class="jp-dead">${__("This job is")} ${frappe.utils.escape_html(frm.doc.status)}.</div>`;
     }
+    html += '<div class="jp-cols">';
     html += rowHtml(__("Lifecycle"), life, li);
     html += rowHtml(__("Work &amp; Money"), stages, si);
-    html += "</div>";
+    html += "</div></div>";
     return html;
 }
 
