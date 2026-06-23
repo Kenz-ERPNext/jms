@@ -2424,6 +2424,11 @@ class Job(Document):
 			{"job": job},
 		)[0][0])
 
+		# Has this job been billed yet (a submitted Sales Invoice exists)?
+		has_sales_invoice = bool(
+			frappe.db.count("Sales Invoice", {"job": job, "docstatus": 1})
+		)
+
 		# Paid Out for this job = ALL pay-side Payment Entries (incl. unallocated
 		# supplier / agent advances), not only those allocated to Purchase
 		# Invoices — otherwise outgoing advance payments are invisible.
@@ -2495,6 +2500,7 @@ class Job(Document):
 			"received_from_customer": received_from_customer,
 			"received_from_agent": received_from_agent,
 			"net_receivable": net_receivable,
+			"has_sales_invoice": has_sales_invoice,
 			"net_payable": net_payable,
 			"indicators": {
 				"show": bool(settings.show_status_indicators),

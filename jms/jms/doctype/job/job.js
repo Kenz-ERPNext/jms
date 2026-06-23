@@ -2172,12 +2172,13 @@ function buildJobPipeline(frm, fin) {
     // work/money stage
     const tasks = frm.doc.tasks || [];
     const tasksDone = tasks.length === 0 || tasks.every((t) => t.status === "Completed");
-    const stages = ["Processing Work", "Amount Pending", "Exp Pending", "Completed"];
+    const stages = ["Processing Work", "Invoice Pending", "Amount Pending", "Exp Pending", "Completed"];
     let si;
-    if (!tasksDone) si = 0;
-    else if (flt(fin.net_receivable) > 0) si = 1;
-    else if (flt(fin.net_payable) > 0) si = 2;
-    else si = 3;
+    if (!tasksDone) si = 0;                         // work not finished
+    else if (!fin.has_sales_invoice) si = 1;        // done but not billed yet (Create Sales Invoice)
+    else if (flt(fin.net_receivable) > 0) si = 2;   // billed, collection pending
+    else if (flt(fin.net_payable) > 0) si = 3;      // collected, supplier/expense pending
+    else si = 4;                                    // fully settled
 
     function rowHtml(title, steps, activeIdx) {
         const cells = steps.map((label, i) => {
