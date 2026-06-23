@@ -338,7 +338,7 @@ class TestSbmReportsSmoke(FrappeTestCase):
 		"jms.jms.report.closed_job_profit.closed_job_profit": {"name", "job_value", "cost", "profit", "closing_month"},
 		"jms.jms.report.monthly_profit.monthly_profit": {"month", "jobs", "job_value", "cost", "profit"},
 		"jms.jms.report.cash_collection.cash_collection": {"posting_date", "party", "job", "amount"},
-		"jms.jms.report.job_wip.job_wip": {"name", "job_value", "received", "pending", "completion"},
+		"jms.jms.report.work_in_progress.work_in_progress": {"name", "job_value", "received", "pending", "completion"},
 		"jms.jms.report.pending_tasks.pending_tasks": {"job", "task_name", "status"},
 		"jms.jms.report.outsourcing_pending_tasks.outsourcing_pending_tasks": {"job", "vendor", "task_cost"},
 		"jms.jms.report.employee_task_report.employee_task_report": {"assigned_to", "job", "task_name"},
