@@ -128,3 +128,42 @@ def card_outsourcing_cost(filters=None, **kwargs):
 @frappe.whitelist()
 def card_net_profit(filters=None, **kwargs):
 	return _card(filters, "net_profit")
+
+
+@frappe.whitelist()
+def pipeline_counts(company=None):
+	"""Counts for the SBM Job pipeline stepper — two rows:
+	  - lifecycle: Created -> In Progress -> Completed -> Closed (by status)
+	  - stages:    Processing Work -> Amount Pending -> Exp Pending -> Completed
+	               (the Job Status Report classification)
+	"""
+	# --- lifecycle (by Job.status) ---
+	cond, params = "", {}
+	if company:
+		cond = " WHERE company = %(company)s"
+		params["company"] = company
+	by_status = dict(
+		frappe.db.sql(f"SELECT status, COUNT(*) FROM `tabJob`{cond} GROUP BY status", params)
+	)
+	lifecycle = [
+		{"label": "Created", "count": int(by_status.get("Created", 0))},
+		{"label": "In Progress", "count": int(by_status.get("In Progress", 0))},
+		{"label": "Completed", "count": int(by_status.get("Completed", 0))},
+		{"label": "Closed", "count": int(by_status.get("Closed", 0))},
+	]
+
+	# --- work/money stages (reuse the Job Status Report classification) ---
+	from jms.jms.report.job_status_report.job_status_report import execute as jsr
+
+	_cols, rows = jsr({"company": company} if company else {})
+	def stage_count(*names):
+		return sum(1 for r in rows if r.get("stage") in names)
+
+	stages = [
+		{"label": "Processing Work", "count": stage_count("Processing Work")},
+		{"label": "Amount Pending", "count": stage_count("Amount Pending", "Amount + Exp Pending")},
+		{"label": "Exp Pending", "count": stage_count("Exp Pending", "Amount + Exp Pending")},
+		{"label": "Completed", "count": stage_count("Completed")},
+	]
+
+	return {"lifecycle": lifecycle, "stages": stages}
