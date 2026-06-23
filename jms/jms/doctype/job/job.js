@@ -1964,12 +1964,11 @@ function renderJobFinancials(frm) {
             }
             const fin = r.message;
 
-            // Per-job pipeline stepper on the form dashboard (this job's own
-            // progress — lifecycle + work/money stage, current step highlighted)
-            try {
-                frm.dashboard.wrapper.find(".sbm-jobpipe").closest(".form-dashboard-section").remove();
-                frm.dashboard.add_section(buildJobPipeline(frm, fin), __("Job Pipeline"));
-            } catch (e) { /* dashboard section is non-critical */ }
+            // Per-job pipeline stepper (this job's own progress — lifecycle +
+            // work/money stage, current step highlighted) into the HTML field.
+            if (frm.fields_dict.pipeline_html) {
+                frm.fields_dict.pipeline_html.$wrapper.html(buildJobPipeline(frm, fin));
+            }
 
             const currency = fin.currency || frappe.defaults.get_default("currency");
             const fmt = (v) => format_currency(v, currency);

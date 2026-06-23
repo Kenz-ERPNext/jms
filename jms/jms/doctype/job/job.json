@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "company",
+  "pipeline_html",
   "message",
   "sales_invoice_status",
   "purchase_invoice_status",
@@ -474,6 +475,11 @@
    "label": "Receivable From",
    "options": "\nCustomer\nAgent",
    "reqd": 1
+  },
+  {
+   "fieldname": "pipeline_html",
+   "fieldtype": "HTML",
+   "label": "Job Pipeline"
   },
   {
    "fieldname": "message",
