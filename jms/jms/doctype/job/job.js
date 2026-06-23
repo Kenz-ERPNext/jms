@@ -2191,15 +2191,13 @@ function buildJobPipeline(frm, fin) {
             return `<div class="jp-step ${cls}"><div class="jp-chk">${mark}</div>`
                 + `<div class="jp-lbl">${frappe.utils.escape_html(label)}</div></div>${arrow}`;
         }).join("");
-        return `<div class="jp-col"><div class="jp-rowtitle">${title}</div><div class="jp-stepper">${cells}</div></div>`;
+        return `<div class="jp-rowtitle">${title}</div><div class="jp-stepper">${cells}</div>`;
     }
 
     const css = `<style>
-    .sbm-jobpipe .jp-cols{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;}
-    .sbm-jobpipe .jp-col{flex:1 1 440px;min-width:0;}
-    .sbm-jobpipe .jp-rowtitle{font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin:8px 2px 6px;}
-    .sbm-jobpipe .jp-stepper{display:flex;align-items:stretch;flex-wrap:nowrap;margin-bottom:6px;}
-    .sbm-jobpipe .jp-step{flex:1 1 0;border-radius:8px;padding:8px 6px;min-width:0;text-align:center;border:1px solid #e5e7eb;background:#f9fafb;}
+    .sbm-jobpipe .jp-rowtitle{font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin:10px 2px 6px;}
+    .sbm-jobpipe .jp-stepper{display:flex;align-items:stretch;flex-wrap:wrap;margin-bottom:12px;}
+    .sbm-jobpipe .jp-step{border-radius:8px;padding:10px 16px;min-width:135px;text-align:center;border:1px solid #e5e7eb;background:#f9fafb;}
     .sbm-jobpipe .jp-step .jp-chk{width:18px;height:18px;line-height:18px;border-radius:50%;margin:0 auto 4px;font-size:11px;background:#d1d5db;color:#fff;}
     .sbm-jobpipe .jp-step .jp-lbl{font-size:11.5px;color:#6b7280;font-weight:600;}
     .sbm-jobpipe .jp-step.done{background:#e9f7ef;border-color:#c8ebd6;}
@@ -2216,10 +2214,9 @@ function buildJobPipeline(frm, fin) {
     if (dead) {
         html += `<div class="jp-dead">${__("This job is")} ${frappe.utils.escape_html(frm.doc.status)}.</div>`;
     }
-    html += '<div class="jp-cols">';
     html += rowHtml(__("Lifecycle"), life, li);
     html += rowHtml(__("Work &amp; Money"), stages, si);
-    html += "</div></div>";
+    html += "</div>";
     return html;
 }
 
