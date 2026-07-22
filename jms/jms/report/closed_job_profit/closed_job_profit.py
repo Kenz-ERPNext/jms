@@ -6,12 +6,14 @@ import frappe
 from frappe import _
 from frappe.utils import flt, getdate
 
-from jms.jms.report_helpers import job_costs
+from jms.jms.report_helpers import closed_jobs_empty_message, job_costs
 
 
 def execute(filters=None):
 	filters = filters or {}
-	return get_columns(), get_data(filters)
+	data = get_data(filters)
+	message = None if data else closed_jobs_empty_message(filters)
+	return get_columns(), data, message
 
 
 def get_columns():

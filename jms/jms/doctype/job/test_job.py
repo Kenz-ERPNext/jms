@@ -367,10 +367,28 @@ class TestSbmReportsSmoke(FrappeTestCase):
 
 		for mod, expected in self.REPORTS.items():
 			report = importlib.import_module(mod)
-			columns, data = report.execute({})
+			result = report.execute({})
+			columns, data = result[0], result[1]
 			colnames = {c["fieldname"] for c in columns}
 			self.assertTrue(
 				expected.issubset(colnames),
 				msg=f"{mod}: missing columns {expected - colnames}",
 			)
 			self.assertIsInstance(data, list)
+
+
+class TestClosedProfitEmptyState(FrappeTestCase):
+	"""When the Closed-jobs profit reports have no rows, they must explain WHY
+	(profit is recognized only on Close) instead of a bare 'Nothing to show'."""
+
+	def test_empty_reports_explain_the_close_rule(self):
+		from jms.jms.report.closed_job_profit import closed_job_profit
+		from jms.jms.report.monthly_profit import monthly_profit
+
+		# an impossible date range guarantees zero rows on any site
+		filters = {"from_date": "1900-01-01", "to_date": "1900-01-02"}
+		for mod in (closed_job_profit, monthly_profit):
+			columns, data, message = mod.execute(filters)
+			self.assertEqual(data, [])
+			self.assertTrue(message, msg=f"{mod.__name__}: empty report must carry a message")
+			self.assertIn("close", message.lower())

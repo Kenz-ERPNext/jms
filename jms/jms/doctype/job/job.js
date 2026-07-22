@@ -1948,7 +1948,14 @@ function renderJobFinancials(frm) {
         return;
     }
     if (frm.is_new()) {
+        // The form instance is reused across documents — without a re-render
+        // these HTML fields keep the previously opened job's markup.
         frm.fields_dict.financial_details.$wrapper.html("");
+        if (frm.fields_dict.pipeline_html) {
+            frm.fields_dict.pipeline_html.$wrapper.html(
+                buildJobPipeline(frm, { has_sales_invoice: false, net_receivable: 0, net_payable: 0 })
+            );
+        }
         return;
     }
 
@@ -2174,7 +2181,7 @@ function buildJobPipeline(frm, fin) {
     const tasksDone = tasks.length === 0 || tasks.every((t) => t.status === "Completed");
     const stages = ["Processing Work", "Invoice Pending", "Amount Pending", "Exp Pending", "Completed"];
     let si;
-    if (!tasksDone) si = 0;                         // work not finished
+    if (frm.is_new() || !tasksDone) si = 0;         // new doc / work not finished
     else if (!fin.has_sales_invoice) si = 1;        // done but not billed yet (Create Sales Invoice)
     else if (flt(fin.net_receivable) > 0) si = 2;   // billed, collection pending
     else if (flt(fin.net_payable) > 0) si = 3;      // collected, supplier/expense pending
