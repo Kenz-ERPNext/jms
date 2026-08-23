@@ -1950,11 +1950,12 @@ function renderJobFinancials(frm) {
     if (frm.is_new()) {
         // The form instance is reused across documents — without a re-render
         // these HTML fields keep the previously opened job's markup.
+        // An unsaved job has no lifecycle/work progress yet, so the stepper
+        // is cleared rather than drawn with "Created" / "Processing Work"
+        // active; it renders on the first refresh after save.
         frm.fields_dict.financial_details.$wrapper.html("");
         if (frm.fields_dict.pipeline_html) {
-            frm.fields_dict.pipeline_html.$wrapper.html(
-                buildJobPipeline(frm, { has_sales_invoice: false, net_receivable: 0, net_payable: 0 })
-            );
+            frm.fields_dict.pipeline_html.$wrapper.html("");
         }
         return;
     }
