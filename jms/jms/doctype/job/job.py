@@ -170,9 +170,10 @@ class Job(Document):
 		if not self.items:
 			return
 
-		# Clear existing tasks if this is a new creation
-		if self.is_new():
-			self.tasks = []
+		# Never reset self.tasks here: on a new Job this ran inside validate()
+		# and wiped the task rows (and their Employee / Outsource assignment)
+		# the user had entered before the first save. The name checks below
+		# already make template task creation idempotent.
 
 		for item in self.items:
 			if not item.work_template:

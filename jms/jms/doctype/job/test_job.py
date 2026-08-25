@@ -392,3 +392,66 @@ class TestClosedProfitEmptyState(FrappeTestCase):
 			self.assertEqual(data, [])
 			self.assertTrue(message, msg=f"{mod.__name__}: empty report must carry a message")
 			self.assertIn("close", message.lower())
+
+
+class TestJobTasksSurviveFirstSave(FrappeTestCase):
+	"""Task rows the user enters on a NEW Job (with an Employee / Outsourced
+	Party assigned) must survive the first save. Template tasks are still
+	auto-added from items, but never by wiping what the user typed."""
+
+	def _new_job(self):
+		company = _first("Company")
+		customer = _first("Customer")
+		job_type = _first("Job Type")
+		if not all([company, customer, job_type]):
+			self.skipTest("missing a required master (company/customer/job type)")
+		job = frappe.new_doc("Job")
+		job.job_title = "testctl tasks-survive job"
+		job.date = nowdate()
+		job.start_date = nowdate()
+		job.status = "Created"
+		job.job_type = job_type
+		job.receivable_from = "Customer"
+		job.customer = customer
+		job.company = company
+		return job
+
+	def test_manual_task_with_employee_kept_on_insert(self):
+		employee = _first("Employee")
+		if not employee:
+			self.skipTest("no Employee on this site")
+		job = self._new_job()
+		job.append("tasks", {
+			"task_name": "Manual task",
+			"employee__outsource": "Employee",
+			"assigned_to": employee,
+			"status": "Open",
+		})
+		job.insert(ignore_permissions=True)
+
+		saved = frappe.get_doc("Job", job.name)
+		rows = [(t.task_name, t.employee__outsource, t.assigned_to) for t in saved.tasks]
+		self.assertIn(("Manual task", "Employee", employee), rows)
+
+	def test_manual_task_kept_alongside_template_tasks(self):
+		employee = _first("Employee")
+		template = _first("Work Template")
+		if not (employee and template):
+			self.skipTest("need an Employee and a Work Template")
+		job = self._new_job()
+		job.append("items", {"work_template": template, "job_qty": 1})
+		job.append("tasks", {
+			"task_name": "Manual task",
+			"employee__outsource": "Employee",
+			"assigned_to": employee,
+			"status": "Open",
+		})
+		job.insert(ignore_permissions=True)
+
+		saved = frappe.get_doc("Job", job.name)
+		names = [t.task_name for t in saved.tasks]
+		self.assertIn("Manual task", names)
+		# template-derived tasks are still generated (if the template defines any)
+		wt = frappe.get_doc("Work Template", template)
+		if (wt.has_sub_tasks and wt.sub_tasks) or getattr(wt, "task", None):
+			self.assertGreater(len(names), 1)
