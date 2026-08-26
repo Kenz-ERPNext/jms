@@ -455,3 +455,110 @@ class TestJobTasksSurviveFirstSave(FrappeTestCase):
 		wt = frappe.get_doc("Work Template", template)
 		if (wt.has_sub_tasks and wt.sub_tasks) or getattr(wt, "task", None):
 			self.assertGreater(len(names), 1)
+
+
+class TestJobLinkedDocLifecycle(FrappeTestCase):
+	"""Back-references the Job keeps to its Sales/Purchase Invoices and
+	Payment Entry must follow the linked documents through cancel, amend and
+	Duplicate, so the form's Create buttons / pending messages / stepper never
+	act on a cancelled or foreign document."""
+
+	LINK_FIELDS = (
+		"linked_invoice", "sales_invoice_status", "sales_invoice_payment_entry",
+		"purchase_invoice", "purchase_invoice_status", "expense_status",
+		"closing_date", "completion_date", "status",
+	)
+
+	def _job(self):
+		company, customer, job_type = _first("Company"), _first("Customer"), _first("Job Type")
+		if not all([company, customer, job_type]):
+			self.skipTest("missing company/customer/job type")
+		job = frappe.new_doc("Job")
+		job.update({
+			"job_title": "testctl lifecycle job", "date": nowdate(), "start_date": nowdate(),
+			"status": "Created", "job_type": job_type, "receivable_from": "Customer",
+			"customer": customer, "company": company,
+		})
+		job.append("tasks", {"task_name": "out", "employee__outsource": "Outsource", "status": "Completed"})
+		job.insert(ignore_permissions=True)
+		return job
+
+	def _link_everything(self, job):
+		frappe.db.set_value("Job", job.name, {
+			"linked_invoice": "SI-TEST", "sales_invoice_status": "Created",
+			"sales_invoice_payment_entry": "PE-TEST", "purchase_invoice": "PI-TEST",
+			"purchase_invoice_status": "Created", "status": "Completed", "closing_date": nowdate(),
+		}, update_modified=False)
+		frappe.db.set_value("Job Task", job.tasks[0].name, "purchase_invoice", "PI-TEST", update_modified=False)
+		return frappe.get_doc("Job", job.name)
+
+	def test_meta_task_grid_is_inline_editable_and_links_are_no_copy(self):
+		self.assertTrue(frappe.get_meta("Job Task").editable_grid, "Job Task must edit inline like Job Item")
+		job_meta = frappe.get_meta("Job")
+		for f in self.LINK_FIELDS:
+			self.assertTrue(job_meta.get_field(f).no_copy, f"Job.{f} must be no_copy")
+		self.assertTrue(job_meta.get_field("sales_invoice_status").read_only, "sales_invoice_status is system-managed")
+		task_meta = frappe.get_meta("Job Task")
+		for f in ("purchase_invoice", "status", "completion_date"):
+			self.assertTrue(task_meta.get_field(f).no_copy, f"Job Task.{f} must be no_copy")
+
+	def test_duplicate_drops_back_references_and_task_progress(self):
+		job = self._link_everything(self._job())
+		dup = frappe.copy_doc(job, ignore_no_copy=False)  # what the UI 'Duplicate' does
+		for f in self.LINK_FIELDS:
+			if f == "status":
+				self.assertIn(dup.status, (None, "", "Created"))
+			else:
+				self.assertFalse(dup.get(f), f"Duplicate must not carry Job.{f}={dup.get(f)!r}")
+		self.assertFalse(dup.tasks[0].purchase_invoice)
+		self.assertNotEqual(dup.tasks[0].status, "Completed")
+
+	def test_payment_entry_cancel_clears_si_payment_ref(self):
+		from jms.events import on_payment_entry_cancel
+		job = self._link_everything(self._job())
+		on_payment_entry_cancel(frappe._dict(name="PE-TEST", job=job.name))
+		self.assertFalse(frappe.db.get_value("Job", job.name, "sales_invoice_payment_entry"))
+		# an unrelated payment leaves the reference alone
+		frappe.db.set_value("Job", job.name, "sales_invoice_payment_entry", "PE-TEST", update_modified=False)
+		on_payment_entry_cancel(frappe._dict(name="PE-OTHER", job=job.name))
+		self.assertEqual(frappe.db.get_value("Job", job.name, "sales_invoice_payment_entry"), "PE-TEST")
+
+	def test_purchase_invoice_cancel_clears_job_and_task_rows(self):
+		from jms.events import on_purchase_invoice_cancel
+		job = self._link_everything(self._job())
+		on_purchase_invoice_cancel(frappe._dict(name="PI-TEST", job=job.name))
+		self.assertFalse(frappe.db.get_value("Job", job.name, "purchase_invoice"))
+		self.assertFalse(frappe.db.get_value("Job", job.name, "purchase_invoice_status"))
+		self.assertFalse(frappe.db.get_value("Job Task", job.tasks[0].name, "purchase_invoice"))
+
+	def test_sales_invoice_submit_relinks_job(self):
+		from jms.events import on_sales_invoice_submit
+		job = self._job()
+		on_sales_invoice_submit(frappe._dict(name="SI-TEST-1", job=job.name, amended_from="SI-TEST"))
+		self.assertEqual(frappe.db.get_value("Job", job.name, "linked_invoice"), "SI-TEST-1")
+		self.assertEqual(frappe.db.get_value("Job", job.name, "sales_invoice_status"), "Created")
+		# a Sales Invoice not tagged to any job is ignored
+		on_sales_invoice_submit(frappe._dict(name="SI-FOREIGN", job=None))
+		self.assertEqual(frappe.db.get_value("Job", job.name, "linked_invoice"), "SI-TEST-1")
+
+	def test_purchase_invoice_submit_relinks_amended_outsource_pi_only(self):
+		from jms.events import on_purchase_invoice_submit
+		job = self._job()
+		frappe.db.set_value("Job Task", job.tasks[0].name, "purchase_invoice", "PI-TEST", update_modified=False)
+		# amended outsource PI → task row + job follow it
+		on_purchase_invoice_submit(frappe._dict(name="PI-TEST-1", job=job.name, amended_from="PI-TEST"))
+		self.assertEqual(frappe.db.get_value("Job Task", job.tasks[0].name, "purchase_invoice"), "PI-TEST-1")
+		self.assertEqual(frappe.db.get_value("Job", job.name, "purchase_invoice"), "PI-TEST-1")
+		self.assertEqual(frappe.db.get_value("Job", job.name, "purchase_invoice_status"), "Created")
+		# an expense PI (no task row references it) must NOT become the outsource back-ref
+		on_purchase_invoice_submit(frappe._dict(name="PI-EXPENSE", job=job.name, amended_from=None))
+		self.assertEqual(frappe.db.get_value("Job", job.name, "purchase_invoice"), "PI-TEST-1")
+
+	def test_hooks_wire_submit_and_cancel_events(self):
+		from jms import hooks
+		ev = hooks.doc_events
+		self.assertEqual(ev["Sales Invoice"]["on_submit"], "jms.events.on_sales_invoice_submit")
+		self.assertEqual(ev["Purchase Invoice"]["on_submit"], "jms.events.on_purchase_invoice_submit")
+		for path in (ev["Sales Invoice"]["on_submit"], ev["Purchase Invoice"]["on_submit"],
+			ev["Sales Invoice"]["on_cancel"], ev["Purchase Invoice"]["on_cancel"], ev["Payment Entry"]["on_cancel"]):
+			self.assertTrue(callable(frappe.get_attr(path)), path)

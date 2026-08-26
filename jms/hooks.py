@@ -139,9 +139,11 @@ app_license = "mit"
 
 doc_events = {
 	"Sales Invoice": {
+		"on_submit": "jms.events.on_sales_invoice_submit",
 		"on_cancel": "jms.events.on_sales_invoice_cancel",
 	},
 	"Purchase Invoice": {
+		"on_submit": "jms.events.on_purchase_invoice_submit",
 		"on_cancel": "jms.events.on_purchase_invoice_cancel",
 	},
 	"Payment Entry": {

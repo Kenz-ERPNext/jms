@@ -243,14 +243,16 @@
   {
    "fieldname": "completion_date",
    "fieldtype": "Date",
-   "label": "Completion Date"
+   "label": "Completion Date",
+   "no_copy": 1
   },
   {
+   "description": "Set automatically when the Job is Closed. Profit is recognized in this month.",
    "fieldname": "closing_date",
    "fieldtype": "Date",
    "label": "Closing Date",
-   "read_only": 1,
-   "description": "Set automatically when the Job is Closed. Profit is recognized in this month."
+   "no_copy": 1,
+   "read_only": 1
   },
   {
    "fieldname": "overdue_status",
@@ -365,6 +367,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
+   "no_copy": 1,
    "options": "Created\nIn Progress\nProcessing\nCompleted\nRejected\nCancelled\nSupervisor Approved\nMD Approved\nClosed",
    "read_only": 1,
    "reqd": 1
@@ -385,6 +388,7 @@
    "fieldname": "linked_invoice",
    "fieldtype": "Link",
    "label": "Linked Invoice",
+   "no_copy": 1,
    "options": "Sales Invoice",
    "read_only": 1
   },
@@ -500,12 +504,15 @@
    "fieldname": "sales_invoice_status",
    "fieldtype": "Select",
    "label": "Sales Invoice Status",
-   "options": "\nCreated"
+   "no_copy": 1,
+   "options": "\nCreated",
+   "read_only": 1
   },
   {
    "fieldname": "purchase_invoice_status",
    "fieldtype": "Select",
    "label": "Purchase Invoice Status",
+   "no_copy": 1,
    "options": "\nCreated",
    "read_only": 1
   },
@@ -513,6 +520,7 @@
    "fieldname": "purchase_invoice",
    "fieldtype": "Link",
    "label": "Purchase Invoice",
+   "no_copy": 1,
    "options": "Purchase Invoice",
    "read_only": 1
   },
@@ -538,6 +546,7 @@
    "fieldname": "sales_invoice_payment_entry",
    "fieldtype": "Link",
    "label": "Sales Invoice Payment Entry",
+   "no_copy": 1,
    "options": "Payment Entry",
    "read_only": 1
   },
@@ -555,6 +564,7 @@
    "fieldname": "expense_status",
    "fieldtype": "Select",
    "label": "Expense Status",
+   "no_copy": 1,
    "options": "\nCreated",
    "read_only": 1
   },

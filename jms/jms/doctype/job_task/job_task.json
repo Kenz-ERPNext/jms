@@ -2,6 +2,7 @@
  "actions": [],
  "creation": "2025-12-04 20:00:00",
  "doctype": "DocType",
+ "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
   "task_name",
@@ -64,13 +65,15 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
+   "no_copy": 1,
    "options": "Open\nPending\nIn Progress\nCompleted\nCancelled"
   },
   {
    "depends_on": "eval:doc.status=='Completed'",
    "fieldname": "completion_date",
    "fieldtype": "Date",
-   "label": "Completion Date"
+   "label": "Completion Date",
+   "no_copy": 1
   },
   {
    "fieldname": "notes",
@@ -147,6 +150,7 @@
    "fieldname": "purchase_invoice",
    "fieldtype": "Data",
    "label": "Purchase Invoice",
+   "no_copy": 1,
    "read_only": 1
   }
  ],
