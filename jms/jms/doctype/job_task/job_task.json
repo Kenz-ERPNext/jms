@@ -17,6 +17,7 @@
   "priority",
   "section_break_xmye",
   "item_code",
+  "work_template",
   "linked_task",
   "employee_user",
   "outsource_supplier",
@@ -124,6 +125,12 @@
    "fieldtype": "Link",
    "label": "Item Code",
    "options": "Item"
+  },
+  {
+   "fieldname": "work_template",
+   "fieldtype": "Link",
+   "label": "Work Template",
+   "options": "Work Template"
   },
   {
    "depends_on": "eval:doc.employee__outsource == \"Outsource\"",

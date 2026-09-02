@@ -1771,6 +1771,73 @@ frappe.ui.form.on('Job', {
 		if (frm.doc.net_amount && frm.doc.paid_up) {
 			frm.set_value('balance', frm.doc.net_amount - frm.doc.paid_up);
 		}
+	},
+
+	sync_subtasks_for_items: function(frm) {
+		let items = frm.doc.items || [];
+		let active_template_codes = items.map(i => i.work_template).filter(Boolean);
+
+		// 1. Remove subtasks belonging to work templates that are no longer in items
+		if (frm.doc.tasks && frm.doc.tasks.length > 0) {
+			let original_len = frm.doc.tasks.length;
+			frm.doc.tasks = frm.doc.tasks.filter(task => {
+				if (!task.work_template) return true; // Keep manual tasks
+				return active_template_codes.includes(task.work_template);
+			});
+			if (frm.doc.tasks.length !== original_len) {
+				frm.refresh_field('tasks');
+			}
+		}
+
+		// 2. Fetch and add missing subtasks for active items
+		if (!active_template_codes.length) return;
+
+		let existing_task_names = (frm.doc.tasks || []).map(t => t.task_name);
+		let promises = items.map(item => {
+			if (!item.work_template) return Promise.resolve();
+			return frappe.db.get_doc('Work Template', item.work_template).then(doc => {
+				if (!doc) return;
+
+				if (doc.has_sub_tasks && doc.sub_tasks && doc.sub_tasks.length > 0) {
+					doc.sub_tasks.forEach(sub_task => {
+						let task_name = `${doc.description} - ${sub_task.task_name}`;
+						if (!existing_task_names.includes(task_name)) {
+							let due_date = frm.doc.start_date
+								? frappe.datetime.add_days(frm.doc.start_date, sub_task.due_days || 0)
+								: frappe.datetime.get_today();
+
+							frm.add_child('tasks', {
+								task_name: task_name,
+								due_date: due_date,
+								status: sub_task.status || 'Pending',
+								linked_task: sub_task.linked_task,
+								item_code: doc.item_code || item.item_code,
+								work_template: item.work_template
+							});
+							existing_task_names.push(task_name);
+						}
+					});
+				} else if (doc.task) {
+					let task_name = `${doc.description} - ${doc.task}`;
+					if (!existing_task_names.includes(task_name)) {
+						let due_date = frm.doc.start_date || frappe.datetime.get_today();
+						frm.add_child('tasks', {
+							task_name: task_name,
+							due_date: due_date,
+							status: doc.status || 'Pending',
+							linked_task: doc.linked_task,
+							item_code: doc.item_code || item.item_code,
+							work_template: item.work_template
+						});
+						existing_task_names.push(task_name);
+					}
+				}
+			});
+		});
+
+		Promise.all(promises).then(() => {
+			frm.refresh_field('tasks');
+		});
 	}
 });
 
@@ -1824,7 +1891,13 @@ frappe.ui.form.on('Job Item', {
 
 				// Calculate item total
 				frm.trigger('calculate_item_total', cdt, cdn);
+
+				// Real-time subtasks sync on work_template selection
+				frm.trigger('sync_subtasks_for_items');
 			});
+		} else {
+			// If work_template is cleared, sync tasks to remove orphaned subtasks
+			frm.trigger('sync_subtasks_for_items');
 		}
 	},
 
@@ -1833,8 +1906,6 @@ frappe.ui.form.on('Job Item', {
 	},
 
 	fee_price: function(frm, cdt, cdn) {
-
-		
 		frm.trigger('calculate_item_total', cdt, cdn);
 	},
 
@@ -1851,19 +1922,15 @@ frappe.ui.form.on('Job Item', {
 	},
 
 	items_remove: function(frm) {
-		
 		frm.trigger('calculate_totals');
+		frm.trigger('sync_subtasks_for_items');
 	},
 	
 
 	calculate_item_total: function(frm, cdt, cdn) {
 		// Recompute every row + the form totals live, client-side.
-		// (Previously this auto-saved the form on every edit, which scrolled
-		//  the page to the top — see calculate_totals.)
 		frm.trigger('calculate_totals');
 	}
-
-
 });
  
 
