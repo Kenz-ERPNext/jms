@@ -642,7 +642,7 @@
   {
    "group": "Expense",
    "link_doctype": "Purchase Invoice",
-   "link_fieldname": "job"
+   "link_fieldname": "custom_job"
   }
  ],
  "modified": "2026-05-09 09:38:27.368101",

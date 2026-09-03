@@ -1102,7 +1102,8 @@ class Job(Document):
 		reference_date=None,
 		posting_date=None,
 		payment_pi=None,
-		mode_of_payment_pi=None
+		mode_of_payment_pi=None,
+		supplier=None
 	):
 
 		patch_round_floats_in()
@@ -1121,12 +1122,14 @@ class Job(Document):
 			row for row in self.tasks
 
 			if row.employee__outsource == "Outsource"
+			and not row.purchase_invoice
+			and (not supplier or row.outsource_supplier == supplier)
 		]
 
 		if not outsource_rows:
 
 			frappe.throw(
-				"No outsource rows found in tasks table."
+				"No unbilled outsource tasks found." if not supplier else f"No unbilled outsource tasks found for supplier {supplier}."
 			)
 
 		# -------------------------

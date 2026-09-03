@@ -1443,19 +1443,17 @@ frappe.ui.form.on('Job', {
                 'Create Purchase Invoice',
                 function () {
 
-                    // Block ONLY if the tracked outsource Purchase Invoice is
-                    // still active (submitted). A cancelled one (docstatus 2) —
-                    // or none — frees the Job to create a new one. Expense PIs
-                    // don't set this back-ref, so they never block here.
-                    let __pi_ref = frm.doc.purchase_invoice;
-                    let __pi_check = __pi_ref
-                        ? frappe.db.get_value("Purchase Invoice", __pi_ref, "docstatus")
-                            .then(r => r && r.message && r.message.docstatus === 1)
-                        : Promise.resolve(false);
-                    __pi_check.then(active_pi => {
+                    let unbilled_suppliers = [];
+                    (frm.doc.tasks || []).forEach(task => {
+                        if (task.employee__outsource === "Outsource" && !task.purchase_invoice && task.outsource_supplier) {
+                            if (!unbilled_suppliers.includes(task.outsource_supplier)) {
+                                unbilled_suppliers.push(task.outsource_supplier);
+                            }
+                        }
+                    });
 
-                    if (active_pi) {
-                        frappe.msgprint(__('Purchase Invoice already created for this Job.'));
+                    if (unbilled_suppliers.length === 0) {
+                        frappe.msgprint(__('No unbilled outsource tasks found. All Purchase Invoices have been created.'));
                         return;
                     }
 
@@ -1468,6 +1466,21 @@ frappe.ui.form.on('Job', {
                         title: 'Create Purchase Invoice',
 
                         fields: [
+
+                            {
+                                label: 'Select Supplier',
+                                fieldname: 'supplier',
+                                fieldtype: 'Link',
+                                options: 'Supplier',
+                                get_query: function() {
+                                    return {
+                                        filters: [
+                                            ['name', 'in', unbilled_suppliers]
+                                        ]
+                                    };
+                                },
+                                reqd: 1
+                            },
 
                             {
                                 label: 'Posting Date',
@@ -1557,7 +1570,8 @@ frappe.ui.form.on('Job', {
                                         payment_pi: values.payment_pi,
                                         mode_of_payment_pi: isNow ? values.mode_of_payment_pi : null,
                                         reference_no: values.reference_no,
-                                        reference_date: values.reference_date
+                                        reference_date: values.reference_date,
+                                        supplier: values.supplier
                                     },
 
                                     callback: function (r) {
@@ -1612,8 +1626,6 @@ frappe.ui.form.on('Job', {
                             jmsRenderAdvancesInfo(d, "advances_html", r.message || []);
                         }
                     });
-
-                    });  // end frappe.db.count(...).then
 
                 }
             );
