@@ -1189,7 +1189,7 @@ class Job(Document):
 				pi.taxes_and_charges = tax_template
 
 			# -------------------------
-			# ADD ITEMS
+			# ADD ITEMS 
 			# -------------------------
 
 			for row in rows:
