@@ -456,6 +456,32 @@ class TestJobTasksSurviveFirstSave(FrappeTestCase):
 		if (wt.has_sub_tasks and wt.sub_tasks) or getattr(wt, "task", None):
 			self.assertGreater(len(names), 1)
 
+	def test_subtask_removal_when_item_deleted(self):
+		template_name = _first("Work Template")
+		if not template_name:
+			wt = frappe.new_doc("Work Template")
+			wt.template_code = "TEST-WT-001"
+			wt.description = "Test Work Template"
+			wt.has_sub_tasks = 1
+			wt.append("sub_tasks", {"task_name": "Subtask 1", "status": "Open"})
+			wt.insert(ignore_permissions=True)
+			template_name = wt.name
+
+		job = frappe.new_doc("Job")
+		job.start_date = nowdate()
+		job.append("items", {"work_template": template_name, "job_qty": 1})
+		job.auto_create_tasks_from_items()
+
+		# Ensure template task was added
+		self.assertTrue(any(t.work_template == template_name for t in job.tasks))
+
+		# Now delete the item row
+		job.items = []
+		job.auto_create_tasks_from_items()
+
+		# Ensure tasks linked to deleted work_template are removed
+		self.assertFalse(any(t.work_template == template_name for t in job.tasks))
+
 
 class TestJobLinkedDocLifecycle(FrappeTestCase):
 	"""Back-references the Job keeps to its Sales/Purchase Invoices and

@@ -167,13 +167,17 @@ class Job(Document):
 	@frappe.whitelist()
 	def auto_create_tasks_from_items(self):
 		"""Auto-create tasks from work template sub tasks or single task field"""
+		active_templates = [item.work_template for item in (self.items or []) if item.work_template]
+
+		# Clean up tasks whose work_template is no longer in items
+		if self.tasks:
+			self.tasks = [
+				t for t in self.tasks
+				if not getattr(t, "work_template", None) or t.work_template in active_templates
+			]
+
 		if not self.items:
 			return
-
-		# Never reset self.tasks here: on a new Job this ran inside validate()
-		# and wiped the task rows (and their Employee / Outsource assignment)
-		# the user had entered before the first save. The name checks below
-		# already make template task creation idempotent.
 
 		for item in self.items:
 			if not item.work_template:
@@ -194,11 +198,11 @@ class Job(Document):
 						due_date = add_days(self.start_date, sub_task.due_days or 0)
 						self.append("tasks", {
 							"task_name": f"{work_template.description} - {sub_task.task_name}",
-							# "assigned_to": sub_task.assigned_to,
 							"due_date": due_date,
 							"status": sub_task.status or "Pending",
 							"linked_task": sub_task.linked_task,
-							"item_code" :item.item_code
+							"item_code": item.item_code,
+							"work_template": item.work_template
 						})
 
 			# 2️⃣ If no sub_tasks but single task field exists
@@ -209,11 +213,11 @@ class Job(Document):
 					due_date = self.start_date  # Or calculate differently if needed
 					self.append("tasks", {
 						"task_name": task_name,
-						# "assigned_to": getattr(work_template, "assigned_to", None),
 						"due_date": due_date,
 						"status": getattr(work_template, "status", "Pending"),
 						"linked_task": getattr(work_template, "linked_task", None),
-						"item_code" :item.item_code
+						"item_code": item.item_code,
+						"work_template": item.work_template
 					})
 
 
@@ -1098,7 +1102,8 @@ class Job(Document):
 		reference_date=None,
 		posting_date=None,
 		payment_pi=None,
-		mode_of_payment_pi=None
+		mode_of_payment_pi=None,
+		supplier=None
 	):
 
 		patch_round_floats_in()
@@ -1117,12 +1122,14 @@ class Job(Document):
 			row for row in self.tasks
 
 			if row.employee__outsource == "Outsource"
+			and not row.purchase_invoice
+			and (not supplier or row.outsource_supplier == supplier)
 		]
 
 		if not outsource_rows:
 
 			frappe.throw(
-				"No outsource rows found in tasks table."
+				"No unbilled outsource tasks found." if not supplier else f"No unbilled outsource tasks found for supplier {supplier}."
 			)
 
 		# -------------------------
@@ -2304,7 +2311,8 @@ class Job(Document):
 		"""Open invoices (outstanding > 0) for this job, to allocate a payment
 		against. invoice_type = 'Sales Invoice' or 'Purchase Invoice'."""
 		party_field = "customer" if invoice_type == "Sales Invoice" else "supplier"
-		conditions = "job = %(job)s AND docstatus = 1 AND outstanding_amount > 0"
+		job_field = "job" if frappe.db.has_column(invoice_type, "job") else "custom_job"
+		conditions = f"{job_field} = %(job)s AND docstatus = 1 AND outstanding_amount > 0"
 		params = {"job": self.name}
 		if party:
 			conditions += f" AND `{party_field}` = %(party)s"
@@ -2323,8 +2331,9 @@ class Job(Document):
 	def get_job_unallocated_payments(self, payment_type, party=None):
 		"""Unallocated advance Payment Entries for this job, to apply to an
 		invoice. payment_type = 'Receive' (customer) or 'Pay' (supplier)."""
+		job_field = "job" if frappe.db.has_column("Payment Entry", "job") else "custom_job"
 		conditions = (
-			"job = %(job)s AND docstatus = 1 AND payment_type = %(pt)s "
+			f"{job_field} = %(job)s AND docstatus = 1 AND payment_type = %(pt)s "
 			"AND unallocated_amount > 0"
 		)
 		params = {"job": self.name, "pt": payment_type}
@@ -2356,8 +2365,14 @@ class Job(Document):
 		settings = frappe.get_cached_doc("JMS Settings")
 		outsourcing_acct = get_outsourcing_cost_account(company)
 		job = self.name
+		has_gle_job = frappe.db.has_column("GL Entry", "job")
+		pe_job_field = "job" if frappe.db.has_column("Payment Entry", "job") else "custom_job"
+		si_job_field = "job" if frappe.db.has_column("Sales Invoice", "job") else "custom_job"
+		pi_job_field = "job" if frappe.db.has_column("Purchase Invoice", "job") else "custom_job"
 
 		def _gl_sum(root_type=None, account=None, exclude_account=None):
+			if not has_gle_job:
+				return 0.0
 			conditions = "gle.job = %(job)s AND gle.is_cancelled = 0"
 			params = {"job": job}
 			if root_type:
@@ -2396,9 +2411,9 @@ class Job(Document):
 
 		# 2. Total Amount Received (Payment Entry, Receive; includes advances)
 		total_received = flt(frappe.db.sql(
-			"""SELECT COALESCE(SUM(pe.paid_amount), 0)
+			f"""SELECT COALESCE(SUM(pe.paid_amount), 0)
 				FROM `tabPayment Entry` pe
-				WHERE pe.job = %(job)s AND pe.docstatus = 1
+				WHERE pe.{pe_job_field} = %(job)s AND pe.docstatus = 1
 				  AND pe.payment_type = 'Receive'""",
 			{"job": job},
 		)[0][0])
@@ -2408,9 +2423,9 @@ class Job(Document):
 		received_from_agent = 0.0
 		if self.agent_customer:
 			received_from_agent = flt(frappe.db.sql(
-				"""SELECT COALESCE(SUM(pe.paid_amount), 0)
+				f"""SELECT COALESCE(SUM(pe.paid_amount), 0)
 					FROM `tabPayment Entry` pe
-					WHERE pe.job = %(job)s AND pe.docstatus = 1
+					WHERE pe.{pe_job_field} = %(job)s AND pe.docstatus = 1
 					  AND pe.payment_type = 'Receive'
 					  AND pe.party = %(party)s""",
 				{"job": job, "party": self.agent_customer},
@@ -2419,33 +2434,33 @@ class Job(Document):
 
 		# 3. Outstanding to Receive (Sales Invoice outstanding by job)
 		outstanding = flt(frappe.db.sql(
-			"""SELECT COALESCE(SUM(si.outstanding_amount), 0)
+			f"""SELECT COALESCE(SUM(si.outstanding_amount), 0)
 				FROM `tabSales Invoice` si
-				WHERE si.job = %(job)s AND si.docstatus = 1""",
+				WHERE si.{si_job_field} = %(job)s AND si.docstatus = 1""",
 			{"job": job},
 		)[0][0])
 
 		# Has this job been billed yet (a submitted Sales Invoice exists)?
 		has_sales_invoice = bool(
-			frappe.db.count("Sales Invoice", {"job": job, "docstatus": 1})
+			frappe.db.count("Sales Invoice", {si_job_field: job, "docstatus": 1})
 		)
 
 		# Paid Out for this job = ALL pay-side Payment Entries (incl. unallocated
 		# supplier / agent advances), not only those allocated to Purchase
 		# Invoices — otherwise outgoing advance payments are invisible.
 		paid_out = flt(frappe.db.sql(
-			"""SELECT COALESCE(SUM(pe.paid_amount), 0)
+			f"""SELECT COALESCE(SUM(pe.paid_amount), 0)
 				FROM `tabPayment Entry` pe
-				WHERE pe.job = %(job)s AND pe.docstatus = 1
+				WHERE pe.{pe_job_field} = %(job)s AND pe.docstatus = 1
 				  AND pe.payment_type = 'Pay'""",
 			{"job": job},
 		)[0][0])
 
 		# Unpaid payables (Exp. Pending indicator + Profit Balance)
 		payable_outstanding = flt(frappe.db.sql(
-			"""SELECT COALESCE(SUM(pi.outstanding_amount), 0)
+			f"""SELECT COALESCE(SUM(pi.outstanding_amount), 0)
 				FROM `tabPurchase Invoice` pi
-				WHERE pi.job = %(job)s AND pi.docstatus = 1""",
+				WHERE pi.{pi_job_field} = %(job)s AND pi.docstatus = 1""",
 			{"job": job},
 		)[0][0])
 
@@ -2454,16 +2469,16 @@ class Job(Document):
 		# older data) would otherwise stay flagged "pending" forever, so we net
 		# the unallocated advance against the gross invoice outstanding.
 		unallocated_received = flt(frappe.db.sql(
-			"""SELECT COALESCE(SUM(pe.unallocated_amount), 0)
+			f"""SELECT COALESCE(SUM(pe.unallocated_amount), 0)
 				FROM `tabPayment Entry` pe
-				WHERE pe.job = %(job)s AND pe.docstatus = 1
+				WHERE pe.{pe_job_field} = %(job)s AND pe.docstatus = 1
 				  AND pe.payment_type = 'Receive'""",
 			{"job": job},
 		)[0][0])
 		unallocated_paid = flt(frappe.db.sql(
-			"""SELECT COALESCE(SUM(pe.unallocated_amount), 0)
+			f"""SELECT COALESCE(SUM(pe.unallocated_amount), 0)
 				FROM `tabPayment Entry` pe
-				WHERE pe.job = %(job)s AND pe.docstatus = 1
+				WHERE pe.{pe_job_field} = %(job)s AND pe.docstatus = 1
 				  AND pe.payment_type = 'Pay'""",
 			{"job": job},
 		)[0][0])

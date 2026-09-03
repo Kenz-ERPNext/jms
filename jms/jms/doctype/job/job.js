@@ -1443,19 +1443,17 @@ frappe.ui.form.on('Job', {
                 'Create Purchase Invoice',
                 function () {
 
-                    // Block ONLY if the tracked outsource Purchase Invoice is
-                    // still active (submitted). A cancelled one (docstatus 2) —
-                    // or none — frees the Job to create a new one. Expense PIs
-                    // don't set this back-ref, so they never block here.
-                    let __pi_ref = frm.doc.purchase_invoice;
-                    let __pi_check = __pi_ref
-                        ? frappe.db.get_value("Purchase Invoice", __pi_ref, "docstatus")
-                            .then(r => r && r.message && r.message.docstatus === 1)
-                        : Promise.resolve(false);
-                    __pi_check.then(active_pi => {
+                    let unbilled_suppliers = [];
+                    (frm.doc.tasks || []).forEach(task => {
+                        if (task.employee__outsource === "Outsource" && !task.purchase_invoice && task.outsource_supplier) {
+                            if (!unbilled_suppliers.includes(task.outsource_supplier)) {
+                                unbilled_suppliers.push(task.outsource_supplier);
+                            }
+                        }
+                    });
 
-                    if (active_pi) {
-                        frappe.msgprint(__('Purchase Invoice already created for this Job.'));
+                    if (unbilled_suppliers.length === 0) {
+                        frappe.msgprint(__('No unbilled outsource tasks found. All Purchase Invoices have been created.'));
                         return;
                     }
 
@@ -1468,6 +1466,21 @@ frappe.ui.form.on('Job', {
                         title: 'Create Purchase Invoice',
 
                         fields: [
+
+                            {
+                                label: 'Select Supplier',
+                                fieldname: 'supplier',
+                                fieldtype: 'Link',
+                                options: 'Supplier',
+                                get_query: function() {
+                                    return {
+                                        filters: [
+                                            ['name', 'in', unbilled_suppliers]
+                                        ]
+                                    };
+                                },
+                                reqd: 1
+                            },
 
                             {
                                 label: 'Posting Date',
@@ -1557,7 +1570,8 @@ frappe.ui.form.on('Job', {
                                         payment_pi: values.payment_pi,
                                         mode_of_payment_pi: isNow ? values.mode_of_payment_pi : null,
                                         reference_no: values.reference_no,
-                                        reference_date: values.reference_date
+                                        reference_date: values.reference_date,
+                                        supplier: values.supplier
                                     },
 
                                     callback: function (r) {
@@ -1612,8 +1626,6 @@ frappe.ui.form.on('Job', {
                             jmsRenderAdvancesInfo(d, "advances_html", r.message || []);
                         }
                     });
-
-                    });  // end frappe.db.count(...).then
 
                 }
             );
@@ -1771,6 +1783,73 @@ frappe.ui.form.on('Job', {
 		if (frm.doc.net_amount && frm.doc.paid_up) {
 			frm.set_value('balance', frm.doc.net_amount - frm.doc.paid_up);
 		}
+	},
+
+	sync_subtasks_for_items: function(frm) {
+		let items = frm.doc.items || [];
+		let active_template_codes = items.map(i => i.work_template).filter(Boolean);
+
+		// 1. Remove subtasks belonging to work templates that are no longer in items
+		if (frm.doc.tasks && frm.doc.tasks.length > 0) {
+			let original_len = frm.doc.tasks.length;
+			frm.doc.tasks = frm.doc.tasks.filter(task => {
+				if (!task.work_template) return true; // Keep manual tasks
+				return active_template_codes.includes(task.work_template);
+			});
+			if (frm.doc.tasks.length !== original_len) {
+				frm.refresh_field('tasks');
+			}
+		}
+
+		// 2. Fetch and add missing subtasks for active items
+		if (!active_template_codes.length) return;
+
+		let existing_task_names = (frm.doc.tasks || []).map(t => t.task_name);
+		let promises = items.map(item => {
+			if (!item.work_template) return Promise.resolve();
+			return frappe.db.get_doc('Work Template', item.work_template).then(doc => {
+				if (!doc) return;
+
+				if (doc.has_sub_tasks && doc.sub_tasks && doc.sub_tasks.length > 0) {
+					doc.sub_tasks.forEach(sub_task => {
+						let task_name = `${doc.description} - ${sub_task.task_name}`;
+						if (!existing_task_names.includes(task_name)) {
+							let due_date = frm.doc.start_date
+								? frappe.datetime.add_days(frm.doc.start_date, sub_task.due_days || 0)
+								: frappe.datetime.get_today();
+
+							frm.add_child('tasks', {
+								task_name: task_name,
+								due_date: due_date,
+								status: sub_task.status || 'Pending',
+								linked_task: sub_task.linked_task,
+								item_code: doc.item_code || item.item_code,
+								work_template: item.work_template
+							});
+							existing_task_names.push(task_name);
+						}
+					});
+				} else if (doc.task) {
+					let task_name = `${doc.description} - ${doc.task}`;
+					if (!existing_task_names.includes(task_name)) {
+						let due_date = frm.doc.start_date || frappe.datetime.get_today();
+						frm.add_child('tasks', {
+							task_name: task_name,
+							due_date: due_date,
+							status: doc.status || 'Pending',
+							linked_task: doc.linked_task,
+							item_code: doc.item_code || item.item_code,
+							work_template: item.work_template
+						});
+						existing_task_names.push(task_name);
+					}
+				}
+			});
+		});
+
+		Promise.all(promises).then(() => {
+			frm.refresh_field('tasks');
+		});
 	}
 });
 
@@ -1824,7 +1903,13 @@ frappe.ui.form.on('Job Item', {
 
 				// Calculate item total
 				frm.trigger('calculate_item_total', cdt, cdn);
+
+				// Real-time subtasks sync on work_template selection
+				frm.trigger('sync_subtasks_for_items');
 			});
+		} else {
+			// If work_template is cleared, sync tasks to remove orphaned subtasks
+			frm.trigger('sync_subtasks_for_items');
 		}
 	},
 
@@ -1833,8 +1918,6 @@ frappe.ui.form.on('Job Item', {
 	},
 
 	fee_price: function(frm, cdt, cdn) {
-
-		
 		frm.trigger('calculate_item_total', cdt, cdn);
 	},
 
@@ -1851,19 +1934,15 @@ frappe.ui.form.on('Job Item', {
 	},
 
 	items_remove: function(frm) {
-		
 		frm.trigger('calculate_totals');
+		frm.trigger('sync_subtasks_for_items');
 	},
 	
 
 	calculate_item_total: function(frm, cdt, cdn) {
 		// Recompute every row + the form totals live, client-side.
-		// (Previously this auto-saved the form on every edit, which scrolled
-		//  the page to the top — see calculate_totals.)
 		frm.trigger('calculate_totals');
 	}
-
-
 });
  
 
