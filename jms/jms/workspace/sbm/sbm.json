@@ -253,10 +253,9 @@
   },
   {
    "color": "Blue",
-   "format": "{} Open",
    "label": "Job",
    "link_to": "Job",
-   "stats_filter": "{\"status\": \"In Progress\"}",
+   "stats_filter": "{}",
    "type": "DocType"
   },
   {

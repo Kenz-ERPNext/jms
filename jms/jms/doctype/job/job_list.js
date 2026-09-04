@@ -72,6 +72,14 @@ frappe.listview_settings['Job'] = {
 	},
 
 	onload: function(listview) {
+		// Clear default 'In Progress' filter if applied by shortcut/route
+		if (frappe.route_options && frappe.route_options.status) {
+			delete frappe.route_options.status;
+		}
+		if (listview.filter_area) {
+			listview.filter_area.remove("status");
+		}
+
 		// Add custom buttons to list view
 		listview.page.add_inner_button(__('Create Sample Jobs'), function() {
 			frappe.call({
