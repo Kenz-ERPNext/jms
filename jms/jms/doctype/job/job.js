@@ -597,7 +597,11 @@ frappe.ui.form.on('Job', {
             // A cancelled invoice (docstatus=2) frees the Job to create a new
             // one — checked live so a cancellation elsewhere is reflected even
             // if the open form's cached sales_invoice_status is stale.
-            frappe.db.count("Sales Invoice", { filters: { job: frm.doc.name, docstatus: 1 } }).then(active_si => {
+            let si_field = frappe.meta.has_field("Sales Invoice", "job") ? "job" : "custom_job";
+            let si_filters = { docstatus: 1 };
+            si_filters[si_field] = frm.doc.name;
+
+            frappe.db.count("Sales Invoice", { filters: si_filters }).then(active_si => {
 
             if (active_si > 0) {
 
@@ -623,66 +627,80 @@ frappe.ui.form.on('Job', {
                 });
             }
 
-            // ----------------------------
-            // Dynamic Fields
-            // ----------------------------
+            frappe.db.get_list("Sales Taxes and Charges Template", {
+                filters: { company: frm.doc.company || frappe.defaults.get_user_default("company") },
+                fields: ["name", "title", "is_default"]
+            }).then(templates => {
 
-            let fields = [
+                let default_vat = "";
+                if (templates && templates.length) {
+                    let vat0 = templates.find(t => (t.title && t.title.toLowerCase().includes("vat 0")) || (t.name && t.name.toLowerCase().includes("vat 0")));
+                    let def = templates.find(t => t.is_default);
+                    default_vat = vat0 ? vat0.name : (def ? def.name : templates[0].name);
+                }
 
-                {
-                    fieldname: "posting_date",
-                    label: "Posting Date",
-                    fieldtype: "Date",
-                    default: frappe.datetime.get_today(),
-                    reqd: 1
-                },
+                // ----------------------------
+                // Dynamic Fields
+                // ----------------------------
 
-                {
-                    fieldname: "tax_template",
-                    label: "Sales Taxes and Charges Template",
-                    fieldtype: "Link",
-                    options: "Sales Taxes and Charges Template",
-                    reqd: 1
-                },
+                let fields = [
 
-                {
-                    fieldname: "invoice_total",
-                    label: "Total Invoice Amount",
-                    fieldtype: "Currency",
-                    default: total_amount,
-                    read_only: 1
-                },
+                    {
+                        fieldname: "posting_date",
+                        label: "Posting Date",
+                        fieldtype: "Date",
+                        default: frappe.datetime.get_today(),
+                        reqd: 1
+                    },
 
-                {
-                    fieldname: "payment",
-                    label: "Payment",
-                    fieldtype: "Select",
-                    options: "Credit\nPayment Now",
-                    default: frm.doc.payment || "Credit",
-                    reqd: 1
-                },
+                    {
+                        fieldname: "tax_template",
+                        label: "Sales Taxes and Charges Template",
+                        fieldtype: "Link",
+                        options: "Sales Taxes and Charges Template",
+                        default: default_vat || "VAT 0% - K",
+                        reqd: 1
+                    },
 
-                {
-                    fieldname: "mode_of_payment",
-                    label: "Mode of Payment",
-                    fieldtype: "Link",
-                    options: "Mode of Payment",
-                    default: frm.doc.mode_of_payment,
-                    depends_on: "eval:doc.payment=='Payment Now'",
-                    mandatory_depends_on: "eval:doc.payment=='Payment Now'",
-                    change() {
-                        jmsToggleReferenceFields(d, "mode_of_payment");
-                    }
-                },
+                    {
+                        fieldname: "invoice_total",
+                        label: "Total Invoice Amount",
+                        fieldtype: "Currency",
+                        default: total_amount,
+                        read_only: 1
+                    },
 
-                {
-                    fieldname: "payment_type",
-                    label: "Payment Type",
-                    fieldtype: "Select",
-                    options: "Full Paid\nPartially Paid",
-                    depends_on: "eval:doc.payment=='Payment Now'",
-                    mandatory_depends_on: "eval:doc.payment=='Payment Now'"
-                },
+                    {
+                        fieldname: "payment",
+                        label: "Payment",
+                        fieldtype: "Select",
+                        options: "Credit\nPayment Now",
+                        default: "Payment Now",
+                        reqd: 1
+                    },
+
+                    {
+                        fieldname: "mode_of_payment",
+                        label: "Mode of Payment",
+                        fieldtype: "Link",
+                        options: "Mode of Payment",
+                        default: frm.doc.mode_of_payment || "Cash",
+                        depends_on: "eval:doc.payment=='Payment Now'",
+                        mandatory_depends_on: "eval:doc.payment=='Payment Now'",
+                        change() {
+                            jmsToggleReferenceFields(d, "mode_of_payment");
+                        }
+                    },
+
+                    {
+                        fieldname: "payment_type",
+                        label: "Payment Type",
+                        fieldtype: "Select",
+                        options: "Full Paid\nPartially Paid",
+                        default: "Full Paid",
+                        depends_on: "eval:doc.payment=='Payment Now'",
+                        mandatory_depends_on: "eval:doc.payment=='Payment Now'"
+                    },
 
                 {
                     fieldname: "partial_amount",
@@ -814,6 +832,8 @@ frappe.ui.form.on('Job', {
                     jmsRenderAdvancesInfo(d, "advances_html", r.message || []);
                 }
             });
+
+            });  // end frappe.db.get_list(templates).then
 
             });  // end frappe.db.count(...).then
 

@@ -564,10 +564,11 @@ class Job(Document):
 			return 0.0
 
 		# keep only advances whose Payment Entry is tagged to this job
+		pe_job_field = "job" if frappe.db.has_column("Payment Entry", "job") else "custom_job"
 		job_rows = []
 		for adv in (doc.get("advances") or []):
 			if adv.reference_type == "Payment Entry" and frappe.db.get_value(
-				"Payment Entry", adv.reference_name, "job"
+				"Payment Entry", adv.reference_name, pe_job_field
 			) == self.name:
 				job_rows.append(adv)
 		doc.set("advances", job_rows)
