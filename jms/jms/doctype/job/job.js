@@ -149,41 +149,10 @@ frappe.ui.form.on('Job', {
                                     "type"
                                 ).then(r => {
 
-                                    let payment_type = r.message.type;
-
-                                    if (payment_type === "Bank") {
-
-                                        d.set_df_property(
-                                            "reference_no",
-                                            "hidden",
-                                            0
-                                        );
-
-                                        d.set_df_property(
-                                            "reference_date",
-                                            "hidden",
-                                            0
-                                        );
-
-                                    } else {
-
-                                        d.set_df_property(
-                                            "reference_no",
-                                            "hidden",
-                                            1
-                                        );
-
-                                        d.set_df_property(
-                                            "reference_date",
-                                            "hidden",
-                                            1
-                                        );
-
-                                        d.set_value("reference_no", "");
-
-                                        d.set_value("reference_date", "");
-                                    }
-
+                                    d.set_df_property("reference_no", "hidden", 1);
+                                    d.set_df_property("reference_date", "hidden", 1);
+                                    d.set_value("reference_no", "");
+                                    d.set_value("reference_date", "");
                                     d.refresh();
                                 });
                             }
@@ -373,41 +342,10 @@ frappe.ui.form.on('Job', {
                             "type"
                         ).then(r => {
 
-                            let payment_type = r.message.type;
-
-                            if (payment_type === "Bank") {
-
-                                d.set_df_property(
-                                    "reference_no",
-                                    "hidden",
-                                    0
-                                );
-
-                                d.set_df_property(
-                                    "reference_date",
-                                    "hidden",
-                                    0
-                                );
-
-                            } else {
-
-                                d.set_df_property(
-                                    "reference_no",
-                                    "hidden",
-                                    1
-                                );
-
-                                d.set_df_property(
-                                    "reference_date",
-                                    "hidden",
-                                    1
-                                );
-
-                                d.set_value("reference_no", "");
-
-                                d.set_value("reference_date", "");
-                            }
-
+                            d.set_df_property("reference_no", "hidden", 1);
+                            d.set_df_property("reference_date", "hidden", 1);
+                            d.set_value("reference_no", "");
+                            d.set_value("reference_date", "");
                             d.refresh();
                         });
                     }
@@ -859,34 +797,9 @@ frappe.ui.form.on('Job', {
                         });
                     };
 
-                    // Bank mode requires reference no/date before submitting
-                    if (isNow && values.mode_of_payment) {
-
-                        frappe.db.get_value(
-                            "Mode of Payment",
-                            values.mode_of_payment,
-                            "type"
-                        ).then(r => {
-
-                            if (r.message && r.message.type === "Bank") {
-
-                                if (!values.reference_no) {
-                                    frappe.msgprint("Reference No is required");
-                                    return;
-                                }
-
-                                if (!values.reference_date) {
-                                    frappe.msgprint("Reference Date is required");
-                                    return;
-                                }
-                            }
-
-                            submit();
-                        });
-
-                    } else {
-                        submit();
-                    }
+                    // Bank mode requires reference no/date before submitting (commented out)
+                    // if (isNow && values.mode_of_payment) { ... }
+                    submit();
                 }
 
             });
@@ -1586,33 +1499,8 @@ frappe.ui.form.on('Job', {
                                 });
                             };
 
-                            if (isNow && values.mode_of_payment_pi) {
-
-                                frappe.db.get_value(
-                                    "Mode of Payment",
-                                    values.mode_of_payment_pi,
-                                    "type"
-                                ).then(r => {
-
-                                    if (r.message && r.message.type === "Bank") {
-
-                                        if (!values.reference_no) {
-                                            frappe.msgprint(__("Reference No is required"));
-                                            return;
-                                        }
-
-                                        if (!values.reference_date) {
-                                            frappe.msgprint(__("Reference Date is required"));
-                                            return;
-                                        }
-                                    }
-
-                                    submit();
-                                });
-
-                            } else {
-                                submit();
-                            }
+                            // if (isNow && values.mode_of_payment_pi) { ... } (commented out)
+                            submit();
                         }
                     });
 
@@ -2232,10 +2120,12 @@ function jmsToggleReferenceFields(d, mop_fieldname) {
     }
     frappe.db.get_value("Mode of Payment", mop, "type").then(r => {
         let isBank = r.message && r.message.type === "Bank";
-        d.set_df_property("reference_no", "hidden", isBank ? 0 : 1);
-        d.set_df_property("reference_date", "hidden", isBank ? 0 : 1);
-        d.set_df_property("reference_no", "reqd", isBank ? 1 : 0);
-        d.set_df_property("reference_date", "reqd", isBank ? 1 : 0);
+        d.set_df_property("reference_no", "hidden", 1);
+        d.set_df_property("reference_date", "hidden", 1);
+        // d.set_df_property("reference_no", "reqd", isBank ? 1 : 0);
+        // d.set_df_property("reference_date", "reqd", isBank ? 1 : 0);
+        d.set_df_property("reference_no", "reqd", 0);
+        d.set_df_property("reference_date", "reqd", 0);
         d.refresh();
     });
 }

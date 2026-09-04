@@ -780,22 +780,14 @@ class Job(Document):
 			# ------------------------------------------------
 
 			if mop_type == "Bank":
-
-				if not reference_no:
-
-					frappe.throw(
-						"Reference No is required"
-					)
-
-				if not reference_date:
-
-					frappe.throw(
-						"Reference Date is required"
-					)
-
-				payment_entry.reference_no = reference_no
-
-				payment_entry.reference_date = reference_date
+				# if not reference_no:
+				# 	frappe.throw("Reference No is required")
+				# if not reference_date:
+				# 	frappe.throw("Reference Date is required")
+				if reference_no:
+					payment_entry.reference_no = reference_no
+				if reference_date:
+					payment_entry.reference_date = reference_date
 
 			# ------------------------------------------------
 			# ACCOUNT FETCH
@@ -1298,18 +1290,14 @@ class Job(Document):
 				# -------------------------
 
 				if mop_type == "Bank":
-
-					if not reference_no:
-
-						frappe.throw(
-							"Reference No is required"
-						)
-
-					if not reference_date:
-
-						frappe.throw(
-							"Reference Date is required"
-						)
+					# if not reference_no:
+					# 	frappe.throw("Reference No is required")
+					# if not reference_date:
+					# 	frappe.throw("Reference Date is required")
+					if reference_no:
+						pe.reference_no = reference_no
+					if reference_date:
+						pe.reference_date = reference_date
 
 				# -------------------------
 				# FETCH ACCOUNT
@@ -1782,18 +1770,14 @@ class Job(Document):
 			# -----------------------
 
 			if mop_type == "Bank":
-
-				if not reference_no:
-
-					frappe.throw(
-						"Reference No is required"
-					)
-
-				if not reference_date:
-
-					frappe.throw(
-						"Reference Date is required"
-					)
+				# if not reference_no:
+				# 	frappe.throw("Reference No is required")
+				# if not reference_date:
+				# 	frappe.throw("Reference Date is required")
+				if reference_no:
+					pe.reference_no = reference_no
+				if reference_date:
+					pe.reference_date = reference_date
 
 			# -----------------------
 			# FETCH PAID ACCOUNT
@@ -2029,16 +2013,14 @@ class Job(Document):
 		# ------------------------------------------------
 
 		if mop_type == "Bank":
-
-			if not reference_no:
-				frappe.throw("Reference No is required")
-
-			if not reference_date:
-				frappe.throw("Reference Date is required")
-
-			pe.reference_no = reference_no
-
-			pe.reference_date = reference_date
+			# if not reference_no:
+			# 	frappe.throw("Reference No is required")
+			# if not reference_date:
+			# 	frappe.throw("Reference Date is required")
+			if reference_no:
+				pe.reference_no = reference_no
+			if reference_date:
+				pe.reference_date = reference_date
 
 		# ------------------------------------------------
 		# Account Fetch
@@ -2057,7 +2039,14 @@ class Job(Document):
 		)
 
 		if not pe.paid_to:
+			pe.paid_to = (
+				frappe.db.get_value("Company", self.company, "default_bank_account")
+				or frappe.db.get_value("Account", {"company": self.company, "account_type": "Bank", "is_group": 0}, "name")
+				or frappe.db.get_value("Company", self.company, "default_cash_account")
+				or frappe.db.get_value("Account", {"company": self.company, "account_type": "Cash", "is_group": 0}, "name")
+			)
 
+		if not pe.paid_to:
 			frappe.throw(
 				f"No account found for Mode of Payment: {mode_of_payment}"
 			)
@@ -2183,16 +2172,14 @@ class Job(Document):
 			# ----------------------------------------
 
 			if mop_type == "Bank":
-
-				if not reference_no:
-					frappe.throw("Reference No is required")
-
-				if not reference_date:
-					frappe.throw("Reference Date is required")
-
-				pe.reference_no = reference_no
-
-				pe.reference_date = reference_date
+				# if not reference_no:
+				# 	frappe.throw("Reference No is required")
+				# if not reference_date:
+				# 	frappe.throw("Reference Date is required")
+				if reference_no:
+					pe.reference_no = reference_no
+				if reference_date:
+					pe.reference_date = reference_date
 
 			# ----------------------------------------
 			# FETCH MODE OF PAYMENT ACCOUNT
