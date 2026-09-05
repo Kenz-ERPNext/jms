@@ -341,11 +341,17 @@ frappe.ui.form.on('Job', {
                             mode_of_payment,
                             "type"
                         ).then(r => {
+                            let isBank = r.message && r.message.type === "Bank";
 
-                            d.set_df_property("reference_no", "hidden", 1);
-                            d.set_df_property("reference_date", "hidden", 1);
-                            d.set_value("reference_no", "");
-                            d.set_value("reference_date", "");
+                            d.set_df_property("reference_no", "hidden", isBank ? 0 : 1);
+                            d.set_df_property("reference_date", "hidden", isBank ? 0 : 1);
+                            d.set_df_property("reference_no", "reqd", 0);
+                            d.set_df_property("reference_date", "reqd", 0);
+
+                            if (!isBank) {
+                                d.set_value("reference_no", "");
+                                d.set_value("reference_date", "");
+                            }
                             d.refresh();
                         });
                     }
@@ -355,14 +361,16 @@ frappe.ui.form.on('Job', {
                     fieldname: "reference_no",
                     label: "Reference No",
                     fieldtype: "Data",
-                    hidden: 1
+                    hidden: 1,
+                    reqd: 0
                 },
 
                 {
                     fieldname: "reference_date",
                     label: "Reference Date",
                     fieldtype: "Date",
-                    hidden: 1
+                    hidden: 1,
+                    reqd: 0
                 },
 
                 {
