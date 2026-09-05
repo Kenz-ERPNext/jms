@@ -11,6 +11,15 @@ class ExpenseType(Document):
 	@frappe.whitelist()
 	def validate(self):
 		if not frappe.db.exists("Item", self.expense_type):
+			if not frappe.db.exists("Item Group", "Expense"):
+				ig = frappe.get_doc({
+					"doctype": "Item Group",
+					"item_group_name": "Expense",
+					"parent_item_group": "All Item Groups",
+					"is_group": 0
+				})
+				ig.insert(ignore_permissions=True)
+
 			item = frappe.new_doc("Item")
 			item.item_code = self.expense_type
 			item.item_name = self.expense_type

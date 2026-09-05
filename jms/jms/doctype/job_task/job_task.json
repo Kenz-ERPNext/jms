@@ -47,10 +47,8 @@
    "options": "Employee"
   },
   {
-   "columns": 2,
    "fieldname": "due_date",
    "fieldtype": "Date",
-   "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Due Date"
   },
@@ -59,7 +57,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "columns": 2,
+   "columns": 1,
    "default": "Pending",
    "fieldname": "status",
    "fieldtype": "Select",
@@ -94,7 +92,8 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Employee / Outsource",
-   "options": "\nEmployee\nOutsource"
+   "options": "\nEmployee\nOutsource",
+   "columns": 1
   },
   {
    "depends_on": "eval:doc.employee__outsource == \"Outsource\"",
@@ -104,7 +103,8 @@
    "in_standard_filter": 1,
    "label": "Assigned To",
    "mandatory_depends_on": "eval:doc.employee__outsource == \"Outsource\"",
-   "options": "Outsourced Party"
+   "options": "Outsourced Party",
+   "columns": 2
   },
   {
    "fetch_from": "assigned_to.user_id",
@@ -133,11 +133,13 @@
    "options": "Work Template"
   },
   {
-   "depends_on": "eval:doc.employee__outsource == \"Outsource\"",
    "fieldname": "outsource_charge",
    "fieldtype": "Currency",
    "label": "Outsource Charge",
-   "mandatory_depends_on": "eval:doc.employee__outsource == \"Outsource\""
+   "mandatory_depends_on": "eval:doc.employee__outsource == \"Outsource\"",
+   "in_list_view": 1,
+   "read_only_depends_on": "eval:doc.employee__outsource != \"Outsource\"",
+   "columns": 1
   },
   {
    "fieldname": "priority",
