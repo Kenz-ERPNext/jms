@@ -2014,14 +2014,10 @@ class Job(Document):
 		# ------------------------------------------------
 
 		if mop_type == "Bank":
-			# if not reference_no:
-			# 	frappe.throw("Reference No is required")
-			# if not reference_date:
-			# 	frappe.throw("Reference Date is required")
-			if reference_no:
-				pe.reference_no = reference_no
-			if reference_date:
-				pe.reference_date = reference_date
+			# ERPNext requires these fields for Bank accounts. Keep them optional
+			# in the dialog; when blank, use the Job number and posting date.
+			pe.reference_no = reference_no or self.name
+			pe.reference_date = reference_date or pe.posting_date
 
 		# ------------------------------------------------
 		# Account Fetch
