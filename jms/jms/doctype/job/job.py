@@ -2028,9 +2028,15 @@ class Job(Document):
 				f"No account found for Mode of Payment: {mode_of_payment}"
 			)
 
-		# ERPNext requires transaction references for the final Bank account.
-		# The dialog keeps these optional; blank values get safe defaults.
-		if frappe.get_cached_value("Account", pe.paid_to, "account_type") == "Bank":
+		# ERPNext requires transaction references for Bank payment modes. The
+		# dialog intentionally keeps these optional, so set safe values before
+		# inserting the Payment Entry instead of showing ERPNext mandatory-field
+		# errors. A Bank mode can be configured with a non-Bank account type.
+		mop_type = frappe.get_cached_value("Mode of Payment", mode_of_payment, "type")
+		if (
+			mop_type == "Bank"
+			or frappe.get_cached_value("Account", pe.paid_to, "account_type") == "Bank"
+		):
 			pe.reference_no = reference_no or self.name
 			pe.reference_date = reference_date or pe.posting_date
 
@@ -2527,7 +2533,6 @@ def get_outsourcing_cost_account(company):
 
 
 	
-
 
 
 
