@@ -2000,26 +2000,6 @@ class Job(Document):
 		pe.job = self.name
 
 		# ------------------------------------------------
-		# MODE OF PAYMENT TYPE
-		# ------------------------------------------------
-
-		mop_type = frappe.db.get_value(
-			"Mode of Payment",
-			mode_of_payment,
-			"type"
-		)
-
-		# ------------------------------------------------
-		# REFERENCE DETAILS
-		# ------------------------------------------------
-
-		if mop_type == "Bank":
-			# ERPNext requires these fields for Bank accounts. Keep them optional
-			# in the dialog; when blank, use the Job number and posting date.
-			pe.reference_no = reference_no or self.name
-			pe.reference_date = reference_date or pe.posting_date
-
-		# ------------------------------------------------
 		# Account Fetch
 		# ------------------------------------------------
 
@@ -2047,6 +2027,12 @@ class Job(Document):
 			frappe.throw(
 				f"No account found for Mode of Payment: {mode_of_payment}"
 			)
+
+		# ERPNext requires transaction references for the final Bank account.
+		# The dialog keeps these optional; blank values get safe defaults.
+		if frappe.get_cached_value("Account", pe.paid_to, "account_type") == "Bank":
+			pe.reference_no = reference_no or self.name
+			pe.reference_date = reference_date or pe.posting_date
 
 		# ------------------------------------------------
 		# Amount
