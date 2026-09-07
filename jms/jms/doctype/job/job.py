@@ -781,14 +781,11 @@ class Job(Document):
 			# ------------------------------------------------
 
 			if mop_type == "Bank":
-				# if not reference_no:
-				# 	frappe.throw("Reference No is required")
-				# if not reference_date:
-				# 	frappe.throw("Reference Date is required")
-				if reference_no:
-					payment_entry.reference_no = reference_no
-				if reference_date:
-					payment_entry.reference_date = reference_date
+				# Reference details are no longer mandatory for the client.
+				# Auto-fill safe defaults when left blank so ERPNext's
+				# Bank-transaction validation passes.
+				payment_entry.reference_no = reference_no or self.name
+				payment_entry.reference_date = reference_date or sales_invoice.posting_date
 
 			# ------------------------------------------------
 			# ACCOUNT FETCH
@@ -1290,16 +1287,6 @@ class Job(Document):
 				# REFERENCE VALIDATION
 				# -------------------------
 
-				if mop_type == "Bank":
-					# if not reference_no:
-					# 	frappe.throw("Reference No is required")
-					# if not reference_date:
-					# 	frappe.throw("Reference Date is required")
-					if reference_no:
-						pe.reference_no = reference_no
-					if reference_date:
-						pe.reference_date = reference_date
-
 				# -------------------------
 				# FETCH ACCOUNT
 				# -------------------------
@@ -1402,10 +1389,11 @@ class Job(Document):
 				# -------------------------
 
 				if mop_type == "Bank":
-
-					pe.reference_no = reference_no
-
-					pe.reference_date = reference_date
+					# Reference details are no longer mandatory for the client.
+					# When left blank, auto-fill safe defaults (job name + posting
+					# date) so ERPNext's Bank-transaction validation passes.
+					pe.reference_no = reference_no or self.name
+					pe.reference_date = reference_date or pi.posting_date
 
 				pe.paid_from = paid_from
 
@@ -1767,20 +1755,6 @@ class Job(Document):
 			)
 
 			# -----------------------
-			# REFERENCE DETAILS
-			# -----------------------
-
-			if mop_type == "Bank":
-				# if not reference_no:
-				# 	frappe.throw("Reference No is required")
-				# if not reference_date:
-				# 	frappe.throw("Reference Date is required")
-				if reference_no:
-					pe.reference_no = reference_no
-				if reference_date:
-					pe.reference_date = reference_date
-
-			# -----------------------
 			# FETCH PAID ACCOUNT
 			# -----------------------
 
@@ -1884,10 +1858,10 @@ class Job(Document):
 			# -----------------------
 
 			if mop_type == "Bank":
-
-				pe.reference_no = reference_no
-
-				pe.reference_date = reference_date
+				# Reference details are no longer mandatory for the client.
+				# Auto-fill safe defaults when left blank.
+				pe.reference_no = reference_no or self.name
+				pe.reference_date = reference_date or pi.posting_date
 
 			pe.paid_from = paid_account
 
@@ -2161,14 +2135,10 @@ class Job(Document):
 			# ----------------------------------------
 
 			if mop_type == "Bank":
-				# if not reference_no:
-				# 	frappe.throw("Reference No is required")
-				# if not reference_date:
-				# 	frappe.throw("Reference Date is required")
-				if reference_no:
-					pe.reference_no = reference_no
-				if reference_date:
-					pe.reference_date = reference_date
+				# Reference details are no longer mandatory for the client.
+				# Auto-fill safe defaults when left blank.
+				pe.reference_no = reference_no or self.name
+				pe.reference_date = reference_date or pe.posting_date
 
 			# ----------------------------------------
 			# FETCH MODE OF PAYMENT ACCOUNT
