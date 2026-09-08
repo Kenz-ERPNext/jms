@@ -767,16 +767,6 @@ class Job(Document):
 			payment_entry.job = self.name
 
 			# ------------------------------------------------
-			# MODE OF PAYMENT TYPE
-			# ------------------------------------------------
-
-			mop_type = frappe.db.get_value(
-				"Mode of Payment",
-				mode_of_payment,
-				"type"
-			)
-
-			# ------------------------------------------------
 			# ACCOUNT FETCH
 			# ------------------------------------------------
 
@@ -804,22 +794,12 @@ class Job(Document):
 			# REFERENCE DETAILS
 			# ------------------------------------------------
 
-			# ERPNext's mandatory reference check looks at the paid_to
-			# account's account_type, not the Mode of Payment's "type" field —
-			# a Mode of Payment can be left without a "type" while still
-			# pointing at a real Bank account, so check both.
-			paid_to_account_type = frappe.db.get_value(
-				"Account",
-				payment_entry.paid_to,
-				"account_type"
-			)
-
-			if mop_type == "Bank" or paid_to_account_type == "Bank":
-				# Reference details are no longer mandatory for the client.
-				# Auto-fill safe defaults when left blank so ERPNext's
-				# Bank-transaction validation passes.
-				payment_entry.reference_no = reference_no or self.name
-				payment_entry.reference_date = reference_date or sales_invoice.posting_date
+			# Reference No/Date are not a feature the client wants to be asked
+			# for at all — always fill them with safe defaults so ERPNext's
+			# Bank-transaction validation never blocks submission, regardless
+			# of whether the Mode of Payment/account happens to be Bank-typed.
+			payment_entry.reference_no = reference_no or self.name
+			payment_entry.reference_date = reference_date or sales_invoice.posting_date
 
 			# ------------------------------------------------
 			# PAYMENT AMOUNT
@@ -1284,20 +1264,6 @@ class Job(Document):
 					)
 
 				# -------------------------
-				# MODE OF PAYMENT TYPE
-				# -------------------------
-
-				mop_type = frappe.db.get_value(
-					"Mode of Payment",
-					mode_of_payment_pi,
-					"type"
-				)
-
-				# -------------------------
-				# REFERENCE VALIDATION
-				# -------------------------
-
-				# -------------------------
 				# FETCH ACCOUNT
 				# -------------------------
 
@@ -1334,16 +1300,6 @@ class Job(Document):
 					"Account",
 					paid_from,
 					"account_currency"
-				)
-
-				# ERPNext's mandatory reference check looks at the paid_from
-				# account's account_type, not the Mode of Payment's "type"
-				# field — a Mode of Payment can be left without a "type" while
-				# still pointing at a real Bank account, so check both.
-				paid_from_account_type = frappe.db.get_value(
-					"Account",
-					paid_from,
-					"account_type"
 				)
 
 				# -------------------------
@@ -1408,12 +1364,12 @@ class Job(Document):
 				# SET REFERENCE DETAILS
 				# -------------------------
 
-				if mop_type == "Bank" or paid_from_account_type == "Bank":
-					# Reference details are no longer mandatory for the client.
-					# When left blank, auto-fill safe defaults (job name + posting
-					# date) so ERPNext's Bank-transaction validation passes.
-					pe.reference_no = reference_no or self.name
-					pe.reference_date = reference_date or pi.posting_date
+				# Reference No/Date are not a feature the client wants to be
+				# asked for at all — always fill them with safe defaults so
+				# ERPNext's Bank-transaction validation never blocks
+				# submission, regardless of the Mode of Payment/account type.
+				pe.reference_no = reference_no or self.name
+				pe.reference_date = reference_date or pi.posting_date
 
 				pe.paid_from = paid_from
 
@@ -1765,16 +1721,6 @@ class Job(Document):
 				)
 
 			# -----------------------
-			# MODE OF PAYMENT TYPE
-			# -----------------------
-
-			mop_type = frappe.db.get_value(
-				"Mode of Payment",
-				mode_of_payment,
-				"type"
-			)
-
-			# -----------------------
 			# FETCH PAID ACCOUNT
 			# -----------------------
 
@@ -1795,16 +1741,6 @@ class Job(Document):
 					f"Default account not set for "
 					f"Mode of Payment {mode_of_payment}"
 				)
-
-			# ERPNext's mandatory reference check looks at the paid_from
-			# account's account_type, not the Mode of Payment's "type" field —
-			# a Mode of Payment can be left without a "type" while still
-			# pointing at a real Bank account, so check both.
-			paid_account_type = frappe.db.get_value(
-				"Account",
-				paid_account,
-				"account_type"
-			)
 
 			# -----------------------
 			# FETCH PI AMOUNTS
@@ -1887,11 +1823,12 @@ class Job(Document):
 			# SET REFERENCE DETAILS
 			# -----------------------
 
-			if mop_type == "Bank" or paid_account_type == "Bank":
-				# Reference details are no longer mandatory for the client.
-				# Auto-fill safe defaults when left blank.
-				pe.reference_no = reference_no or self.name
-				pe.reference_date = reference_date or pi.posting_date
+			# Reference No/Date are not a feature the client wants to be asked
+			# for at all — always fill them with safe defaults so ERPNext's
+			# Bank-transaction validation never blocks submission, regardless
+			# of the Mode of Payment/account type.
+			pe.reference_no = reference_no or self.name
+			pe.reference_date = reference_date or pi.posting_date
 
 			pe.paid_from = paid_account
 
@@ -2032,17 +1969,12 @@ class Job(Document):
 				f"No account found for Mode of Payment: {mode_of_payment}"
 			)
 
-		# ERPNext requires transaction references for Bank payment modes. The
-		# dialog intentionally keeps these optional, so set safe values before
-		# inserting the Payment Entry instead of showing ERPNext mandatory-field
-		# errors. A Bank mode can be configured with a non-Bank account type.
-		mop_type = frappe.get_cached_value("Mode of Payment", mode_of_payment, "type")
-		if (
-			mop_type == "Bank"
-			or frappe.get_cached_value("Account", pe.paid_to, "account_type") == "Bank"
-		):
-			pe.reference_no = reference_no or self.name
-			pe.reference_date = reference_date or pe.posting_date
+		# Reference No/Date are not a feature the client wants to be asked for
+		# at all — always fill them with safe defaults so ERPNext's
+		# Bank-transaction validation never blocks submission, regardless of
+		# the Mode of Payment/account type.
+		pe.reference_no = reference_no or self.name
+		pe.reference_date = reference_date or pe.posting_date
 
 		# ------------------------------------------------
 		# Amount
@@ -2151,16 +2083,6 @@ class Job(Document):
 			pe.job = self.name
 
 			# ----------------------------------------
-			# MODE OF PAYMENT TYPE
-			# ----------------------------------------
-
-			mop_type = frappe.db.get_value(
-				"Mode of Payment",
-				mode_of_payment,
-				"type"
-			)
-
-			# ----------------------------------------
 			# FETCH MODE OF PAYMENT ACCOUNT
 			# ----------------------------------------
 
@@ -2186,21 +2108,12 @@ class Job(Document):
 			# REFERENCE DETAILS
 			# ----------------------------------------
 
-			# ERPNext's mandatory reference check looks at the paid_from
-			# account's account_type, not the Mode of Payment's "type" field —
-			# a Mode of Payment can be left without a "type" while still
-			# pointing at a real Bank account, so check both.
-			paid_from_account_type = frappe.db.get_value(
-				"Account",
-				paid_from,
-				"account_type"
-			)
-
-			if mop_type == "Bank" or paid_from_account_type == "Bank":
-				# Reference details are no longer mandatory for the client.
-				# Auto-fill safe defaults when left blank.
-				pe.reference_no = reference_no or self.name
-				pe.reference_date = reference_date or pe.posting_date
+			# Reference No/Date are not a feature the client wants to be asked
+			# for at all — always fill them with safe defaults so ERPNext's
+			# Bank-transaction validation never blocks submission, regardless
+			# of the Mode of Payment/account type.
+			pe.reference_no = reference_no or self.name
+			pe.reference_date = reference_date or pe.posting_date
 
 			# ----------------------------------------
 			# SUPPLIER PAYABLE ACCOUNT
