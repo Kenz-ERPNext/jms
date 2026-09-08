@@ -1250,37 +1250,51 @@ frappe.ui.form.on('Job', {
                     return;
                 }
 
-                frm.call({
+                // Use dt/dn instead of doc: frm.doc — frm.call() resolves the
+                // doc to send from the browser's locals[doctype][name] cache,
+                // and a stale/missing cache entry there makes it silently
+                // drop the whole "docs" param, which crashes run_doc_method
+                // server-side with "First non keyword argument must be a
+                // string or dict". dt/dn makes the server fetch the doc fresh
+                // from the database instead, so it can't go stale.
+                frappe.call({
 
-                    doc: frm.doc,
-
-                    method: "create_expense",
+                    method: "run_doc_method",
 
                     args: {
 
-                        expense_type: values.expense_type,
+                        dt: frm.doc.doctype,
 
-                        amount: values.amount,
+                        dn: frm.doc.name,
 
-                        supplier: values.supplier,
+                        method: "create_expense",
 
-                        taxes_template: values.taxes_template,
+                        args: {
 
-                        item_code: values.item_code,
+                            expense_type: values.expense_type,
 
-                        payment_type: values.payment_type,
+                            amount: values.amount,
 
-                        mode_of_payment: values.mode_of_payment,
+                            supplier: values.supplier,
 
-                        reference_no: values.reference_no,
+                            taxes_template: values.taxes_template,
 
-                        reference_date: values.reference_date,
+                            item_code: values.item_code,
 
-                        posting_date: values.posting_date,
+                            payment_type: values.payment_type,
 
-                        reference_doctype: frm.doc.doctype,
+                            mode_of_payment: values.mode_of_payment,
 
-                        reference_name: frm.doc.name
+                            reference_no: values.reference_no,
+
+                            reference_date: values.reference_date,
+
+                            posting_date: values.posting_date,
+
+                            reference_doctype: frm.doc.doctype,
+
+                            reference_name: frm.doc.name
+                        }
                     },
 
                     callback: function(r) {
