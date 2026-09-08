@@ -1417,6 +1417,20 @@ class Job(Document):
 				# SAVE PAYMENT ENTRY
 				# -------------------------
 
+				# TEMP DIAGNOSTIC — remove once the "Reference No and Reference
+				# Date is mandatory" reports are confirmed resolved. Lets us
+				# check Desk > Error Log to see exactly what this deployed
+				# code actually set right before insert, without needing
+				# server/terminal access.
+				frappe.log_error(
+					title="create_pinvoice: PE ref fields before insert",
+					message=(
+						f"job={self.name} mode_of_payment={mode_of_payment_pi} "
+						f"paid_from={paid_from} reference_no={pe.reference_no} "
+						f"reference_date={pe.reference_date}"
+					),
+				)
+
 				pe.insert(ignore_permissions=True)
 
 				pe.submit()
@@ -1872,6 +1886,19 @@ class Job(Document):
 			# -----------------------
 			# SAVE
 			# -----------------------
+
+			# TEMP DIAGNOSTIC — remove once the "Reference No and Reference
+			# Date is mandatory" reports are confirmed resolved. Lets us check
+			# Desk > Error Log to see exactly what this deployed code actually
+			# set right before insert, without needing server/terminal access.
+			frappe.log_error(
+				title="create_expense: PE ref fields before insert",
+				message=(
+					f"job={self.name} mode_of_payment={mode_of_payment} "
+					f"paid_from={paid_account} reference_no={pe.reference_no} "
+					f"reference_date={pe.reference_date}"
+				),
+			)
 
 			pe.insert(ignore_permissions=True)
 
