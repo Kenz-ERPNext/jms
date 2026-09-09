@@ -43,6 +43,19 @@ def get_job_financials_map(job_names):
 	):
 		result[r.job].update(job_amount=flt(r.job_amount), expenses=flt(r.expenses), outsourcing=flt(r.outsourcing))
 
+	# job_amount falls back to the Job's own priced gross_amount when nothing
+	# has been invoiced yet — matches Job.get_financials()'s total_job_amount,
+	# which is known as soon as the job is priced, not only once a Sales
+	# Invoice posts GL income. Without this, an un-invoiced job reads Job
+	# Amount 0 here while its own Financial tab correctly shows the priced
+	# total.
+	for r in frappe.db.sql(
+		"""SELECT name AS job, gross_amount FROM `tabJob` WHERE name IN %(jobs)s""",
+		{"jobs": job_names}, as_dict=True,
+	):
+		if not result[r.job]["job_amount"]:
+			result[r.job]["job_amount"] = flt(r.gross_amount)
+
 	# --- Received (Payment Entry, Receive, FROM CUSTOMERS). party_type
 	# filtered so an Expense Return (Receive, but from a Supplier) doesn't
 	# inflate this. ---

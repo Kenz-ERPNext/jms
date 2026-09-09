@@ -68,7 +68,7 @@ def get_data(filters, settings):
 	jobs = frappe.db.sql(
 		f"""
 		SELECT j.name AS job, j.date, j.customer, j.agent, j.status,
-			j.agent_customer, j.receivable_from
+			j.agent_customer, j.receivable_from, j.gross_amount
 		FROM `tabJob` j
 		WHERE {_job_conditions(filters)}
 		ORDER BY j.date DESC, j.name DESC
@@ -94,7 +94,11 @@ def get_data(filters, settings):
 	rows = []
 	for j in jobs:
 		g = gl.get(j.job, {})
-		income = flt(g.get("income"))
+		# Falls back to the Job's own priced gross_amount when nothing has
+		# been invoiced yet — matches Job.get_financials()'s total_job_amount,
+		# known as soon as the job is priced, not only once a Sales Invoice
+		# posts GL income.
+		income = flt(g.get("income")) or flt(j.gross_amount)
 		expenses = flt(g.get("expenses"))
 		outsourcing = flt(g.get("outsourcing"))
 		ret = returns.get(j.job, {})
