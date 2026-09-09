@@ -15,6 +15,8 @@ _FIN_COLS = [
 	("outsourcing", "Outsourcing"),
 	("supplier_paid", "Supplier Paid"),
 	("supplier_balance", "Supplier Balance"),
+	("expense_returns", "Expense Returns"),
+	("payment_returns", "Payment Returns"),
 	("net_profit", "Net Profit"),
 ]
 

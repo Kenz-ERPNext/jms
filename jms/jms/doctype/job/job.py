@@ -2228,6 +2228,325 @@ class Job(Document):
 
 		return created_entries
 
+	@frappe.whitelist()
+	def create_expense_return(
+		self,
+		supplier,
+		amount,
+		mode_of_payment,
+		posting_date=None
+	):
+		"""A supplier we already paid (Expense / outsource Purchase Invoice)
+		refunds some or all of it back to us — the reverse of a normal
+		expense payment. Recorded as an unallocated advance-style Payment
+		Entry (Receive/Supplier), same shape as create_outsource_advance_payment
+		just flipped, so get_financials() can net it against Paid Out."""
+
+		if not amount or flt(amount) <= 0:
+			frappe.throw("Amount is required")
+
+		# ----------------------------------------
+		# CAN'T RETURN MORE THAN WAS PAID
+		# ----------------------------------------
+
+		total_paid_to_supplier = flt(frappe.db.sql(
+			"""SELECT COALESCE(SUM(pe.paid_amount), 0)
+				FROM `tabPayment Entry` pe
+				WHERE pe.job = %(job)s AND pe.docstatus = 1
+				  AND pe.payment_type = 'Pay' AND pe.party_type = 'Supplier'
+				  AND pe.party = %(party)s""",
+			{"job": self.name, "party": supplier},
+		)[0][0])
+
+		total_returned_from_supplier = flt(frappe.db.sql(
+			"""SELECT COALESCE(SUM(pe.paid_amount), 0)
+				FROM `tabPayment Entry` pe
+				WHERE pe.job = %(job)s AND pe.docstatus = 1
+				  AND pe.payment_type = 'Receive' AND pe.party_type = 'Supplier'
+				  AND pe.party = %(party)s""",
+			{"job": self.name, "party": supplier},
+		)[0][0])
+
+		available_to_return = total_paid_to_supplier - total_returned_from_supplier
+
+		if flt(amount) > available_to_return:
+			frappe.throw(
+				f"Cannot return {flt(amount)} — only {available_to_return} "
+				f"is available to return for supplier {supplier} on this job."
+			)
+
+		# ----------------------------------------
+		# CREATE PAYMENT ENTRY
+		# ----------------------------------------
+
+		pe = frappe.new_doc("Payment Entry")
+
+		pe.payment_type = "Receive"
+
+		pe.party_type = "Supplier"
+
+		pe.party = supplier
+
+		pe.company = self._resolve_company()
+
+		pe.set_posting_time = 1
+
+		pe.posting_date = posting_date or frappe.utils.nowdate()
+
+		pe.mode_of_payment = mode_of_payment
+
+		pe.custom_job = self.name
+
+		pe.job = self.name
+
+		# ----------------------------------------
+		# SUPPLIER PAYABLE ACCOUNT (money leaves the supplier's side)
+		# ----------------------------------------
+
+		paid_from = frappe.db.get_value(
+			"Party Account",
+			{
+				"parenttype": "Supplier",
+				"parent": supplier,
+				"company": pe.company
+			},
+			"account"
+		)
+
+		if not paid_from:
+
+			paid_from = frappe.get_value(
+				"Company",
+				pe.company,
+				"default_payable_account"
+			)
+
+		if not paid_from:
+
+			frappe.throw(
+				f"No payable account found "
+				f"for supplier {supplier}"
+			)
+
+		pe.paid_from = paid_from
+
+		# ----------------------------------------
+		# FETCH MODE OF PAYMENT ACCOUNT (money lands in our bank/cash)
+		# ----------------------------------------
+
+		paid_to = frappe.db.get_value(
+			"Mode of Payment Account",
+			{
+				"parent": mode_of_payment,
+				"company": pe.company
+			},
+			"default_account"
+		)
+
+		if not paid_to:
+
+			frappe.throw(
+				f"No default account found for "
+				f"Mode of Payment {mode_of_payment}"
+			)
+
+		pe.paid_to = paid_to
+
+		# ----------------------------------------
+		# REFERENCE DETAILS
+		# ----------------------------------------
+
+		# Reference No/Date are not a feature the client wants to be asked
+		# for at all — always fill them with safe defaults so ERPNext's
+		# Bank-transaction validation never blocks submission, regardless
+		# of the Mode of Payment/account type.
+		pe.reference_no = self.name
+		pe.reference_date = pe.posting_date
+
+		# ----------------------------------------
+		# AMOUNT
+		# ----------------------------------------
+
+		pe.paid_amount = amount
+
+		pe.received_amount = amount
+
+		# ----------------------------------------
+		# SAVE
+		# ----------------------------------------
+
+		pe.insert(ignore_permissions=True)
+
+		pe.submit()
+
+		return pe.name
+
+	@frappe.whitelist()
+	def create_payment_return(
+		self,
+		amount,
+		mode_of_payment,
+		posting_date=None
+	):
+		"""We already received money from the customer and need to refund
+		some or all of it back — the reverse of an Advance Receipt. Recorded
+		as an unallocated Payment Entry (Pay/Customer), so get_financials()
+		can net it against Total Amount Received."""
+
+		if not amount or flt(amount) <= 0:
+			frappe.throw("Amount is required")
+
+		# Same party resolution as create_advance_receipt — for agent jobs
+		# the money was received from (and must be refunded to) the agent's
+		# linked customer, not self.customer.
+		customer = (
+			self.agent_customer
+			if self.receivable_from == "Agent"
+			else self.customer
+		)
+
+		if not customer:
+			frappe.throw(
+				_("Cannot create Payment Return: no {0} is set on this Job.").format(
+					"Agent's linked Customer"
+					if self.receivable_from == "Agent"
+					else "Customer"
+				)
+			)
+
+		# ----------------------------------------
+		# CAN'T RETURN MORE THAN WAS RECEIVED
+		# ----------------------------------------
+
+		total_received_from_customer = flt(frappe.db.sql(
+			"""SELECT COALESCE(SUM(pe.paid_amount), 0)
+				FROM `tabPayment Entry` pe
+				WHERE pe.job = %(job)s AND pe.docstatus = 1
+				  AND pe.payment_type = 'Receive' AND pe.party_type = 'Customer'
+				  AND pe.party = %(party)s""",
+			{"job": self.name, "party": customer},
+		)[0][0])
+
+		total_returned_to_customer = flt(frappe.db.sql(
+			"""SELECT COALESCE(SUM(pe.paid_amount), 0)
+				FROM `tabPayment Entry` pe
+				WHERE pe.job = %(job)s AND pe.docstatus = 1
+				  AND pe.payment_type = 'Pay' AND pe.party_type = 'Customer'
+				  AND pe.party = %(party)s""",
+			{"job": self.name, "party": customer},
+		)[0][0])
+
+		available_to_return = total_received_from_customer - total_returned_to_customer
+
+		if flt(amount) > available_to_return:
+			frappe.throw(
+				f"Cannot return {flt(amount)} — only {available_to_return} "
+				f"is available to return for customer {customer} on this job."
+			)
+
+		# ----------------------------------------
+		# CREATE PAYMENT ENTRY
+		# ----------------------------------------
+
+		pe = frappe.new_doc("Payment Entry")
+
+		pe.payment_type = "Pay"
+
+		pe.party_type = "Customer"
+
+		pe.party = customer
+
+		pe.company = self.company
+
+		pe.set_posting_time = 1
+
+		pe.posting_date = posting_date or frappe.utils.nowdate()
+
+		pe.mode_of_payment = mode_of_payment
+
+		pe.custom_job = self.name
+
+		pe.job = self.name
+
+		# ----------------------------------------
+		# FETCH MODE OF PAYMENT ACCOUNT (money leaves our bank/cash)
+		# ----------------------------------------
+
+		paid_from = frappe.db.get_value(
+			"Mode of Payment Account",
+			{
+				"parent": mode_of_payment,
+				"company": self.company
+			},
+			"default_account"
+		)
+
+		if not paid_from:
+
+			frappe.throw(
+				f"No default account found for "
+				f"Mode of Payment {mode_of_payment}"
+			)
+
+		pe.paid_from = paid_from
+
+		# ----------------------------------------
+		# CUSTOMER RECEIVABLE ACCOUNT (money lands on the customer's side)
+		# ----------------------------------------
+
+		paid_to = frappe.db.get_value(
+			"Party Account",
+			{
+				"parenttype": "Customer",
+				"parent": customer,
+				"company": self.company
+			},
+			"account"
+		)
+
+		if not paid_to:
+
+			paid_to = frappe.get_value(
+				"Company",
+				self.company,
+				"default_receivable_account"
+			)
+
+		if not paid_to:
+
+			frappe.throw(
+				f"No receivable account found "
+				f"for customer {customer}"
+			)
+
+		pe.paid_to = paid_to
+
+		# ----------------------------------------
+		# REFERENCE DETAILS
+		# ----------------------------------------
+
+		pe.reference_no = self.name
+
+		pe.reference_date = pe.posting_date
+
+		# ----------------------------------------
+		# AMOUNT
+		# ----------------------------------------
+
+		pe.paid_amount = amount
+
+		pe.received_amount = amount
+
+		# ----------------------------------------
+		# SAVE
+		# ----------------------------------------
+
+		pe.insert(ignore_permissions=True)
+
+		pe.submit()
+
+		return pe.name
+
 	# --------------------------------------------------------
 	# RECONCILIATION HELPERS (for allocation dialogs)
 	# --------------------------------------------------------
@@ -2332,30 +2651,69 @@ class Job(Document):
 		# 4. Total Expenses = all expense accounts EXCEPT outsourcing
 		total_expenses = _gl_sum(root_type="Expense", exclude_account=outsourcing_acct)
 
-		# 6. Net Profit = #1 - #4 - #5  (commission excluded by decision)
-		net_profit = total_job_amount - total_expenses - outsourcing_cost
-
-		# 2. Total Amount Received (Payment Entry, Receive; includes advances)
-		total_received = flt(frappe.db.sql(
+		# 2. Total Amount Received (Payment Entry, Receive, FROM CUSTOMERS;
+		# includes advances). party_type is filtered so an Expense Return
+		# (Receive, but from a Supplier) doesn't inflate this.
+		total_received_gross = flt(frappe.db.sql(
 			f"""SELECT COALESCE(SUM(pe.paid_amount), 0)
 				FROM `tabPayment Entry` pe
 				WHERE pe.{pe_job_field} = %(job)s AND pe.docstatus = 1
-				  AND pe.payment_type = 'Receive'""",
+				  AND pe.payment_type = 'Receive' AND pe.party_type = 'Customer'""",
 			{"job": job},
 		)[0][0])
 
+		# Expense Returns = money a Supplier refunded back to us (the reverse
+		# of a Pay to that supplier). Nets against Paid Out, and improves Net
+		# Profit below, since it's cash that came back.
+		expense_returns = flt(frappe.db.sql(
+			f"""SELECT COALESCE(SUM(pe.paid_amount), 0)
+				FROM `tabPayment Entry` pe
+				WHERE pe.{pe_job_field} = %(job)s AND pe.docstatus = 1
+				  AND pe.payment_type = 'Receive' AND pe.party_type = 'Supplier'""",
+			{"job": job},
+		)[0][0])
+
+		# Payment Returns = money we refunded back to the Customer (the
+		# reverse of an Advance Receipt). Nets against Total Amount Received.
+		payment_returns = flt(frappe.db.sql(
+			f"""SELECT COALESCE(SUM(pe.paid_amount), 0)
+				FROM `tabPayment Entry` pe
+				WHERE pe.{pe_job_field} = %(job)s AND pe.docstatus = 1
+				  AND pe.payment_type = 'Pay' AND pe.party_type = 'Customer'""",
+			{"job": job},
+		)[0][0])
+
+		total_received = total_received_gross - payment_returns
+
+		# 6. Net Profit = #1 - #4 - #5, plus Expense Returns (a Supplier
+		# refund is cash that directly improves profit; commission excluded
+		# by decision)
+		net_profit = total_job_amount - total_expenses - outsourcing_cost + expense_returns
+
 		# Customer vs Agent split (agents pay via their linked customer, so
-		# compare party to agent_customer — party_type is always 'Customer')
+		# compare party to agent_customer — party_type is always 'Customer').
+		# Payment Returns are netted per-party too, so the split still adds
+		# up to total_received.
 		received_from_agent = 0.0
+		payment_returns_to_agent = 0.0
 		if self.agent_customer:
-			received_from_agent = flt(frappe.db.sql(
+			received_from_agent_gross = flt(frappe.db.sql(
 				f"""SELECT COALESCE(SUM(pe.paid_amount), 0)
 					FROM `tabPayment Entry` pe
 					WHERE pe.{pe_job_field} = %(job)s AND pe.docstatus = 1
-					  AND pe.payment_type = 'Receive'
+					  AND pe.payment_type = 'Receive' AND pe.party_type = 'Customer'
 					  AND pe.party = %(party)s""",
 				{"job": job, "party": self.agent_customer},
 			)[0][0])
+			payment_returns_to_agent = flt(frappe.db.sql(
+				f"""SELECT COALESCE(SUM(pe.paid_amount), 0)
+					FROM `tabPayment Entry` pe
+					WHERE pe.{pe_job_field} = %(job)s AND pe.docstatus = 1
+					  AND pe.payment_type = 'Pay' AND pe.party_type = 'Customer'
+					  AND pe.party = %(party)s""",
+				{"job": job, "party": self.agent_customer},
+			)[0][0])
+			received_from_agent = received_from_agent_gross - payment_returns_to_agent
 		received_from_customer = total_received - received_from_agent
 
 		# 3. Outstanding to Receive (Sales Invoice outstanding by job)
@@ -2371,16 +2729,20 @@ class Job(Document):
 			frappe.db.count("Sales Invoice", {si_job_field: job, "docstatus": 1})
 		)
 
-		# Paid Out for this job = ALL pay-side Payment Entries (incl. unallocated
-		# supplier / agent advances), not only those allocated to Purchase
-		# Invoices — otherwise outgoing advance payments are invisible.
-		paid_out = flt(frappe.db.sql(
+		# Paid Out for this job = ALL pay-side Payment Entries TO SUPPLIERS
+		# (incl. unallocated supplier / agent advances), not only those
+		# allocated to Purchase Invoices — otherwise outgoing advance
+		# payments are invisible. party_type filtered so a Payment Return
+		# (Pay, but to a Customer) doesn't inflate this; netted against
+		# Expense Returns since that's cash that came back.
+		paid_out_gross = flt(frappe.db.sql(
 			f"""SELECT COALESCE(SUM(pe.paid_amount), 0)
 				FROM `tabPayment Entry` pe
 				WHERE pe.{pe_job_field} = %(job)s AND pe.docstatus = 1
-				  AND pe.payment_type = 'Pay'""",
+				  AND pe.payment_type = 'Pay' AND pe.party_type = 'Supplier'""",
 			{"job": job},
 		)[0][0])
+		paid_out = paid_out_gross - expense_returns
 
 		# Unpaid payables (Exp. Pending indicator + Profit Balance)
 		payable_outstanding = flt(frappe.db.sql(
@@ -2394,18 +2756,22 @@ class Job(Document):
 		# A job whose advance simply wasn't auto-linked (e.g. party mismatch on
 		# older data) would otherwise stay flagged "pending" forever, so we net
 		# the unallocated advance against the gross invoice outstanding.
+		# party_type filtered — an Expense Return is an unallocated Receive
+		# too, but from a Supplier, and must not be mistaken for a customer
+		# advance (which would wrongly deflate net_receivable); same for a
+		# Payment Return on the Pay side against net_payable.
 		unallocated_received = flt(frappe.db.sql(
 			f"""SELECT COALESCE(SUM(pe.unallocated_amount), 0)
 				FROM `tabPayment Entry` pe
 				WHERE pe.{pe_job_field} = %(job)s AND pe.docstatus = 1
-				  AND pe.payment_type = 'Receive'""",
+				  AND pe.payment_type = 'Receive' AND pe.party_type = 'Customer'""",
 			{"job": job},
 		)[0][0])
 		unallocated_paid = flt(frappe.db.sql(
 			f"""SELECT COALESCE(SUM(pe.unallocated_amount), 0)
 				FROM `tabPayment Entry` pe
 				WHERE pe.{pe_job_field} = %(job)s AND pe.docstatus = 1
-				  AND pe.payment_type = 'Pay'""",
+				  AND pe.payment_type = 'Pay' AND pe.party_type = 'Supplier'""",
 			{"job": job},
 		)[0][0])
 
@@ -2421,13 +2787,24 @@ class Job(Document):
 
 		currency = frappe.get_cached_value("Company", company, "default_currency") if company else None
 
+		# Migrating a new Check field onto an existing Single doctype (JMS
+		# Settings) doesn't backfill its stored value — it stays NULL, not
+		# the field's "1" default — so getattr(..., 1) alone won't catch it
+		# (the attribute exists, just as None). Treat missing-or-None as
+		# visible by default.
+		def _visible_default(fieldname):
+			val = getattr(settings, fieldname, None)
+			return 1 if val is None else val
+
 		metric_defs = [
 			("total_job_amount", "Total Job Amount", total_job_amount, settings.show_total_job_amount),
 			("total_received", "Total Amount Received", total_received, settings.show_total_received),
 			("outstanding", "Outstanding to Receive", outstanding, settings.show_outstanding),
 			("total_expenses", "Total Expenses", total_expenses, settings.show_total_expenses),
 			("outsourcing_cost", "Outsourcing Costs", outsourcing_cost, settings.show_outsourcing_cost),
-			("paid_out", "Paid Out (Supplier/Agent)", paid_out, getattr(settings, "show_paid_out", 1)),
+			("paid_out", "Paid Out (Supplier/Agent)", paid_out, _visible_default("show_paid_out")),
+			("expense_returns", "Expense Returns", expense_returns, _visible_default("show_expense_returns")),
+			("payment_returns", "Payment Returns", payment_returns, _visible_default("show_payment_returns")),
 			("net_profit", "Net Profit", net_profit, settings.show_net_profit),
 			("profit_balance", "Profit Balance", profit_balance, settings.show_profit_balance),
 		]

@@ -32,6 +32,8 @@ def get_columns(settings):
 		("show_outstanding", "Outstanding", "outstanding"),
 		("show_total_expenses", "Expenses", "total_expenses"),
 		("show_outsourcing_cost", "Outsourcing", "outsourcing_cost"),
+		("show_expense_returns", "Expense Returns", "expense_returns"),
+		("show_payment_returns", "Payment Returns", "payment_returns"),
 		("show_net_profit", "Net Profit", "net_profit"),
 		("show_profit_balance", "Profit Balance", "profit_balance"),
 	]
@@ -87,6 +89,7 @@ def get_data(filters, settings):
 	gl = _gl_by_job(job_names, outsourcing_accounts)
 	received = _received_by_job(job_names)
 	outstanding = _outstanding_by_job(job_names)
+	returns = _returns_by_job(job_names)
 
 	rows = []
 	for j in jobs:
@@ -94,8 +97,15 @@ def get_data(filters, settings):
 		income = flt(g.get("income"))
 		expenses = flt(g.get("expenses"))
 		outsourcing = flt(g.get("outsourcing"))
-		net_profit = income - expenses - outsourcing
-		recv = flt(received.get(j.job))
+		ret = returns.get(j.job, {})
+		expense_returns = flt(ret.get("expense_returns"))
+		payment_returns = flt(ret.get("payment_returns"))
+		# Expense Returns are cash that came back, so they directly improve
+		# profit, same as Job.get_financials().
+		net_profit = income - expenses - outsourcing + expense_returns
+		# Received is netted against Payment Returns so it reflects what the
+		# customer actually kept paid, not the raw gross receipt total.
+		recv = flt(received.get(j.job)) - payment_returns
 		outst = flt(outstanding.get(j.job))
 		# Profit Balance = remaining receivable minus remaining payable
 		profit_balance = outst - flt(g.get("payable_outstanding"))
@@ -118,6 +128,8 @@ def get_data(filters, settings):
 				"outstanding": outst,
 				"total_expenses": expenses,
 				"outsourcing_cost": outsourcing,
+				"expense_returns": expense_returns,
+				"payment_returns": payment_returns,
 				"net_profit": net_profit,
 				"profit_balance": profit_balance,
 				"fin_state": ", ".join(states),
@@ -164,17 +176,52 @@ def _gl_by_job(job_names, outsourcing_accounts):
 
 
 def _received_by_job(job_names):
+	# party_type filtered so an Expense Return (Receive, but from a
+	# Supplier) doesn't inflate this.
 	rows = frappe.db.sql(
 		"""
 		SELECT pe.job, COALESCE(SUM(pe.paid_amount), 0) AS received
 		FROM `tabPayment Entry` pe
 		WHERE pe.job IN %(jobs)s AND pe.docstatus = 1 AND pe.payment_type = 'Receive'
+		  AND pe.party_type = 'Customer'
 		GROUP BY pe.job
 		""",
 		{"jobs": job_names},
 		as_dict=True,
 	)
 	return {r.job: r.received for r in rows}
+
+
+def _returns_by_job(job_names):
+	"""Expense Returns (Receive from Supplier) and Payment Returns (Pay to
+	Customer) per job — the reverse-direction Payment Entries created by
+	Job.create_expense_return / Job.create_payment_return."""
+	result = {}
+	for r in frappe.db.sql(
+		"""
+		SELECT pe.job, COALESCE(SUM(pe.paid_amount), 0) AS v
+		FROM `tabPayment Entry` pe
+		WHERE pe.job IN %(jobs)s AND pe.docstatus = 1 AND pe.payment_type = 'Receive'
+		  AND pe.party_type = 'Supplier'
+		GROUP BY pe.job
+		""",
+		{"jobs": job_names},
+		as_dict=True,
+	):
+		result.setdefault(r.job, {})["expense_returns"] = r.v
+	for r in frappe.db.sql(
+		"""
+		SELECT pe.job, COALESCE(SUM(pe.paid_amount), 0) AS v
+		FROM `tabPayment Entry` pe
+		WHERE pe.job IN %(jobs)s AND pe.docstatus = 1 AND pe.payment_type = 'Pay'
+		  AND pe.party_type = 'Customer'
+		GROUP BY pe.job
+		""",
+		{"jobs": job_names},
+		as_dict=True,
+	):
+		result.setdefault(r.job, {})["payment_returns"] = r.v
+	return result
 
 
 def _outstanding_by_job(job_names):

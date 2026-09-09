@@ -10,3 +10,4 @@ jms.patches.v1_2.repair_naming_series
 jms.patches.v1_3.clear_cancelled_invoice_links
 jms.patches.v1_4.rename_jms_workspace_to_sbm
 jms.patches.v1_5.free_cancelled_invoice_jobs
+jms.patches.v1_6.set_default_return_visibility

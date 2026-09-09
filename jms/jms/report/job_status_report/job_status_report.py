@@ -95,13 +95,16 @@ def get_data(filters):
 	pi_out = _sum_by_job(
 		"`tabPurchase Invoice`", "outstanding_amount", job_names, "docstatus = 1"
 	)
+	# party_type filtered — an Expense Return is an unallocated Receive too,
+	# but from a Supplier, and must not be mistaken for a customer advance
+	# (same for a Payment Return on the Pay side).
 	unalloc_recv = _sum_by_job(
 		"`tabPayment Entry`", "unallocated_amount", job_names,
-		"docstatus = 1 AND payment_type = 'Receive'",
+		"docstatus = 1 AND payment_type = 'Receive' AND party_type = 'Customer'",
 	)
 	unalloc_pay = _sum_by_job(
 		"`tabPayment Entry`", "unallocated_amount", job_names,
-		"docstatus = 1 AND payment_type = 'Pay'",
+		"docstatus = 1 AND payment_type = 'Pay' AND party_type = 'Supplier'",
 	)
 	task_total, task_done = _task_counts(job_names)
 

@@ -25,6 +25,8 @@ def get_columns():
 		{"label": "Outstanding", "fieldname": "outstanding", "fieldtype": "Currency", "width": 120},
 		{"label": "Expenses", "fieldname": "expenses", "fieldtype": "Currency", "width": 110},
 		{"label": "Outsourcing", "fieldname": "outsourcing", "fieldtype": "Currency", "width": 110},
+		{"label": "Expense Returns", "fieldname": "expense_returns", "fieldtype": "Currency", "width": 120},
+		{"label": "Payment Returns", "fieldname": "payment_returns", "fieldtype": "Currency", "width": 120},
 		{"label": "Net Profit", "fieldname": "net_profit", "fieldtype": "Currency", "width": 120},
 	]
 
@@ -66,6 +68,8 @@ def get_data(filters):
 			outstanding=f.get("outstanding", 0),
 			expenses=f.get("expenses", 0),
 			outsourcing=f.get("outsourcing", 0),
+			expense_returns=f.get("expense_returns", 0),
+			payment_returns=f.get("payment_returns", 0),
 			net_profit=f.get("net_profit", 0),
 		)
 		if only_pending and not (row["outstanding"] > 0):

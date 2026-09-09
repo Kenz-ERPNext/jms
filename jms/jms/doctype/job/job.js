@@ -301,6 +301,93 @@ frappe.ui.form.on('Job', {
 // //////////////////////////////////////////////////////////
 
 
+        addCreate('Expense Return', function () {
+
+            // A Supplier we already paid (via Expense or an outsource
+            // Purchase Invoice) refunds some/all of it back to us. No
+            // Reference No/Date fields here — those are always auto-filled
+            // server-side now, not something the client wants to be asked.
+            let d = new frappe.ui.Dialog({
+
+                title: "Create Expense Return",
+
+                fields: [
+
+                    {
+                        fieldname: "supplier",
+                        label: "Supplier",
+                        fieldtype: "Link",
+                        options: "Supplier",
+                        reqd: 1
+                    },
+
+                    {
+                        fieldname: "amount",
+                        label: "Amount",
+                        fieldtype: "Currency",
+                        reqd: 1
+                    },
+
+                    {
+                        fieldname: "mode_of_payment",
+                        label: "Mode of Payment",
+                        fieldtype: "Link",
+                        options: "Mode of Payment",
+                        reqd: 1
+                    },
+
+                    {
+                        fieldname: "posting_date",
+                        label: "Posting Date",
+                        fieldtype: "Date",
+                        default: frappe.datetime.get_today(),
+                        reqd: 1
+                    }
+
+                ],
+
+                primary_action_label: "Create",
+
+                primary_action(values) {
+
+                    frappe.call({
+
+                        doc: frm.doc,
+
+                        method: "create_expense_return",
+
+                        args: {
+                            supplier: values.supplier,
+                            amount: values.amount,
+                            mode_of_payment: values.mode_of_payment,
+                            posting_date: values.posting_date
+                        },
+
+                        callback: function(r) {
+
+                            if (r.message) {
+
+                                frappe.msgprint(
+                                    __("Expense Return Payment Entry Created: " + r.message)
+                                );
+
+                                frm.reload_doc();
+
+                                d.hide();
+                            }
+                        }
+                    });
+                }
+            });
+
+            d.show();
+        });
+
+
+//////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////
+
+
 
 
         addCreate('Advance Receipt', function () {
@@ -446,7 +533,84 @@ frappe.ui.form.on('Job', {
 // //////////////////////////////////////////////////////////////////////////////////////
 
 
-		if (frm.doc.sales_invoice_payment_entry === '' 
+        addCreate('Payment Return', function () {
+
+            // We already received money from the customer and need to
+            // refund some/all of it back. No Reference No/Date fields here —
+            // always auto-filled server-side now.
+            let d = new frappe.ui.Dialog({
+
+                title: "Create Payment Return",
+
+                fields: [
+
+                    {
+                        fieldname: "amount",
+                        label: "Amount",
+                        fieldtype: "Currency",
+                        reqd: 1
+                    },
+
+                    {
+                        fieldname: "mode_of_payment",
+                        label: "Mode of Payment",
+                        fieldtype: "Link",
+                        options: "Mode of Payment",
+                        reqd: 1
+                    },
+
+                    {
+                        fieldname: "posting_date",
+                        label: "Posting Date",
+                        fieldtype: "Date",
+                        default: frappe.datetime.get_today(),
+                        reqd: 1
+                    }
+
+                ],
+
+                primary_action_label: "Create",
+
+                primary_action(values) {
+
+                    frappe.call({
+
+                        doc: frm.doc,
+
+                        method: "create_payment_return",
+
+                        args: {
+                            amount: values.amount,
+                            mode_of_payment: values.mode_of_payment,
+                            posting_date: values.posting_date
+                        },
+
+                        callback: function(r) {
+
+                            if (r.message) {
+
+                                frappe.msgprint(
+                                    __("Payment Return Payment Entry Created: " + r.message)
+                                );
+
+                                frm.reload_doc();
+
+                                d.hide();
+                            }
+                        }
+                    });
+                }
+            });
+
+            d.show();
+        });
+
+
+// ////////////////////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////////////////////////
+
+
+		if (frm.doc.sales_invoice_payment_entry === ''
             // &&frm.doc.sales_invoice_status === 'Created'
         ) {
             addCreate('SI Payment', function () {
@@ -2020,6 +2184,8 @@ function renderJobFinancials(frm) {
                 total_expenses: "Total Expenses",
                 outsourcing_cost: "Outsourcing Costs",
                 paid_out: "Paid Out (Supplier/Agent)",
+                expense_returns: "Expense Returns",
+                payment_returns: "Payment Returns",
                 net_profit: "Net Profit",
                 profit_balance: "Profit Balance"
             };

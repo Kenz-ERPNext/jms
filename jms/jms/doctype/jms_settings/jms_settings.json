@@ -14,6 +14,8 @@
   "show_total_expenses",
   "show_outsourcing_cost",
   "show_paid_out",
+  "show_expense_returns",
+  "show_payment_returns",
   "show_profit_balance",
   "show_status_indicators",
   "accounting_section",
@@ -75,6 +77,18 @@
    "fieldname": "show_paid_out",
    "fieldtype": "Check",
    "label": "Show Paid Out (Supplier/Agent)"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_expense_returns",
+   "fieldtype": "Check",
+   "label": "Show Expense Returns"
+  },
+  {
+   "default": "1",
+   "fieldname": "show_payment_returns",
+   "fieldtype": "Check",
+   "label": "Show Payment Returns"
   },
   {
    "default": "1",
