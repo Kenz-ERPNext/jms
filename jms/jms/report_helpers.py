@@ -27,20 +27,38 @@ def job_costs(job_names):
 
 
 def job_received(job_names):
-	"""{job: total received} from submitted Receive Payment Entries."""
+	"""{job: total received from Customers} from submitted Receive Payment
+	Entries, netted against any Payment Returns (refunds back to the
+	customer). party_type filtered so an Expense Return (Receive, but from
+	a Supplier) doesn't get counted as customer money received."""
 	if not job_names:
 		return {}
-	rows = frappe.db.sql(
+	received = {}
+	for r in frappe.db.sql(
 		"""
 		SELECT job, COALESCE(SUM(paid_amount), 0) AS amt
 		FROM `tabPayment Entry`
-		WHERE docstatus = 1 AND payment_type = 'Receive' AND job IN %(jobs)s
+		WHERE docstatus = 1 AND payment_type = 'Receive' AND party_type = 'Customer'
+		  AND job IN %(jobs)s
 		GROUP BY job
 		""",
 		{"jobs": job_names},
 		as_dict=True,
-	)
-	return {r.job: flt(r.amt) for r in rows}
+	):
+		received[r.job] = flt(r.amt)
+	for r in frappe.db.sql(
+		"""
+		SELECT job, COALESCE(SUM(paid_amount), 0) AS amt
+		FROM `tabPayment Entry`
+		WHERE docstatus = 1 AND payment_type = 'Pay' AND party_type = 'Customer'
+		  AND job IN %(jobs)s
+		GROUP BY job
+		""",
+		{"jobs": job_names},
+		as_dict=True,
+	):
+		received[r.job] = flt(received.get(r.job)) - flt(r.amt)
+	return received
 
 
 def job_task_progress(job_names):
@@ -85,7 +103,10 @@ def closed_jobs_empty_message(filters=None):
 		).format(total_closed)
 
 	# same conditions as Job.validate_closing: every task Completed AND the
-	# full amount received (0.5 rounding tolerance)
+	# full amount received (0.5 rounding tolerance). party_type filtered /
+	# Payment Returns netted the same way validate_closing() does, so this
+	# "eligible" count agrees with what the Close Job button will actually
+	# allow.
 	eligible = frappe.db.sql(
 		f"""
 		SELECT COUNT(*) FROM `tabJob` j
@@ -95,10 +116,18 @@ def closed_jobs_empty_message(filters=None):
 			WHERE t.parenttype = 'Job' AND t.parent = j.name
 			  AND COALESCE(t.status, '') != 'Completed'
 		  )
-		  AND COALESCE(j.net_amount, 0) - COALESCE((
-			SELECT SUM(pe.paid_amount) FROM `tabPayment Entry` pe
-			WHERE pe.job = j.name AND pe.docstatus = 1 AND pe.payment_type = 'Receive'
-		  ), 0) <= 0.5
+		  AND COALESCE(j.net_amount, 0) - (
+			COALESCE((
+				SELECT SUM(pe.paid_amount) FROM `tabPayment Entry` pe
+				WHERE pe.job = j.name AND pe.docstatus = 1 AND pe.payment_type = 'Receive'
+				  AND pe.party_type = 'Customer'
+			), 0)
+			- COALESCE((
+				SELECT SUM(pe.paid_amount) FROM `tabPayment Entry` pe
+				WHERE pe.job = j.name AND pe.docstatus = 1 AND pe.payment_type = 'Pay'
+				  AND pe.party_type = 'Customer'
+			), 0)
+		  ) <= 0.5
 		""",
 		params,
 	)[0][0]

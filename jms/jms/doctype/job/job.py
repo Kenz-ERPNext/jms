@@ -68,13 +68,25 @@ class Job(Document):
 				  "All tasks (including outsourced) must be Completed first.").format(len(pending))
 			)
 
-		# 2) full job amount received (cash received >= billable net amount)
-		received = flt(frappe.db.sql(
+		# 2) full job amount received (cash received >= billable net amount).
+		# party_type filtered so an Expense Return (Receive, but from a
+		# Supplier) can't count toward "received"; Payment Returns (money
+		# refunded back to the customer) are netted out too.
+		received_gross = flt(frappe.db.sql(
 			"""SELECT COALESCE(SUM(paid_amount), 0)
 				FROM `tabPayment Entry`
-				WHERE job = %s AND docstatus = 1 AND payment_type = 'Receive'""",
+				WHERE job = %s AND docstatus = 1 AND payment_type = 'Receive'
+				  AND party_type = 'Customer'""",
 			self.name,
 		)[0][0])
+		payment_returns = flt(frappe.db.sql(
+			"""SELECT COALESCE(SUM(paid_amount), 0)
+				FROM `tabPayment Entry`
+				WHERE job = %s AND docstatus = 1 AND payment_type = 'Pay'
+				  AND party_type = 'Customer'""",
+			self.name,
+		)[0][0])
+		received = received_gross - payment_returns
 		billable = flt(self.net_amount)
 		if billable - received > 0.5:  # small tolerance for rounding
 			frappe.throw(
