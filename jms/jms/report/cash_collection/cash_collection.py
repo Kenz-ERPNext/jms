@@ -1,7 +1,10 @@
 # Copyright (c) 2026, Kenz and contributors
-# Cash Collection — money actually RECEIVED, by date (the cash-flow view).
-# Independent of profit recognition: a receipt shows here in the month it
-# arrives, even if the Job's profit is recognized later on its closing date.
+# Cash Collection — customer cash flow, by date: money that came IN
+# ("Collection") and money that went back OUT as a refund ("Return").
+# Returns are shown as negative amounts so the report's own total nets to
+# what the company actually kept. Independent of profit recognition: a
+# receipt shows here in the month it arrives, even if the Job's profit is
+# recognized later on its closing date.
 
 import frappe
 from frappe import _
@@ -16,7 +19,8 @@ def get_columns():
 	return [
 		{"fieldname": "posting_date", "label": _("Date"), "fieldtype": "Date", "width": 100},
 		{"fieldname": "payment_entry", "label": _("Receipt"), "fieldtype": "Link", "options": "Payment Entry", "width": 170},
-		{"fieldname": "party", "label": _("Received From"), "fieldtype": "Data", "width": 180},
+		{"fieldname": "type", "label": _("Type"), "fieldtype": "Data", "width": 90},
+		{"fieldname": "party", "label": _("Party"), "fieldtype": "Data", "width": 180},
 		{"fieldname": "job", "label": _("Job"), "fieldtype": "Link", "options": "Job", "width": 130},
 		{"fieldname": "mode_of_payment", "label": _("Mode"), "fieldtype": "Link", "options": "Mode of Payment", "width": 120},
 		{"fieldname": "amount", "label": _("Amount"), "fieldtype": "Currency", "width": 140},
@@ -24,10 +28,11 @@ def get_columns():
 
 
 def get_data(filters):
-	# party_type='Customer' — an Expense Return is also a "Receive" Payment
-	# Entry (money back from a Supplier), and without this filter it would
-	# show up here looking like a customer collection.
-	conditions = ["pe.docstatus = 1", "pe.payment_type = 'Receive'", "pe.party_type = 'Customer'"]
+	# Both halves are scoped to party_type='Customer' — this is a customer
+	# cash-flow view. An Expense Return (Receive, but from a Supplier) or an
+	# outsource payment (Pay, but to a Supplier) belong to the supplier side
+	# of the books, not here.
+	conditions = ["pe.docstatus = 1"]
 	params = {}
 	if filters.get("company"):
 		conditions.append("pe.company = %(company)s")
@@ -48,11 +53,19 @@ def get_data(filters):
 	where = " AND ".join(conditions)
 	return frappe.db.sql(
 		f"""
-		SELECT pe.posting_date, pe.name AS payment_entry, pe.party,
-			pe.job, pe.mode_of_payment, pe.paid_amount AS amount
+		SELECT pe.posting_date, pe.name AS payment_entry, 'Collection' AS type,
+			pe.party, pe.job, pe.mode_of_payment, pe.paid_amount AS amount
 		FROM `tabPayment Entry` pe
-		WHERE {where}
-		ORDER BY pe.posting_date, pe.name
+		WHERE {where} AND pe.payment_type = 'Receive' AND pe.party_type = 'Customer'
+
+		UNION ALL
+
+		SELECT pe.posting_date, pe.name AS payment_entry, 'Return' AS type,
+			pe.party, pe.job, pe.mode_of_payment, -pe.paid_amount AS amount
+		FROM `tabPayment Entry` pe
+		WHERE {where} AND pe.payment_type = 'Pay' AND pe.party_type = 'Customer'
+
+		ORDER BY posting_date, payment_entry
 		""",
 		params,
 		as_dict=True,
