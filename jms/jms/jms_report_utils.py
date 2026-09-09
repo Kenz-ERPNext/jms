@@ -13,6 +13,7 @@ OUTSOURCING_ACCOUNT_NAME = "Outsourcing Cost"
 _KEYS = (
 	"job_amount", "expenses", "outsourcing", "received", "received_from_agent",
 	"outstanding", "supplier_paid", "supplier_balance",
+	"expense_returns", "payment_returns", "payment_returns_to_agent",
 )
 
 
@@ -42,11 +43,14 @@ def get_job_financials_map(job_names):
 	):
 		result[r.job].update(job_amount=flt(r.job_amount), expenses=flt(r.expenses), outsourcing=flt(r.outsourcing))
 
-	# --- Received (Payment Entry, Receive) ---
+	# --- Received (Payment Entry, Receive, FROM CUSTOMERS). party_type
+	# filtered so an Expense Return (Receive, but from a Supplier) doesn't
+	# inflate this. ---
 	for r in frappe.db.sql(
 		"""SELECT pe.job, COALESCE(SUM(pe.paid_amount), 0) v
 			FROM `tabPayment Entry` pe
 			WHERE pe.job IN %(jobs)s AND pe.docstatus=1 AND pe.payment_type='Receive'
+			  AND pe.party_type='Customer'
 			GROUP BY pe.job""",
 		{"jobs": job_names}, as_dict=True,
 	):
@@ -57,12 +61,27 @@ def get_job_financials_map(job_names):
 		"""SELECT pe.job, COALESCE(SUM(pe.paid_amount), 0) v
 			FROM `tabPayment Entry` pe JOIN `tabJob` j ON j.name = pe.job
 			WHERE pe.job IN %(jobs)s AND pe.docstatus=1 AND pe.payment_type='Receive'
+			  AND pe.party_type='Customer'
 			  AND j.agent_customer IS NOT NULL AND j.agent_customer != ''
 			  AND pe.party = j.agent_customer
 			GROUP BY pe.job""",
 		{"jobs": job_names}, as_dict=True,
 	):
 		result[r.job]["received_from_agent"] = flt(r.v)
+
+	# --- Payment Returns to Agent (party == job.agent_customer), so the
+	# agent split still nets correctly below ---
+	for r in frappe.db.sql(
+		"""SELECT pe.job, COALESCE(SUM(pe.paid_amount), 0) v
+			FROM `tabPayment Entry` pe JOIN `tabJob` j ON j.name = pe.job
+			WHERE pe.job IN %(jobs)s AND pe.docstatus=1 AND pe.payment_type='Pay'
+			  AND pe.party_type='Customer'
+			  AND j.agent_customer IS NOT NULL AND j.agent_customer != ''
+			  AND pe.party = j.agent_customer
+			GROUP BY pe.job""",
+		{"jobs": job_names}, as_dict=True,
+	):
+		result[r.job]["payment_returns_to_agent"] = flt(r.v)
 
 	# --- Outstanding to receive (Sales Invoice) ---
 	for r in frappe.db.sql(
@@ -73,12 +92,15 @@ def get_job_financials_map(job_names):
 	):
 		result[r.job]["outstanding"] = flt(r.v)
 
-	# --- Supplier Paid = ALL pay-side Payment Entries for the job (incl.
-	# unallocated supplier / agent advances, not only PI-allocated payments) ---
+	# --- Supplier Paid = ALL pay-side Payment Entries TO SUPPLIERS for the
+	# job (incl. unallocated supplier / agent advances, not only
+	# PI-allocated payments). party_type filtered so a Payment Return (Pay,
+	# but to a Customer) doesn't inflate this. ---
 	for r in frappe.db.sql(
 		"""SELECT pe.job, COALESCE(SUM(pe.paid_amount), 0) v
 			FROM `tabPayment Entry` pe
 			WHERE pe.job IN %(jobs)s AND pe.docstatus=1 AND pe.payment_type='Pay'
+			  AND pe.party_type='Supplier'
 			GROUP BY pe.job""",
 		{"jobs": job_names}, as_dict=True,
 	):
@@ -93,9 +115,39 @@ def get_job_financials_map(job_names):
 	):
 		result[r.job]["supplier_balance"] = flt(r.v)
 
+	# --- Expense Returns = money a Supplier refunded back to us (the
+	# reverse of a Pay to that supplier). Nets against Supplier Paid, and
+	# improves Net Profit below, since it's cash that came back. ---
+	for r in frappe.db.sql(
+		"""SELECT pe.job, COALESCE(SUM(pe.paid_amount), 0) v
+			FROM `tabPayment Entry` pe
+			WHERE pe.job IN %(jobs)s AND pe.docstatus=1 AND pe.payment_type='Receive'
+			  AND pe.party_type='Supplier'
+			GROUP BY pe.job""",
+		{"jobs": job_names}, as_dict=True,
+	):
+		result[r.job]["expense_returns"] = flt(r.v)
+
+	# --- Payment Returns = money we refunded back to the Customer (the
+	# reverse of an Advance Receipt). Nets against Received. ---
+	for r in frappe.db.sql(
+		"""SELECT pe.job, COALESCE(SUM(pe.paid_amount), 0) v
+			FROM `tabPayment Entry` pe
+			WHERE pe.job IN %(jobs)s AND pe.docstatus=1 AND pe.payment_type='Pay'
+			  AND pe.party_type='Customer'
+			GROUP BY pe.job""",
+		{"jobs": job_names}, as_dict=True,
+	):
+		result[r.job]["payment_returns"] = flt(r.v)
+
 	# --- derived ---
 	for d in result.values():
+		d["received"] = flt(d["received"]) - flt(d["payment_returns"])
+		d["received_from_agent"] = flt(d["received_from_agent"]) - flt(d["payment_returns_to_agent"])
 		d["received_from_customer"] = flt(d["received"]) - flt(d["received_from_agent"])
-		d["net_profit"] = flt(d["job_amount"]) - flt(d["expenses"]) - flt(d["outsourcing"])
+		d["supplier_paid"] = flt(d["supplier_paid"]) - flt(d["expense_returns"])
+		d["net_profit"] = (
+			flt(d["job_amount"]) - flt(d["expenses"]) - flt(d["outsourcing"]) + flt(d["expense_returns"])
+		)
 
 	return result

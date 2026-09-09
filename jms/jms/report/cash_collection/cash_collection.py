@@ -24,7 +24,10 @@ def get_columns():
 
 
 def get_data(filters):
-	conditions = ["pe.docstatus = 1", "pe.payment_type = 'Receive'"]
+	# party_type='Customer' — an Expense Return is also a "Receive" Payment
+	# Entry (money back from a Supplier), and without this filter it would
+	# show up here looking like a customer collection.
+	conditions = ["pe.docstatus = 1", "pe.payment_type = 'Receive'", "pe.party_type = 'Customer'"]
 	params = {}
 	if filters.get("company"):
 		conditions.append("pe.company = %(company)s")
