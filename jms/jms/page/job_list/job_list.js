@@ -307,13 +307,30 @@ function render_job_cards() {
                 return;
             }
 
+            // Keys must match the Job.status Select field options exactly
+            // (see job.json) — pill/border/bg per status so cards are
+            // distinguishable at a glance instead of every non-Completed
+            // status sharing one flat grey.
+            const status_style_map = {
+                "Created":             { pill: "#3498db", border: "#3498db", bg: "#eaf4fc" },
+                "In Progress":         { pill: "#f39c12", border: "#f39c12", bg: "#fef5e7" },
+                "Processing":          { pill: "#f1c40f", border: "#f1c40f", bg: "#fef9e7" },
+                "Supervisor Approved": { pill: "#17a2b8", border: "#17a2b8", bg: "#e8f6f8" },
+                "MD Approved":         { pill: "#5dade2", border: "#5dade2", bg: "#eaf4fb" },
+                "Completed":           { pill: "#2ecc71", border: "#2ecc71", bg: "#e9f7ef" },
+                "Closed":              { pill: "#9b59b6", border: "#9b59b6", bg: "#f4ecf7" },
+                "Rejected":            { pill: "#e83e8c", border: "#e83e8c", bg: "#fce8f1" },
+                "Cancelled":           { pill: "#e74c3c", border: "#e74c3c", bg: "#fdecea" }
+            };
+
             r.message.forEach(job => {
 
                 const is_completed = job.status === "Completed";
 
-                const card_bg = is_completed ? "#e9f7ef" : "#ffffff";
-                const border_color = is_completed ? "#2ecc71" : "#e0e0e0";
-                const status_bg = is_completed ? "#2ecc71" : "#6c757d";
+                const status_style = status_style_map[job.status] || { pill: "#6c757d", border: "#e0e0e0", bg: "#ffffff" };
+                const card_bg = status_style.bg;
+                const border_color = status_style.border;
+                const status_bg = status_style.pill;
 
                 const priority_bg =
                     job.priority === "High" ? "#e74c3c" :
