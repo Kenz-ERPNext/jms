@@ -1,6 +1,25 @@
 // Copyright (c) 2025, Your Company and contributors
 // For license information, please see license.txt
- 
+
+// Keys must match the Job.status Select field options exactly (see
+// job.json) — job_list.js keeps its own copy of this map for the list
+// view's status pills.
+// window-scoped (not const): job_list.js declares this same map for the
+// list view's status pills, and desk navigates between list/form without a
+// full page reload, so both scripts can share one JS global scope — a
+// const here would throw "already declared" on the second script to load.
+window.job_status_colors = {
+	"Created": "blue",
+	"In Progress": "orange",
+	"Processing": "yellow",
+	"Supervisor Approved": "cyan",
+	"MD Approved": "light-blue",
+	"Completed": "green",
+	"Closed": "purple",
+	"Rejected": "pink",
+	"Cancelled": "red"
+};
+
 frappe.ui.form.on('Job', {
 
 	// NOTE: payment / mode_of_payment (and the _pi variants) are no longer
@@ -33,6 +52,11 @@ frappe.ui.form.on('Job', {
 	refresh: function(frm) {
         // frappe.msgprint("hi")
 
+		// Colored status badge next to the document title, matching the
+		// list view's status pill colors (job_status_colors above).
+		if (frm.doc.status) {
+			frm.page.set_indicator(__(frm.doc.status), job_status_colors[frm.doc.status] || "gray");
+		}
 
 		salesInvoiceMessage(frm);
 
@@ -61,6 +85,30 @@ frappe.ui.form.on('Job', {
 					}
 				);
 			}).addClass("btn-primary");
+		}
+
+		// --------------------------------------------------
+		// CANCEL JOB (Status is read-only / auto-managed, so cancelling is an
+		// explicit action). Lives in the "..." menu next to Delete, not as its
+		// own toolbar button. The guard is enforced server-side in
+		// Job.validate_cancelling(): a Job already Completed or Closed can't
+		// be cancelled, nor one with a submitted invoice.
+		// --------------------------------------------------
+		if (!frm.is_new() && !["Closed", "Cancelled", "Rejected", "Completed"].includes(frm.doc.status)) {
+			frm.page.add_menu_item(__("Cancel"), function () {
+				frappe.confirm(
+					__("Cancel this Job? This cannot be undone from here."),
+					function () {
+						frm.set_value("status", "Cancelled");
+						frm.save().then(() => {
+							frappe.show_alert({ message: __("Job Cancelled"), indicator: "red" });
+						}).catch(() => {
+							// blocked by validate_cancelling — revert the in-memory status
+							frm.reload_doc();
+						});
+					}
+				);
+			});
 		}
 
 		frm.set_query("customer", function() {
@@ -295,95 +343,6 @@ frappe.ui.form.on('Job', {
 
             });
         }
-
-
-//////////////////////////////////////////////////////////////
-// //////////////////////////////////////////////////////////
-
-
-        addCreate('Expense Return', function () {
-
-            // A Supplier we already paid (via Expense or an outsource
-            // Purchase Invoice) refunds some/all of it back to us. No
-            // Reference No/Date fields here — those are always auto-filled
-            // server-side now, not something the client wants to be asked.
-            let d = new frappe.ui.Dialog({
-
-                title: "Create Expense Return",
-
-                fields: [
-
-                    {
-                        fieldname: "supplier",
-                        label: "Supplier",
-                        fieldtype: "Link",
-                        options: "Supplier",
-                        reqd: 1
-                    },
-
-                    {
-                        fieldname: "amount",
-                        label: "Amount",
-                        fieldtype: "Currency",
-                        reqd: 1
-                    },
-
-                    {
-                        fieldname: "mode_of_payment",
-                        label: "Mode of Payment",
-                        fieldtype: "Link",
-                        options: "Mode of Payment",
-                        reqd: 1
-                    },
-
-                    {
-                        fieldname: "posting_date",
-                        label: "Posting Date",
-                        fieldtype: "Date",
-                        default: frappe.datetime.get_today(),
-                        reqd: 1
-                    }
-
-                ],
-
-                primary_action_label: "Create",
-
-                primary_action(values) {
-
-                    frappe.call({
-
-                        doc: frm.doc,
-
-                        method: "create_expense_return",
-
-                        args: {
-                            supplier: values.supplier,
-                            amount: values.amount,
-                            mode_of_payment: values.mode_of_payment,
-                            posting_date: values.posting_date
-                        },
-
-                        callback: function(r) {
-
-                            if (r.message) {
-
-                                frappe.msgprint(
-                                    __("Expense Return Payment Entry Created: " + r.message)
-                                );
-
-                                frm.reload_doc();
-
-                                d.hide();
-                            }
-                        }
-                    });
-                }
-            });
-
-            d.show();
-        });
-
-
 //////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////
 
@@ -527,8 +486,6 @@ frappe.ui.form.on('Job', {
         });
 
     });
-
-
 // ////////////////////////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////////////////////////
 
@@ -604,8 +561,6 @@ frappe.ui.form.on('Job', {
 
             d.show();
         });
-
-
 // ////////////////////////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////////////////////////
 
@@ -645,8 +600,6 @@ frappe.ui.form.on('Job', {
 
             });
         }
-
-
 ////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////
 
@@ -1003,11 +956,6 @@ frappe.ui.form.on('Job', {
             });  // end frappe.db.count(...).then
 
         });
-
-
-
-
-
 //////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 
@@ -1482,9 +1430,91 @@ frappe.ui.form.on('Job', {
         });  // end frappe.db.get_list(templates).then
     });
 }
+//////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////
 
 
+        addCreate('Expense Return', function () {
 
+            // A Supplier we already paid (via Expense or an outsource
+            // Purchase Invoice) refunds some/all of it back to us. No
+            // Reference No/Date fields here — those are always auto-filled
+            // server-side now, not something the client wants to be asked.
+            let d = new frappe.ui.Dialog({
+
+                title: "Create Expense Return",
+
+                fields: [
+
+                    {
+                        fieldname: "supplier",
+                        label: "Supplier",
+                        fieldtype: "Link",
+                        options: "Supplier",
+                        reqd: 1
+                    },
+
+                    {
+                        fieldname: "amount",
+                        label: "Amount",
+                        fieldtype: "Currency",
+                        reqd: 1
+                    },
+
+                    {
+                        fieldname: "mode_of_payment",
+                        label: "Mode of Payment",
+                        fieldtype: "Link",
+                        options: "Mode of Payment",
+                        reqd: 1
+                    },
+
+                    {
+                        fieldname: "posting_date",
+                        label: "Posting Date",
+                        fieldtype: "Date",
+                        default: frappe.datetime.get_today(),
+                        reqd: 1
+                    }
+
+                ],
+
+                primary_action_label: "Create",
+
+                primary_action(values) {
+
+                    frappe.call({
+
+                        doc: frm.doc,
+
+                        method: "create_expense_return",
+
+                        args: {
+                            supplier: values.supplier,
+                            amount: values.amount,
+                            mode_of_payment: values.mode_of_payment,
+                            posting_date: values.posting_date
+                        },
+
+                        callback: function(r) {
+
+                            if (r.message) {
+
+                                frappe.msgprint(
+                                    __("Expense Return Payment Entry Created: " + r.message)
+                                );
+
+                                frm.reload_doc();
+
+                                d.hide();
+                            }
+                        }
+                    });
+                }
+            });
+
+            d.show();
+        });
 //////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////
 

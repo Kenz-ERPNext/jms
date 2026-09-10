@@ -22,6 +22,7 @@ class Job(Document):
 		self.check_overdue()
 		self.auto_create_tasks_from_items()
 		self.validate_closing()
+		self.validate_cancelling()
 
 
 
@@ -245,19 +246,28 @@ class Job(Document):
 
 		return round((completed_tasks / total_tasks) * 100, 2) if total_tasks else 0
 
-	def before_cancel(self):
-		"""Validate before cancelling job"""
-		if self.status == "COMPLETED":
-			frappe.throw(_("Cannot cancel a completed job"))
+	def validate_cancelling(self):
+		"""Guard the 'Cancelled' status (set via the Cancel Job button, since
+		Job is not a submittable doctype): a Job that's already Completed or
+		Closed has financial recognition behind it and shouldn't be cancelled
+		after the fact, and a Job with a submitted invoice needs that invoice
+		cancelled first."""
+		if self.status != "Cancelled":
+			return
+
+		before_save = self.get_doc_before_save()
+		old_status = before_save.status if before_save else None
+		if old_status in ("Completed", "Closed"):
+			frappe.throw(_("Cannot cancel a Job that is already {0}").format(old_status))
 
 		if self.linked_invoice:
-			invoice = frappe.get_doc("Sales Invoice", self.linked_invoice)
-			if invoice.docstatus == 1:
-				frappe.throw(_("Cannot cancel job with submitted invoice. Please cancel invoice first."))
+			invoice_docstatus = frappe.db.get_value("Sales Invoice", self.linked_invoice, "docstatus")
+			if invoice_docstatus == 1:
+				frappe.throw(_("Cannot cancel a Job with a submitted invoice. Please cancel the invoice first."))
 
 	def on_trash(self):
 		"""Validate before deleting job"""
-		if self.status in ["COMPLETED", "CANCELED", "REJECTED"]:
+		if self.status in ["Completed", "Cancelled", "Rejected"]:
 			frappe.throw(_("Cannot delete jobs with status {0}").format(self.status))
 
 		if self.linked_invoice:

@@ -1,36 +1,39 @@
 // Copyright (c) 2025, Your Company and contributors
 // For license information, please see license.txt
 
+// Keys must match the Job.status Select field options exactly (see
+// job.json) — job.js keeps its own copy of this map for the single-Job
+// form view's title indicator.
+// window-scoped (not const): job.js declares this same map for the form
+// view's title indicator, and desk navigates between list/form without a
+// full page reload, so both scripts can share one JS global scope — a
+// const here would throw "already declared" on the second script to load.
+window.job_status_colors = {
+	"Created": "blue",
+	"In Progress": "orange",
+	"Processing": "yellow",
+	"Supervisor Approved": "cyan",
+	"MD Approved": "light-blue",
+	"Completed": "green",
+	"Closed": "purple",
+	"Rejected": "pink",
+	"Cancelled": "red"
+};
+
 frappe.listview_settings['Job'] = {
 	add_fields: ["status", "billing_status", "priority", "customer", "net_amount", "balance", "overdue_status"],
 
 	get_indicator: function(doc) {
-		// Status indicators with colors
-		const status_colors = {
-			"CREATED": "blue",
-			"PROCESSING": "orange",
-			"COMPLETED": "green",
-			"REJECTED": "red",
-			"CANCELED": "darkgrey",
-			"PENDING_EXT(COMPLETED)": "purple",
-			"AMT_PENDING(COMPLETED)": "yellow"
-		};
-
-		return [__(doc.status), status_colors[doc.status] || "gray", "status,=," + doc.status];
+		// Status indicators with colors. Keys must match the Job.status
+		// Select field options exactly (Title Case) — this previously used
+		// stale ALL-CAPS keys that never matched a real status value, so
+		// every job silently fell through to the same grey indicator.
+		return [__(doc.status), job_status_colors[doc.status] || "gray", "status,=," + doc.status];
 	},
 
 	formatters: {
 		status: function(value) {
-			const status_map = {
-				"CREATED": '<span class="indicator-pill blue">CREATED</span>',
-				"PROCESSING": '<span class="indicator-pill orange">PROCESSING</span>',
-				"COMPLETED": '<span class="indicator-pill green">COMPLETED</span>',
-				"REJECTED": '<span class="indicator-pill red">REJECTED</span>',
-				"CANCELED": '<span class="indicator-pill darkgrey">CANCELED</span>',
-				"PENDING_EXT(COMPLETED)": '<span class="indicator-pill purple">PENDING EXT</span>',
-				"AMT_PENDING(COMPLETED)": '<span class="indicator-pill yellow">AMT PENDING</span>'
-			};
-			return status_map[value] || value;
+			return `<span class="indicator-pill ${job_status_colors[value] || "gray"}">${__(value)}</span>`;
 		},
 
 		billing_status: function(value) {
@@ -96,7 +99,7 @@ frappe.listview_settings['Job'] = {
 
 		// Add filter shortcuts
 		listview.page.add_menu_item(__('Show Only Processing'), function() {
-			listview.filter_area.add([[listview.doctype, 'status', '=', 'PROCESSING']]);
+			listview.filter_area.add([[listview.doctype, 'status', '=', 'Processing']]);
 		});
 
 		listview.page.add_menu_item(__('Show Only Overdue'), function() {
@@ -110,7 +113,7 @@ frappe.listview_settings['Job'] = {
 
 	// Disable delete for specific statuses
 	can_delete: function(doc) {
-		if (doc.status === "COMPLETED" || doc.status === "CANCELED") {
+		if (doc.status === "Completed" || doc.status === "Cancelled") {
 			frappe.msgprint(__("Cannot delete {0} jobs", [doc.status]));
 			return false;
 		}
