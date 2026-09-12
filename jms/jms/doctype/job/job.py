@@ -2738,18 +2738,27 @@ class Job(Document):
 			received_from_agent = received_from_agent_gross - payment_returns_to_agent
 		received_from_customer = total_received - received_from_agent
 
-		# 3. Outstanding to Receive (Sales Invoice outstanding by job)
-		outstanding = flt(frappe.db.sql(
-			f"""SELECT COALESCE(SUM(si.outstanding_amount), 0)
-				FROM `tabSales Invoice` si
-				WHERE si.{si_job_field} = %(job)s AND si.docstatus = 1""",
-			{"job": job},
-		)[0][0])
-
 		# Has this job been billed yet (a submitted Sales Invoice exists)?
 		has_sales_invoice = bool(
 			frappe.db.count("Sales Invoice", {si_job_field: job, "docstatus": 1})
 		)
+
+		# 3. Outstanding to Receive. Once billed, this is the Sales Invoice
+		# outstanding by job. Before any invoice exists there is nothing in
+		# the SI ledger to read, so a job priced at 475 with a 457 advance
+		# (customer or agent) used to show 0.00 owed — fall back to the
+		# customer-payable job value (net incl. VAT, less discount, i.e. the
+		# same basis as the receipts) minus what has actually been received.
+		if has_sales_invoice:
+			outstanding = flt(frappe.db.sql(
+				f"""SELECT COALESCE(SUM(si.outstanding_amount), 0)
+					FROM `tabSales Invoice` si
+					WHERE si.{si_job_field} = %(job)s AND si.docstatus = 1""",
+				{"job": job},
+			)[0][0])
+		else:
+			job_payable = flt(self.net_amount) - flt(self.discount)
+			outstanding = max(0.0, job_payable - total_received)
 
 		# Paid Out for this job = ALL pay-side Payment Entries TO SUPPLIERS
 		# (incl. unallocated supplier / agent advances), not only those
@@ -2800,7 +2809,12 @@ class Job(Document):
 		# Net amounts still to collect / pay after offsetting those advances —
 		# the basis for the "Amount Pending" / "Exp. Pending" indicators and the
 		# Job Status Report "remaining" scenarios.
-		net_receivable = max(0.0, outstanding - unallocated_received)
+		# Unbilled: every receipt is by definition unallocated and has already
+		# been subtracted in `outstanding` above, so don't net it off twice.
+		if has_sales_invoice:
+			net_receivable = max(0.0, outstanding - unallocated_received)
+		else:
+			net_receivable = outstanding
 		net_payable = max(0.0, payable_outstanding - unallocated_paid)
 
 		# 7. Profit Balance = profit still to settle = remaining receivable minus
