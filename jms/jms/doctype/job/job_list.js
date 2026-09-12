@@ -75,10 +75,41 @@ frappe.listview_settings['Job'] = {
 	},
 
 	onload: function(listview) {
-		// Clear default 'In Progress' filter if applied by shortcut/route
-		if (frappe.route_options && frappe.route_options.status) {
-			delete frappe.route_options.status;
-		}
+		// The Job list must open without a default status filter (client
+		// requirement). A status filter can arrive three ways:
+		//   1. frappe.route_options — frappe.set_route("List", "Job", {status}),
+		//      e.g. the SBM Pipeline lifecycle cards.
+		//   2. the URL query string — /app/job?status=In+Progress from a
+		//      workspace shortcut, bookmark, or browser back/forward.
+		//      parse_filters_from_route_options reads window.location.search
+		//      BEFORE frappe.route_options, so clearing route_options alone
+		//      never caught this.
+		//   3. the user's saved list settings — the last-used filters are
+		//      restored on every open and re-saved on every render, so once
+		//      applied via 1 or 2 the filter looked like a permanent default.
+		const strip_status_route = () => {
+			if (frappe.route_options && frappe.route_options.status) {
+				delete frappe.route_options.status;
+			}
+			const url = new URL(window.location.href);
+			if (url.searchParams.has("status")) {
+				url.searchParams.delete("status");
+				window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+			}
+		};
+
+		// onload runs ONCE per session — Frappe caches the list view and, on
+		// returning to it in-app (dashboard → Job list, browser back), only
+		// before_refresh() → parse_filters_from_route_options() run again. So
+		// 1 and 2 are stripped inside that parser, which is on the path of
+		// every show, not just here.
+		const parse_route_filters = listview.parse_filters_from_route_options.bind(listview);
+		listview.parse_filters_from_route_options = function () {
+			strip_status_route();
+			return parse_route_filters();
+		};
+		strip_status_route();
+
 		if (listview.filter_area) {
 			listview.filter_area.remove("status");
 		}
