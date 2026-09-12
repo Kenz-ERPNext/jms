@@ -205,7 +205,10 @@
 // ===================================================
 // GLOBAL STATE (IMPORTANT ✅)
 // ===================================================
-let current_sort_order = "desc";
+// Job No. search term. Cards always list newest job first; the old
+// asc/desc sort dropdown was removed at the client's request in favour
+// of this search box.
+let current_search = "";
 
 frappe.pages['job-list'].on_page_load = function (wrapper) {
 
@@ -239,15 +242,11 @@ function render_job_cards() {
 
             <div style="display:flex; gap:10px; align-items:center;">
                 
-                <!-- ✅ SORT DROPDOWN -->
-                <select id="sort-order" class="form-control" style="width:220px;">
-                    <option value="desc" ${current_sort_order === "desc" ? "selected" : ""}>
-                       Descending
-                    </option>
-                    <option value="asc" ${current_sort_order === "asc" ? "selected" : ""}>
-                       Ascending 
-                    </option>
-                </select>
+                <!-- ✅ JOB NO. SEARCH -->
+                <input type="search" id="job-search" class="form-control"
+                    placeholder="🔍 Search Job No."
+                    value="${frappe.utils.escape_html(current_search)}"
+                    style="width:220px;">
 
                 <button class="btn btn-primary" id="create_job_btn"
                     style="padding:10px 24px; font-size:16px; border-radius:8px;">
@@ -272,16 +271,30 @@ function render_job_cards() {
     });
 
     // =============================
-    // SORT CHANGE EVENT (FIXED ✅)
+    // SEARCH EVENT
     // =============================
-    $("#sort-order").off("change").on("change", function () {
-        current_sort_order = $(this).val();  // store value
-        render_job_cards();                  // re-render
+    // Only the card container is refreshed on search — re-rendering the
+    // whole header would rebuild the input and drop the user's cursor.
+    let search_timer = null;
+    $("#job-search").off("input").on("input", function () {
+        current_search = ($(this).val() || "").trim();
+        clearTimeout(search_timer);
+        search_timer = setTimeout(load_jobs, 300);
     });
 
-    // =============================
-    // FETCH DATA
-    // =============================
+    load_jobs();
+}
+
+// ===================================================
+// FETCH DATA
+// ===================================================
+function load_jobs() {
+
+    const filters = {};
+    if (current_search) {
+        filters.name = ["like", `%${current_search}%`];
+    }
+
     frappe.call({
         method: "frappe.client.get_list",
         args: {
@@ -294,7 +307,8 @@ function render_job_cards() {
                 "customer",
                 "date"
             ],
-            order_by: `name ${current_sort_order}`, // ✅ dynamic sorting
+            filters: filters,
+            order_by: "name desc",
             limit_page_length: 0
         },
         callback: function (r) {
@@ -303,7 +317,9 @@ function render_job_cards() {
             container.empty();
 
             if (!r.message || r.message.length === 0) {
-                container.html("<p>No jobs found</p>");
+                container.html(current_search
+                    ? `<p>No jobs found for "${frappe.utils.escape_html(current_search)}"</p>`
+                    : "<p>No jobs found</p>");
                 return;
             }
 
