@@ -1233,7 +1233,7 @@ frappe.ui.form.on('Job', {
                                 fieldname: 'mode_of_payment',
                                 fieldtype: 'Link',
                                 options: 'Mode of Payment',
-                                default: frm.doc.mode_of_payment || 'Cash',
+                                default: frm.doc.mode_of_payment || null,
                                 hidden: 0,
 
                                 change() {
