@@ -802,7 +802,7 @@ frappe.ui.form.on('Job', {
                             label: "Mode of Payment",
                             fieldtype: "Link",
                             options: "Mode of Payment",
-                            default: frm.doc.mode_of_payment || "Cash",
+                            default: frm.doc.mode_of_payment || null,
                             depends_on: "eval:doc.payment=='Payment Now'",
                             mandatory_depends_on: "eval:doc.payment=='Payment Now'",
                             change() {
