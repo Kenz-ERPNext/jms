@@ -100,9 +100,10 @@ of a task that is assigned to someone else.
   allowed to edit in the current workflow state see the whole form read-only.
   `lockJobForTaskStaff` in `job.js` puts the normal permissions back for Task
   Staff only.
-- **A Pending task without a reason blocks saving.** Pending Reason is mandatory
-  whenever the status is Pending, so an old task that is already Pending with no
-  reason must be given one before its Job can be saved.
+- **Pending Reason is checked on the server for every role.** A task that is set
+  to Pending without a Pending Reason cannot be saved. A task that was already
+  Pending without a reason before this rule is left alone until its status is
+  changed.
 
 ## Test data
 

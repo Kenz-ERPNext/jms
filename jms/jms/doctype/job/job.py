@@ -39,6 +39,7 @@ def office_only(fn):
 class Job(Document):
 	def validate(self):
 		self.limit_task_staff_to_status()
+		self.validate_pending_reason()
 		self.set_year()
 		# self.validate_customer_or_agent()
 		# self.create_customer_from_agent_if_required()
@@ -56,6 +57,20 @@ class Job(Document):
  
 
 
+
+	def validate_pending_reason(self):
+		"""A task set to Pending needs a Pending Reason, for every role. Frappe does
+		not enforce mandatory_depends_on on the server, so it is checked here. A task
+		that was already Pending without a reason before this rule is left alone until
+		its status is changed."""
+		old = self.get_doc_before_save()
+		old_status = {row.name: row.status for row in old.tasks} if old else {}
+		for row in self.tasks:
+			if row.status != "Pending" or (row.pending_reason or "").strip():
+				continue
+			if old_status.get(row.name) == "Pending":
+				continue
+			frappe.throw(_("Row {0}: please give a Pending Reason for task {1}").format(row.idx, row.task_name))
 
 	def limit_task_staff_to_status(self):
 		"""A Task Staff user may only change the status (and pending reason) of
