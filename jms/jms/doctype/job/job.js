@@ -20,6 +20,36 @@ window.job_status_colors = {
     "Cancelled": "red"
 };
 
+const OFFICE_ROLES = ["Administrator", "System Manager", "Admin", "Accounts User", "Accounts Manager"];
+
+function lockJobForTaskStaff(frm) {
+    const roles = frappe.user_roles || [];
+    if (!roles.includes("Task Staff") || OFFICE_ROLES.some((r) => roles.includes(r))) {
+        return false;
+    }
+
+    // The Job workflow (edit approval) makes the whole form read-only for roles
+    // it does not list. Task Staff must still update their tasks, so put the
+    // normal permissions back; the server limits what they can change.
+    frm.read_only = false;
+    frm.perm = frappe.perm.get_perm(frm.doctype, frm.doc);
+
+    frm.fields.forEach((f) => {
+        if (f.df.fieldname !== "tasks") frm.set_df_property(f.df.fieldname, "read_only", 1);
+    });
+
+    const grid = frm.fields_dict.tasks.grid;
+    grid.cannot_add_rows = true;
+    grid.cannot_delete_rows = true;
+    grid.wrapper.find(".grid-add-row, .grid-remove-rows").hide();
+    const editable = ["status", "pending_reason"];
+    frappe.meta.get_docfields("Job Task").forEach((df) => {
+        if (!editable.includes(df.fieldname)) grid.update_docfield_property(df.fieldname, "read_only", 1);
+    });
+    frm.refresh_field("tasks");
+    return true;
+}
+
 frappe.ui.form.on('Job', {
 
     // NOTE: payment / mode_of_payment (and the _pi variants) are no longer
@@ -56,6 +86,12 @@ frappe.ui.form.on('Job', {
         // list view's status pill colors (job_status_colors above).
         if (frm.doc.status) {
             frm.page.set_indicator(__(frm.doc.status), job_status_colors[frm.doc.status] || "gray");
+        }
+
+        // Task Staff can only update the status of their tasks: lock the rest
+        // of the form and skip the money buttons below.
+        if (lockJobForTaskStaff(frm)) {
+            return;
         }
 
         salesInvoiceMessage(frm);

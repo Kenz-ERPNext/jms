@@ -298,6 +298,12 @@ fixtures = [
 				]
 			},
     {
+        "doctype": "Role",
+        "filters": [
+            ["name", "in", ["Admin", "Task Staff"]]
+        ]
+    },
+    {
         "doctype": "Print Format",
         "filters": [
             ["name", "in", ["Job Print Format"]]
