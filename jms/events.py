@@ -86,3 +86,40 @@ def on_payment_entry_cancel(doc, method=None):
 	for job in frappe.get_all("Job", filters={"sales_invoice_payment_entry": doc.name}, pluck="name"):
 		frappe.db.set_value("Job", job, "sales_invoice_payment_entry", None, update_modified=False)
 	_reopen_job_if_closed(doc.get("job"))
+
+
+def log_cancelled_document(doc, method=None):
+	"""Keep a copy of every record that gets cancelled in the Cancelled Document
+	doctype (the cancel-side twin of Frappe's Deleted Document). Registered for
+	all doctypes in hooks.py:
+
+	- on_cancel: a submitted record (Sales Invoice, Payment Entry, ...) is cancelled.
+	- on_update: a record whose status is set to "Cancelled" (Job, Task, ...).
+
+	Logging must never stop the cancel itself, so any failure goes to the Error Log.
+	"""
+	if doc.doctype == "Cancelled Document" or frappe.flags.in_install:
+		return
+
+	if method == "on_update":
+		# Submittable records are logged by on_cancel, not here.
+		if doc.docstatus == 2 or not doc.meta.has_field("status"):
+			return
+		if doc.get("status") != "Cancelled" or not doc.has_value_changed("status"):
+			return
+
+	try:
+		frappe.get_doc(
+			{
+				"doctype": "Cancelled Document",
+				"cancelled_doctype": doc.doctype,
+				"cancelled_name": doc.name,
+				"job": doc.name if doc.doctype == "Job" else doc.get("job"),
+				"data": doc.as_json(),
+			}
+		).insert(ignore_permissions=True)
+	except Exception:
+		frappe.log_error(
+			title=f"Cancelled Document log failed: {doc.doctype} {doc.name}",
+			message=frappe.get_traceback(),
+		)

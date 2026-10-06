@@ -138,6 +138,10 @@ app_include_js = "/assets/jms/js/jms.js"
 # Hook on document methods and events
 
 doc_events = {
+	"*": {
+		"on_cancel": "jms.events.log_cancelled_document",
+		"on_update": "jms.events.log_cancelled_document",
+	},
 	"Sales Invoice": {
 		"on_submit": "jms.events.on_sales_invoice_submit",
 		"on_cancel": "jms.events.on_sales_invoice_cancel",
