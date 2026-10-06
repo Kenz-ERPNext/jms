@@ -45,7 +45,8 @@
    "in_standard_filter": 1,
    "label": "Assigned To",
    "mandatory_depends_on": "eval:doc.employee__outsource == \"Employee\"",
-   "options": "Employee"
+   "options": "Employee",
+   "ignore_user_permissions": 1
   },
   {
    "fieldname": "due_date",

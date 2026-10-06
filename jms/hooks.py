@@ -117,13 +117,13 @@ app_include_js = "/assets/jms/js/jms.js"
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+permission_query_conditions = {
+	"Job": "jms.events.job_query_conditions",
+}
+
+has_permission = {
+	"Job": "jms.events.job_has_permission",
+}
 
 # DocType Class
 # ---------------
@@ -140,7 +140,10 @@ app_include_js = "/assets/jms/js/jms.js"
 doc_events = {
 	"*": {
 		"on_cancel": "jms.events.log_cancelled_document",
-		"on_update": "jms.events.log_cancelled_document",
+		"on_update": [
+			"jms.events.log_cancelled_document",
+			"jms.events.log_updated_document",
+		],
 	},
 	"Sales Invoice": {
 		"on_submit": "jms.events.on_sales_invoice_submit",

@@ -12,7 +12,7 @@ from jms.events import log_cancelled_document
 class TestCancelledDocument(FrappeTestCase):
 	def rows(self, name):
 		return frappe.get_all(
-			"Cancelled Document", filters={"cancelled_name": name}, fields=["name", "cancelled_doctype", "data"]
+			"Cancelled Document", filters={"cancelled_name": name}, fields=["name", "cancelled_doctype", "cancelled_by", "data"]
 		)
 
 	def new_task(self, **kwargs):
@@ -27,6 +27,7 @@ class TestCancelledDocument(FrappeTestCase):
 		rows = self.rows(task.name)
 		self.assertEqual(len(rows), 1)
 		self.assertEqual(rows[0].cancelled_doctype, "Task")
+		self.assertEqual(rows[0].cancelled_by, frappe.session.user)
 		self.assertEqual(json.loads(rows[0].data)["status"], "Cancelled")
 
 		# saving again without a status change must not log it again

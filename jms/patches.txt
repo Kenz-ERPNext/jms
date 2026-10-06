@@ -13,3 +13,4 @@ jms.patches.v1_5.free_cancelled_invoice_jobs
 jms.patches.v1_6.set_default_return_visibility
 jms.patches.v1_7.clear_sbm_job_shortcut_status_filter
 jms.patches.v1_8.grant_employee_read
+jms.patches.v1_9.sync_roles_to_custom_docperms

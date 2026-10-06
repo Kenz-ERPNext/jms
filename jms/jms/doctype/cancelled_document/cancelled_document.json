@@ -8,6 +8,7 @@
  "field_order": [
   "cancelled_doctype",
   "cancelled_name",
+  "cancelled_by",
   "column_break_xapt",
   "job",
   "section_break_data",
@@ -26,6 +27,14 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Cancelled Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cancelled_by",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Cancelled By",
+   "options": "User",
    "read_only": 1
   },
   {

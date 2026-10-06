@@ -27,7 +27,8 @@ only happens when the Job's own status becomes Cancelled.
 | Cancelled Name | The name of the record, for example SI-00175. |
 | Job | The Job the record belongs to. For a Job it is the Job itself. Empty if there is none. |
 | Data | A full JSON copy of the record at the time it was cancelled. |
-| Created By / Created On | Who cancelled it and when. |
+| Cancelled By | The user who cancelled it. |
+| Created On | When it was cancelled. |
 
 All fields are read-only and nobody can add, change or delete a row by hand.
 
