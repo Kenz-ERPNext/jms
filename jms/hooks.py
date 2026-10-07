@@ -11,15 +11,15 @@ app_license = "mit"
 # required_apps = []
 
 # Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "jms",
-# 		"logo": "/assets/jms/logo.png",
-# 		"title": "Jms",
-# 		"route": "/jms",
-# 		"has_permission": "jms.api.permission.has_app_permission"
-# 	}
-# ]
+add_to_apps_screen = [
+	{
+		"name": "jms",
+		"logo": "/assets/jms/images/oasis-cienteirs-logo.png",
+		"title": "JMS Dashboard",
+		"route": "/app/jms-dashboard",
+		"has_permission": "jms.api.has_app_permission",
+	}
+]
 
 # Includes in <head>
 # ------------------
