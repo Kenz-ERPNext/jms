@@ -11,15 +11,15 @@ app_license = "mit"
 # required_apps = []
 
 # Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "jms",
-# 		"logo": "/assets/jms/logo.png",
-# 		"title": "Jms",
-# 		"route": "/jms",
-# 		"has_permission": "jms.api.permission.has_app_permission"
-# 	}
-# ]
+add_to_apps_screen = [
+	{
+		"name": "jms",
+		"logo": "/assets/jms/images/oasis-cienteirs-logo.png",
+		"title": "JMS Dashboard",
+		"route": "/app/jms-dashboard",
+		"has_permission": "jms.api.has_app_permission",
+	}
+]
 
 # Includes in <head>
 # ------------------
@@ -117,13 +117,13 @@ app_include_js = "/assets/jms/js/jms.js"
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+permission_query_conditions = {
+	"Job": "jms.events.job_query_conditions",
+}
+
+has_permission = {
+	"Job": "jms.events.job_has_permission",
+}
 
 # DocType Class
 # ---------------
@@ -138,6 +138,13 @@ app_include_js = "/assets/jms/js/jms.js"
 # Hook on document methods and events
 
 doc_events = {
+	"*": {
+		"on_cancel": "jms.events.log_cancelled_document",
+		"on_update": [
+			"jms.events.log_cancelled_document",
+			"jms.events.log_updated_document",
+		],
+	},
 	"Sales Invoice": {
 		"on_submit": "jms.events.on_sales_invoice_submit",
 		"on_cancel": "jms.events.on_sales_invoice_cancel",
@@ -297,6 +304,12 @@ fixtures = [
                     ]]
 				]
 			},
+    {
+        "doctype": "Role",
+        "filters": [
+            ["name", "in", ["Admin", "Task Staff"]]
+        ]
+    },
     {
         "doctype": "Print Format",
         "filters": [

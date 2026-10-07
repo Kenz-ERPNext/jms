@@ -5,3 +5,5 @@
 tags
 node_modules
 __pycache__
+# JMS dashboard build output
+jms/public/dashboard

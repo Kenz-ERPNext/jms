@@ -1,6 +1,8 @@
 # Copyright (c) 2025, Your Company and contributors
 # For license information, please see license.txt
  
+import functools
+
 import frappe
 from frappe import _
 from frappe.utils import flt
@@ -9,9 +11,35 @@ from frappe.utils import add_days, date_diff, getdate, today, nowdate
 
 from jms.compat import patch_round_floats_in
 
+# Roles that run the business side of a Job. Task Staff only update their tasks.
+OFFICE_ROLES = {"Administrator", "System Manager", "Admin", "Accounts User", "Accounts Manager"}
+STAFF_STATUSES = ("Open", "In Progress", "Pending", "Completed")
+LOCKED_JOB_STATUSES = ("Closed", "Cancelled", "Rejected")
+
+
+def is_task_staff_only(user=None):
+	roles = set(frappe.get_roles(user or frappe.session.user))
+	return "Task Staff" in roles and not (OFFICE_ROLES & roles)
+
+
+def office_only(fn):
+	"""Money actions are for the office roles. Task Staff can save a Job (to
+	update their tasks), so they must not be able to call these directly."""
+
+	@functools.wraps(fn)
+	def wrapper(*args, **kwargs):
+		if is_task_staff_only():
+			frappe.throw(_("You are not permitted to do this"), frappe.PermissionError)
+		return fn(*args, **kwargs)
+
+	return wrapper
+
+
 
 class Job(Document):
 	def validate(self):
+		self.limit_task_staff_to_status()
+		self.validate_pending_reason()
 		self.set_year()
 		# self.validate_customer_or_agent()
 		# self.create_customer_from_agent_if_required()
@@ -29,6 +57,69 @@ class Job(Document):
  
 
 
+
+	def validate_pending_reason(self):
+		"""A task set to Pending needs a Pending Reason, for every role. Frappe does
+		not enforce mandatory_depends_on on the server, so it is checked here. A task
+		that was already Pending without a reason before this rule is left alone until
+		its status is changed."""
+		old = self.get_doc_before_save()
+		old_status = {row.name: row.status for row in old.tasks} if old else {}
+		for row in self.tasks:
+			if row.status != "Pending" or (row.pending_reason or "").strip():
+				continue
+			if old_status.get(row.name) == "Pending":
+				continue
+			frappe.throw(_("Row {0}: please give a Pending Reason for task {1}").format(row.idx, row.task_name))
+
+	def limit_task_staff_to_status(self):
+		"""A Task Staff user may only change the status (and pending reason) of
+		tasks assigned to them. Anything else the form sends is put back to what
+		is saved, so a tampered request changes nothing. The Job status is then
+		derived from the tasks."""
+		if self.is_new() or not is_task_staff_only():
+			return
+		old = self.get_doc_before_save()
+		if not old:
+			return
+
+		skip = {"modified", "modified_by", "creation", "owner", "docstatus", "idx", "name", "tasks"}
+		for df in self.meta.fields:
+			if df.fieldname in skip:
+				continue
+			if df.fieldtype in ("Table", "Table MultiSelect"):
+				self.set(df.fieldname, [row.as_dict() for row in old.get(df.fieldname)])
+			elif df.fieldtype not in frappe.model.no_value_fields:
+				self.set(df.fieldname, old.get(df.fieldname))
+
+		mine = set(frappe.get_all("Employee", filters={"user_id": frappe.session.user}, pluck="name"))
+		new_rows = {row.name: row for row in self.tasks}
+		tasks = []
+		for old_row in old.tasks:
+			row = old_row.as_dict()
+			new = new_rows.get(old_row.name)
+			if new and old_row.assigned_to in mine:
+				if new.status not in STAFF_STATUSES:
+					frappe.throw(_("Row {0}: status must be one of {1}").format(old_row.idx, ", ".join(STAFF_STATUSES)))
+				reason = (new.pending_reason or "").strip()
+				if new.status == "Pending" and not reason:
+					frappe.throw(_("Row {0}: please give a reason for setting the task to Pending").format(old_row.idx))
+				row["status"] = new.status
+				row["pending_reason"] = reason if new.status == "Pending" else None
+				if new.status == "Completed":
+					row["completion_date"] = old_row.completion_date or nowdate()
+				elif old_row.status == "Completed":
+					row["completion_date"] = None
+			tasks.append(row)
+		self.set("tasks", tasks)
+
+		if self.status not in LOCKED_JOB_STATUSES and tasks:
+			statuses = [t["status"] for t in tasks]
+			if all(s == "Completed" for s in statuses):
+				self.status = "Completed"
+				self.completion_date = self.completion_date or nowdate()
+			elif all(s == "In Progress" for s in statuses):
+				self.status = "In Progress"
 
 	def after_insert(self):
 		pass 
@@ -607,6 +698,7 @@ class Job(Document):
 		return applied
 
 	@frappe.whitelist()
+	@office_only
 	def create_invoice(
 		self,
 		tax_template=None,
@@ -1097,6 +1189,7 @@ class Job(Document):
 
 
 	@frappe.whitelist()
+	@office_only
 	def create_pinvoice(
 		self,
 		tax_template=None,
@@ -1653,6 +1746,7 @@ class Job(Document):
 
 
 	@frappe.whitelist()
+	@office_only
 	def create_expense(
 		self,
 		expense_type,
@@ -1937,6 +2031,7 @@ class Job(Document):
 
 
 	@frappe.whitelist()
+	@office_only
 	def create_advance_receipt(
 		self,
 		amount,
@@ -2068,6 +2163,7 @@ class Job(Document):
 
 
 	@frappe.whitelist()
+	@office_only
 	def create_outsource_advance_payment(
 		self,
 		suppliers,
@@ -2251,6 +2347,7 @@ class Job(Document):
 		return created_entries
 
 	@frappe.whitelist()
+	@office_only
 	def create_expense_return(
 		self,
 		supplier,
@@ -2404,6 +2501,7 @@ class Job(Document):
 		return pe.name
 
 	@frappe.whitelist()
+	@office_only
 	def create_payment_return(
 		self,
 		amount,
@@ -2574,6 +2672,7 @@ class Job(Document):
 	# --------------------------------------------------------
 
 	@frappe.whitelist()
+	@office_only
 	def get_job_open_invoices(self, invoice_type, party=None):
 		"""Open invoices (outstanding > 0) for this job, to allocate a payment
 		against. invoice_type = 'Sales Invoice' or 'Purchase Invoice'."""
@@ -2595,6 +2694,7 @@ class Job(Document):
 		)
 
 	@frappe.whitelist()
+	@office_only
 	def get_job_unallocated_payments(self, payment_type, party=None):
 		"""Unallocated advance Payment Entries for this job, to apply to an
 		invoice. payment_type = 'Receive' (customer) or 'Pay' (supplier)."""

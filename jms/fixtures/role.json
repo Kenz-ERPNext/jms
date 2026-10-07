@@ -1,0 +1,16 @@
+[
+ {
+  "desk_access": 1,
+  "disabled": 0,
+  "doctype": "Role",
+  "name": "Admin",
+  "role_name": "Admin"
+ },
+ {
+  "desk_access": 1,
+  "disabled": 0,
+  "doctype": "Role",
+  "name": "Task Staff",
+  "role_name": "Task Staff"
+ }
+]

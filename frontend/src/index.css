@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* undo the desk (Bootstrap) styles that reach inside the dashboard */
+.jms-dashboard a,
+.jms-dashboard a:hover {
+  text-decoration: none;
+}
+.jms-dashboard h2,
+.jms-dashboard h3,
+.jms-dashboard p,
+.jms-dashboard ol {
+  margin: 0;
+}
+.jms-dashboard ol {
+  list-style: none;
+}
+.jms-dashboard button {
+  background: none;
+}
+.jms-dashboard table {
+  border-collapse: collapse;
+}
+.jms-dashboard input[type='search'] {
+  box-shadow: none;
+}

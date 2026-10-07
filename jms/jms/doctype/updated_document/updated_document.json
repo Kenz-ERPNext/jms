@@ -1,0 +1,121 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "hash",
+ "creation": "2026-10-06 15:22:22.946550",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "updated_doctype",
+  "updated_name",
+  "updated_by",
+  "column_break_uoeh",
+  "job",
+  "field_changed",
+  "section_break_limc",
+  "old_value",
+  "new_value",
+  "reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "updated_doctype",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Updated Doctype",
+   "read_only": 1
+  },
+  {
+   "fieldname": "updated_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Updated Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "updated_by",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Updated By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_uoeh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "job",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Job",
+   "read_only": 1
+  },
+  {
+   "fieldname": "field_changed",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Field Changed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_limc",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "old_value",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Old Value",
+   "read_only": 1
+  },
+  {
+   "fieldname": "new_value",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "New Value",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Reason",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-10-06 15:27:05.689813",
+ "modified_by": "Administrator",
+ "module": "Jms",
+ "name": "Updated Document",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Admin",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
