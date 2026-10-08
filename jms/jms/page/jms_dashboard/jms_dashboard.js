@@ -1,9 +1,9 @@
-// JMS Dashboard: a Vue app (source in frontend/, built into
+// SBM Dashboard: a Vue app (source in frontend/, built into
 // /assets/jms/dashboard/) shown inside the desk, under the normal navbar.
 frappe.pages["jms-dashboard"].on_page_load = function (wrapper) {
 	const page = frappe.ui.make_app_page({
 		parent: wrapper,
-		title: __("JMS Dashboard"),
+		title: __("SBM Dashboard"),
 		single_column: true,
 	});
 

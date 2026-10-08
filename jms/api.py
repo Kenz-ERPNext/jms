@@ -9,7 +9,7 @@ MAX_PAGE_LENGTH = 100
 
 
 def has_app_permission():
-	"""Whether the JMS Dashboard tile is shown on the apps screen."""
+	"""Whether the SBM Dashboard tile is shown on the apps screen."""
 	return bool(set(DASHBOARD_ROLES) & set(frappe.get_roles()))
 
 
@@ -22,16 +22,30 @@ def _key(status):
 
 
 @frappe.whitelist()
-def task_status_counts():
-	"""Number of tasks per status, for the cards at the top of the dashboard."""
+def job_status_counts():
+	"""Numbers for the cards at the top of the dashboard, counted in jobs so they
+	match the job list: `all` is every Job, and each status is the number of Jobs
+	with at least one task in that status (the same Jobs its filter shows). A Job
+	can count under more than one status. `tasks` holds the matching task counts."""
 	_admin_only()
-	counts = {status: 0 for status in TASK_STATUSES}
-	for status, count in frappe.db.sql(
-		"select status, count(*) from `tabJob Task` where parenttype = 'Job' group by status"
+	jobs = {status: 0 for status in TASK_STATUSES}
+	tasks = {status: 0 for status in TASK_STATUSES}
+	for status, job_count, task_count in frappe.db.sql(
+		"""select status, count(distinct parent), count(*) from `tabJob Task`
+		where parenttype = 'Job' group by status"""
 	):
-		counts[status] = count
-	return {"all": sum(counts.values()), **{_key(status): count for status, count in counts.items()}}
-
+		if status in jobs:
+			jobs[status] = job_count
+			tasks[status] = task_count
+	return {
+		"all": frappe.db.count("Job"),
+		**{_key(status): count for status, count in jobs.items()},
+		# the number of tasks behind each card, shown as a second line
+		"tasks": {
+			"all": frappe.db.count("Job Task", {"parenttype": "Job"}),
+			**{_key(status): count for status, count in tasks.items()},
+		},
+	}
 
 @frappe.whitelist()
 def job_cards(status=None, search=None, start=0, page_length=20):

@@ -43,21 +43,22 @@ class TestDashboardApi(FrappeTestCase):
 	def test_only_admin_roles_can_call(self):
 		frappe.set_user("Guest")
 		for call in (
-			api.task_status_counts,
+			api.job_status_counts,
 			api.job_cards,
 			lambda: api.job_tasks("any"),
 		):
 			with self.assertRaises(frappe.PermissionError):
 				call()
 
-	def test_counts_add_up(self):
-		counts = api.task_status_counts()
+	def test_counts_match_the_job_list(self):
+		counts = api.job_status_counts()
+		self.assertEqual(counts["all"], frappe.db.count("Job"))
+		self.assertEqual(counts["all"], api.job_cards(page_length=1)["total"])
+		for key, status in (("open", "Open"), ("pending", "Pending"), ("completed", "Completed")):
+			self.assertEqual(counts[key], api.job_cards(status=status, page_length=1)["total"])
+		self.assertEqual(counts["tasks"]["all"], frappe.db.count("Job Task", {"parenttype": "Job"}))
 		self.assertEqual(
-			counts["all"],
-			sum(counts[k] for k in ("open", "in_progress", "pending", "completed", "cancelled")),
-		)
-		self.assertEqual(
-			counts["all"], frappe.db.count("Job Task", {"parenttype": "Job"})
+			counts["tasks"]["pending"], frappe.db.count("Job Task", {"parenttype": "Job", "status": "Pending"})
 		)
 
 	def test_job_card_has_task_counts(self):
