@@ -15,7 +15,7 @@ add_to_apps_screen = [
 	{
 		"name": "jms",
 		"logo": "/assets/jms/images/oasis-cienteirs-logo.png",
-		"title": "JMS Dashboard",
+		"title": "SBM Dashboard",
 		"route": "/app/jms-dashboard",
 		"has_permission": "jms.api.has_app_permission",
 	}

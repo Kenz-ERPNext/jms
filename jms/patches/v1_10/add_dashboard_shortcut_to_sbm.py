@@ -1,12 +1,12 @@
 # Copyright (c) 2026, Kenz and contributors
-# Put a "JMS Dashboard" shortcut on the SBM workspace (the home page of JMS in the
+# Put a "SBM Dashboard" shortcut on the SBM workspace (the home page of JMS in the
 # desk), next to the existing Job Portal and Job Pipeline shortcuts.
 
 import json
 
 import frappe
 
-LABEL = "JMS Dashboard"
+LABEL = "SBM Dashboard"
 URL = "/app/jms-dashboard"
 
 
@@ -15,7 +15,8 @@ def execute():
 		return
 
 	workspace = frappe.get_doc("Workspace", "SBM")
-	existing = [row for row in workspace.shortcuts if row.label == LABEL]
+	# match on the URL too: the shortcut may still carry its old name "JMS Dashboard"
+	existing = [row for row in workspace.shortcuts if row.label == LABEL or row.url in (URL, "/portal")]
 	if existing:
 		for row in existing:
 			if row.url != URL:

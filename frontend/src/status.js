@@ -1,6 +1,6 @@
 // Colours and icons for task statuses, shared by the pages.
 export const STATUSES = {
-  all: { label: 'All tasks', icon: 'layers', tone: 'gray' },
+  all: { label: 'All jobs', icon: 'layers', tone: 'gray' },
   open: { label: 'Open', icon: 'circle', tone: 'blue', value: 'Open' },
   in_progress: { label: 'In Progress', icon: 'loader', tone: 'violet', value: 'In Progress' },
   pending: { label: 'Pending', icon: 'pause-circle', tone: 'orange', value: 'Pending' },
