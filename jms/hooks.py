@@ -139,11 +139,19 @@ has_permission = {
 
 doc_events = {
 	"*": {
-		"on_cancel": "jms.events.log_cancelled_document",
+		"on_cancel": [
+			"jms.events.log_cancelled_document",
+			"jms.accounting_log.log_accounting_change",
+		],
 		"on_update": [
 			"jms.events.log_cancelled_document",
 			"jms.events.log_updated_document",
+			"jms.accounting_log.log_accounting_change",
 		],
+		"after_insert": "jms.accounting_log.log_accounting_change",
+		"on_submit": "jms.accounting_log.log_accounting_change",
+		"on_update_after_submit": "jms.accounting_log.log_accounting_change",
+		"on_trash": "jms.accounting_log.log_accounting_change",
 	},
 	"Sales Invoice": {
 		"on_submit": "jms.events.on_sales_invoice_submit",
@@ -206,6 +214,8 @@ before_tests = "jms.install.before_tests"
 # -----------------------------------------------------------
 
 # ignore_links_on_delete = ["Communication", "ToDo"]
+# The log keeps its rows when the document they describe is deleted.
+ignore_links_on_delete = ["Accounting Change Log"]
 
 # Request Events
 # ----------------
