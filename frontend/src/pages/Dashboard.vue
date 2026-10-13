@@ -31,8 +31,13 @@
       </button>
     </div>
 
+    </div>
+
+    <!-- jobs on the left, live accounting activity on the right (below on small screens) -->
+    <div class="mt-5 flex flex-col gap-4 lg:flex-row lg:items-start">
+    <div class="min-w-0 flex-1">
     <!-- jobs list, like the desk's list view -->
-    <div class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-t-lg border border-gray-200 bg-white px-4 py-2.5">
+    <div class="flex flex-wrap items-center justify-between gap-3 rounded-t-lg border border-gray-200 bg-white px-4 py-2.5">
         <div class="flex flex-wrap items-center gap-1">
           <button
             v-for="key in cardKeys"
@@ -71,8 +76,6 @@
         </div>
         </div>
       </div>
-
-    </div>
 
     <!-- the job list scrolls inside its own box; cards and tabs stay in view -->
     <section
@@ -237,6 +240,10 @@
         <template v-else-if="rows.length && rows.length >= total">All {{ total.toLocaleString() }} jobs shown</template>
       </div>
     </section>
+    </div>
+
+    <AccountingFeed class="lg:w-80 lg:shrink-0 2xl:w-96" />
+    </div>
   </div>
 </template>
 
@@ -246,6 +253,7 @@ import { openJob } from '@/navigation'
 import { createResource, FeatherIcon } from '@/frappe'
 import JobBadge from '@/components/JobBadge.vue'
 import StatusPill from '@/components/StatusPill.vue'
+import AccountingFeed from '@/components/AccountingFeed.vue'
 import { STATUSES, TONES, formatDate } from '@/status'
 
 const PAGE = 21 // 7 rows of 3 cards

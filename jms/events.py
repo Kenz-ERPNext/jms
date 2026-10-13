@@ -129,7 +129,8 @@ def log_cancelled_document(doc, method=None):
 # System logs and queues: logging their own changes would be noise (and some of
 # them are written on every request).
 UPDATE_LOG_SKIP = {
-	"Updated Document", "Cancelled Document", "Deleted Document", "Version", "Error Log",
+	"Updated Document", "Cancelled Document", "Accounting Change Log", "Deleted Document",
+	"Version", "Error Log",
 	"Comment", "Communication", "Activity Log", "Access Log", "Notification Log",
 	"Email Queue", "Email Queue Recipient", "Scheduled Job Log", "Route History", "View Log",
 	"Prepared Report", "Console Log", "Document Follow", "Energy Point Log",
