@@ -66,6 +66,7 @@ export const appResources: AppResource[] = [
 	{
 		name: "my-tasks",
 		label: "My Tasks",
+		page: lazy(() => import("@/features/my-tasks/MyTasksPage")),
 		path: `${HOME}/my-tasks`,
 		icon: <CheckSquareOutlined />,
 		roles: ALL_ROLES,

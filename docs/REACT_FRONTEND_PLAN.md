@@ -648,7 +648,7 @@ Track: **Frontend** (`sbm-react/`). Every file under 200 lines.
 | **FE-9** | **Done.** Job page at `/sbm/jobs/<name>` (`src/features/job/`): header (status, stage by plain name, customer, due), **Next** button from `get_job_state`, More actions grouped Money in / Money out / Job, Print, ERPNext (admin roles); lifecycle and work & money steppers; key money figures; tabs Overview (details, services, totals), Tasks (read-only), Money (all metrics + invoices and payments of the job), Documents, History (admin roles). Close and Cancel work (Job saved with that status; server rules apply). Money actions open the ERPNext form until FE-11; task edits come in FE-10. | — |
 | **FE-10** | Tasks tab with in-place edits and bulk actions (save with `PUT /api/resource/Job`). | FE-9 |
 | **FE-11** | **Done.** Job actions in SBM (`src/features/job-actions/`), no ERPNext: an **Actions** button on every Jobs list row (and the job page): Edit job, the ERPNext **Create** menu with the same names, order and show conditions (`get_actions` in `jms/api/job_state.py`: Outsource Advance Payment, Advance Receipt, Payment Return, Create Sales Invoice, Create Expense, Expense Return, Create Purchase Invoice), then Close Job and Cancel. Same dialog titles, buttons, field labels and messages ("Sales Invoice already created for this Job.", "No unbilled outsource tasks found..."); each calls the same Job method via `run_doc_method`. SI Payment left out: it calls `create_payment`, which does not exist. | — |
-| **FE-12** | My Tasks page for Task Staff, phone layout. | FE-4 |
+| **FE-12** | **Done.** My Tasks (`src/features/my-tasks/`), Task Staff home, phone first: tabs Open / In Progress / Pending / Completed (last 30 days) with counts, Late only switch, a card per task (task, job, customer, due, priority) with one-tap Start / Done / Pending (asks the reason) / Reopen. API `jms/api/tasks.py`: `my_tasks` (tasks of the user's Employee) and `set_task_status` (one task; the Job is saved so all its rules run; Task Staff only their own tasks; not on Closed/Cancelled jobs). A user without an Employee gets a message to ask the admin. | — |
 | **FE-13** | **Done.** Dashboard (`src/features/dashboard/`), by importance: 4 money KPIs (Net Profit card also shows expenses and outsourcing); Needs action: 3 tiles (Ready to invoice, Waiting for payment, Late jobs) with count and amount, the chosen tile's 6 jobs in one table, View all → Jobs tab; Job pipeline card: open jobs per stage as bars, status chips; money cards with icons; two 6-month bar charts (money received, new jobs) from `jms/api/trends.py`, plain SVG-free bars (`src/components/BarChart.tsx`, no chart library) in colour token `chart` (#1F8A55, passes the dataviz palette checks), tooltip per bar. One call: `jms.api.home.get_dashboard`. Job links open the ERPNext form until FE-9; New Job opens the ERPNext form until FE-8. | — |
 | **FE-14** | Task Board (4.7), using the existing dashboard API. | FE-5 |
 | **FE-15** | Reports page (4.9): picker, filters per report from config, table, CSV export. | FE-5 |
@@ -678,7 +678,7 @@ Track: **Frontend** (`sbm-react/`). Every file under 200 lines.
 
 ```
 Done           API-1, API-2, API-3, API-4, API-5, API-6, API-7
-Done           FE-1, FE-2, FE-3, FE-4, FE-7, FE-8, FE-9, FE-11, FE-13
+Done           FE-1, FE-2, FE-3, FE-4, FE-7, FE-8, FE-9, FE-11, FE-12, FE-13
 Week block 1                                     FE-5, FE-6
 Week block 2   API-10, API-11                    FE-4, FE-6, FE-7
 Week block 3   API-8 (after client answers)      FE-8, FE-9, FE-10

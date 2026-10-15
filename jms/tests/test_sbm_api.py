@@ -203,3 +203,61 @@ class TestTrends(FrappeTestCase):
 		first = rows[0]["month"] + "-01"
 		self.assertEqual(sum(r["jobs"] for r in rows), frappe.db.count("Job", {"date": [">=", first]}))
 		self.assertIsNone(trends.monthly(show_money=False)[0]["received"])
+
+
+class TestMyTasks(FrappeTestCase):
+	def _task(self):
+		row = frappe.db.sql(
+			"""SELECT t.name, t.status FROM `tabJob Task` t JOIN `tabJob` j ON j.name = t.parent
+			WHERE t.parenttype = 'Job' AND j.status NOT IN ('Closed', 'Cancelled', 'Rejected')
+			AND t.status IN ('Open', 'In Progress') LIMIT 1""",
+			as_dict=True,
+		)
+		if not row:
+			self.skipTest("no open task on this site")
+		return row[0]
+
+	def test_office_user_sees_all_tasks(self):
+		from jms.api import tasks
+
+		data = tasks.my_tasks()
+		self.assertEqual(data["scope"], "all")
+		expected = frappe.db.sql(
+			"""SELECT COUNT(*) FROM `tabJob Task` t JOIN `tabJob` j ON j.name = t.parent
+			WHERE t.parenttype = 'Job' AND j.status NOT IN ('Cancelled', 'Rejected', 'Closed')
+			AND t.status IN ('Open', 'In Progress', 'Pending')"""
+		)[0][0]
+		self.assertEqual(sum(t.status != "Completed" for t in data["tasks"]), expected)
+		emp = next((t.assigned_to for t in data["tasks"] if t.assigned_to), None)
+		if emp:
+			self.assertTrue(all(t.assigned_to == emp for t in tasks.my_tasks(emp)["tasks"]))
+
+	def test_task_staff_without_employee(self):
+		from jms.api import tasks
+
+		frappe.set_user("Guest")  # not an office user and linked to no Employee
+		try:
+			self.assertEqual(tasks.my_tasks(), {"scope": "mine", "has_employee": False, "tasks": []})
+		finally:
+			frappe.set_user("Administrator")
+
+	def test_rules(self):
+		from jms.api import tasks
+
+		t = self._task()
+		self.assertRaises(frappe.ValidationError, tasks.set_task_status, t.name, "Bogus")
+		self.assertRaises(frappe.ValidationError, tasks.set_task_status, t.name, "Pending", "  ")
+		self.assertRaises(frappe.DoesNotExistError, tasks.set_task_status, "nope", "Open")
+
+	def test_change_is_saved_then_rolled_back(self):
+		from jms.api import tasks
+
+		t = self._task()
+		try:
+			res = tasks.set_task_status(t.name, "Pending", "Waiting for passport")
+			self.assertEqual(res["status"], "Pending")
+			row = frappe.db.get_value("Job Task", t.name, ["status", "pending_reason"], as_dict=True)
+			self.assertEqual((row.status, row.pending_reason), ("Pending", "Waiting for passport"))
+		finally:
+			frappe.db.rollback()
+		self.assertEqual(frappe.db.get_value("Job Task", t.name, "status"), t.status)
