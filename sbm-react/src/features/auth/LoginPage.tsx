@@ -4,9 +4,10 @@
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
 import { useLogin } from "@refinedev/core";
 import { Button, Form, Input } from "antd";
-import { Link, Navigate, useLocation } from "react-router";
+import { Navigate, useLocation } from "react-router";
 
 import { HOME } from "@/lib/redirect";
+import { tokens } from "@/theme/tokens";
 
 import AuthCard from "./AuthCard";
 
@@ -24,7 +25,7 @@ export default function LoginPage() {
 		return <Navigate to={`${HOME}/forgot-password`} replace />;
 
 	return (
-		<AuthCard title="Log in" subtitle="Service Business Management">
+		<AuthCard title="Welcome back" subtitle="Log in to continue to SBM">
 			<Form<LoginForm>
 				layout="vertical"
 				requiredMark={false}
@@ -45,6 +46,7 @@ export default function LoginPage() {
 				<Form.Item
 					name="password"
 					label="Password"
+					style={{ marginBottom: tokens.space.xl }}
 					rules={[{ required: true, message: "Enter your password" }]}
 				>
 					<Input.Password
@@ -53,13 +55,11 @@ export default function LoginPage() {
 						autoComplete="current-password"
 					/>
 				</Form.Item>
+				{/* "Forgot password?" comes back here once its page gets this design */}
 				<Button type="primary" htmlType="submit" size="large" block loading={isPending}>
 					Log in
 				</Button>
 			</Form>
-			<div style={{ marginTop: 16, textAlign: "center" }}>
-				<Link to={`${HOME}/forgot-password`}>Forgot password?</Link>
-			</div>
 		</AuthCard>
 	);
 }

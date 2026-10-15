@@ -44,7 +44,8 @@
 @media (prefers-reduced-motion: reduce) {
 	.sbm-lift,
 	.sbm-row,
-	.sbm-bar {
+	.sbm-bar,
+	.sbm-blade {
 		transition: none;
 		animation: none;
 	}
@@ -68,4 +69,19 @@
 }
 .sbm-log-row:hover {
 	background: var(--sbm-hover-bg);
+}
+
+/* Login: the green blade slides in from the left when the page opens */
+.sbm-blade {
+	animation: sbm-blade-in 700ms var(--sbm-ease) both;
+}
+@keyframes sbm-blade-in {
+	from {
+		transform: translateX(-40%);
+		opacity: 0;
+	}
+	to {
+		transform: none;
+		opacity: 1;
+	}
 }

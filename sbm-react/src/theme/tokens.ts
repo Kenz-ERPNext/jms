@@ -8,6 +8,8 @@ export const tokens = {
 		primaryBg: "#E7F3ED",
 		/** Lighter green for hover and alternate rows. */
 		primaryBgSoft: "#F3F9F6",
+		/** Deep green for the login brand panel (with primary, as a gradient). */
+		primaryDark: "#0B3D2A",
 		accent: "#B8892B",
 		bg: "#F7F6F2",
 		surface: "#FFFFFF",
