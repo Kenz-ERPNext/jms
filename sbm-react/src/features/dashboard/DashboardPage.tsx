@@ -47,6 +47,27 @@ export default function DashboardPage() {
 			)}
 			{isLoading && <Skeleton active paragraph={{ rows: 10 }} />}
 
+			{data?.setup_needed === "job_dimension" && (
+				<Alert
+					type="warning"
+					showIcon
+					message="Money totals need one setting in ERPNext"
+					description={
+						<>
+							Add the <b>Job</b> accounting dimension: in ERPNext open{" "}
+							<a
+								href="/app/accounting-dimension/new"
+								target="_blank"
+								rel="noreferrer"
+							>
+								Accounting Dimension → New
+							</a>
+							, set Reference Document Type to <b>Job</b> and save. Until then the
+							amounts below show 0.
+						</>
+					}
+				/>
+			)}
 			{data && (
 				<>
 					<KpiCards money={data.money} />

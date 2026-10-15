@@ -11,6 +11,8 @@ from jms.jms.doctype.job.job import LOCKED_JOB_STATUSES, is_office_user
 from jms.jms.report.job_status_report.job_status_report import _sum_by_job, _task_counts
 
 MAX_PAGE_LENGTH = 100
+# The "Job" Accounting Dimension adds a `job` column to these; the money totals read it.
+JOB_DIMENSION_TABLES = ("GL Entry", "Sales Invoice", "Purchase Invoice", "Payment Entry")
 TABS = (
 	"Processing Work", "Invoice Pending", "Amount Pending", "Exp Pending", "Completed", "Overdue", "Closed",
 )
@@ -101,8 +103,23 @@ def add_stage_and_money(jobs):
 		j.tabs = ["Closed"] if j.status == "Closed" else [j.stage] + (["Overdue"] if j.overdue else [])
 
 
+def has_job_dimension():
+	"""True once the site has the "Job" Accounting Dimension (set up in ERPNext:
+	Accounting Dimension, Reference Document Type = Job). Without it there are no
+	job columns to read money from, so the totals are 0 instead of an error."""
+	return all(frappe.db.has_column(t, "job") for t in JOB_DIMENSION_TABLES)
+
+
+MONEY_METRICS = (
+	"si_count", "si_outstanding", "pi_outstanding", "received", "refunded",
+	"unallocated_received", "unallocated_paid",
+)
+
+
 def _money_by_job(names):
 	"""{metric: {job: amount}} from submitted invoices and payments."""
+	if not has_job_dimension():
+		return {metric: {} for metric in MONEY_METRICS}
 	pe = "`tabPayment Entry`"
 	return {
 		# SUM(1) counts the submitted Sales Invoices of each Job

@@ -5,7 +5,7 @@
 import frappe
 from frappe.utils import flt, getdate
 
-from jms.api.jobs import check_office_user, get_jobs
+from jms.api.jobs import check_office_user, get_jobs, has_job_dimension
 from jms.api.trends import monthly
 from jms.jms.dashboard_api import get_totals
 
@@ -33,10 +33,13 @@ def get_dashboard(company=None):
 	jobs = get_jobs(company=company)
 	# Closed jobs are settled; counting them in stages and lists would hide the open work.
 	open_jobs = [j for j in jobs if j.status != "Closed"]
+	money_ready = has_job_dimension()
 	return {
+		# no "Job" Accounting Dimension yet: money shows 0 and the page says what to set up
+		"setup_needed": None if money_ready else "job_dimension",
 		"lifecycle": [{"label": s, "count": sum(1 for j in jobs if j.status == s)} for s in LIFECYCLE],
 		"stages": [{"label": s, "count": sum(1 for j in open_jobs if j.stage == s)} for s in STAGES],
-		"money": _money(company),
+		"money": _money(company) if money_ready else _no_money(),
 		"to_invoice": _rows(
 			[j for j in open_jobs if j.stage == "Invoice Pending"], "expected_completion_date", "net_amount"
 		),
@@ -44,7 +47,7 @@ def get_dashboard(company=None):
 			[j for j in open_jobs if j.stage == "Amount Pending"], "to_collect", "to_collect", reverse=True
 		),
 		"overdue": _rows([j for j in open_jobs if j.overdue], "expected_completion_date"),
-		"monthly": monthly(company, show_money=_shown("show_total_received")),
+		"monthly": monthly(company, show_money=money_ready and _shown("show_total_received")),
 	}
 
 
@@ -84,6 +87,11 @@ def _money(company):
 		for key, flag in MONEY_FLAGS.items()
 		if settings.get(flag) is None or settings.get(flag)
 	]
+
+
+def _no_money():
+	"""The money cards the JMS Settings allow, all 0."""
+	return [{"key": key, "value": 0} for key, flag in MONEY_FLAGS.items() if _shown(flag)]
 
 
 def _expense_returns(company=None):

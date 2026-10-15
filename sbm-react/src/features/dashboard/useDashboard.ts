@@ -44,6 +44,8 @@ export interface Dashboard {
 	to_collect: JobList;
 	overdue: JobList;
 	monthly: MonthRow[];
+	/** Set when the site is missing setup the money totals need. */
+	setup_needed?: "job_dimension" | null;
 }
 
 export function useDashboard() {
