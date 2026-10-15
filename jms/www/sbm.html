@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<!-- The SBM frontend shell. The React build (sbm-react, built into jms/public/sbm)
+     mounts on #root and reads window.csrf_token and window.boot. -->
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>SBM</title>
+	<link rel="icon" href="/assets/jms/images/oasis-cienteirs-logo.png">
+	{% if build_version %}
+	<link rel="stylesheet" href="/assets/jms/sbm/sbm.css?v={{ build_version }}">
+	{% endif %}
+</head>
+<body>
+	<div id="root">
+		{% if not build_version %}
+		<p style="font-family: sans-serif; padding: 24px;">
+			The SBM frontend is not built yet. Run <code>yarn build</code> in <code>sbm-react</code>.
+			<a href="/login?desk=1">ERPNext login</a>
+		</p>
+		{% endif %}
+	</div>
+	<script>
+		window.csrf_token = {{ csrf_token | tojson }};
+		window.boot = {{ boot | tojson }};
+	</script>
+	{% if build_version %}
+	<script type="module" src="/assets/jms/sbm/sbm.js?v={{ build_version }}"></script>
+	{% endif %}
+</body>
+</html>

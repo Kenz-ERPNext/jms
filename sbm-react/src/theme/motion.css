@@ -1,0 +1,55 @@
+/* Hover and load animations. Values come from tokens.ts through cssVars.ts. */
+
+/* Cards that lift a little on hover (money cards, action tiles) */
+.sbm-lift {
+	transition:
+		transform var(--sbm-fast) var(--sbm-ease),
+		box-shadow var(--sbm-fast) var(--sbm-ease);
+}
+.sbm-lift:hover {
+	transform: translateY(var(--sbm-lift));
+	box-shadow: var(--sbm-shadow);
+}
+
+/* Rows that light up and step right on hover (pipeline stages) */
+.sbm-row {
+	border-radius: var(--sbm-radius);
+	padding: var(--sbm-xs) var(--sbm-sm);
+	margin: calc(-1 * var(--sbm-xs)) calc(-1 * var(--sbm-sm));
+	transition:
+		background var(--sbm-fast) var(--sbm-ease),
+		transform var(--sbm-fast) var(--sbm-ease);
+}
+.sbm-row:hover {
+	background: var(--sbm-hover-bg);
+	transform: translateX(var(--sbm-xs));
+}
+
+/* Chart bars grow up from the baseline when shown, and darken on hover */
+.sbm-bar {
+	transform-origin: bottom;
+	animation: sbm-grow var(--sbm-slow) var(--sbm-ease) both;
+	transition: filter var(--sbm-fast) var(--sbm-ease);
+}
+.sbm-bar-hit:hover .sbm-bar {
+	filter: brightness(0.85);
+}
+@keyframes sbm-grow {
+	from {
+		transform: scaleY(0);
+	}
+}
+
+/* Someone who asked their system for less motion gets none */
+@media (prefers-reduced-motion: reduce) {
+	.sbm-lift,
+	.sbm-row,
+	.sbm-bar {
+		transition: none;
+		animation: none;
+	}
+	.sbm-lift:hover,
+	.sbm-row:hover {
+		transform: none;
+	}
+}

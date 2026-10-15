@@ -22,13 +22,17 @@ def is_task_staff_only(user=None):
 	return "Task Staff" in roles and not (OFFICE_ROLES & roles)
 
 
+def is_office_user(user=None):
+	return bool(OFFICE_ROLES & set(frappe.get_roles(user or frappe.session.user)))
+
+
 def office_only(fn):
-	"""Money actions are for the office roles. Task Staff can save a Job (to
-	update their tasks), so they must not be able to call these directly."""
+	"""Money actions are for the office roles only. Task Staff and Customer
+	users can save a Job, so they must not be able to call these directly."""
 
 	@functools.wraps(fn)
 	def wrapper(*args, **kwargs):
-		if is_task_staff_only():
+		if not is_office_user():
 			frappe.throw(_("You are not permitted to do this"), frappe.PermissionError)
 		return fn(*args, **kwargs)
 
@@ -47,8 +51,9 @@ class Job(Document):
 		self.calculate_amounts()
 		self.calculate_agent_commission()
 		self.set_expected_completion_date()
-		self.check_overdue()
 		self.auto_create_tasks_from_items()
+		self.set_status_from_tasks()
+		self.check_overdue()
 		self.validate_closing()
 		self.validate_cancelling()
 
@@ -113,13 +118,17 @@ class Job(Document):
 			tasks.append(row)
 		self.set("tasks", tasks)
 
-		if self.status not in LOCKED_JOB_STATUSES and tasks:
-			statuses = [t["status"] for t in tasks]
-			if all(s == "Completed" for s in statuses):
-				self.status = "Completed"
-				self.completion_date = self.completion_date or nowdate()
-			elif all(s == "In Progress" for s in statuses):
-				self.status = "In Progress"
+	def set_status_from_tasks(self):
+		"""Job status follows its tasks for every role: all Completed → Completed,
+		all In Progress → In Progress. Closed, Cancelled and Rejected are kept."""
+		if self.status in LOCKED_JOB_STATUSES or not self.tasks:
+			return
+		statuses = {t.status for t in self.tasks}
+		if statuses == {"Completed"}:
+			self.status = "Completed"
+			self.completion_date = self.completion_date or nowdate()
+		elif statuses == {"In Progress"}:
+			self.status = "In Progress"
 
 	def after_insert(self):
 		pass 
@@ -2721,6 +2730,7 @@ class Job(Document):
 	# --------------------------------------------------------
 
 	@frappe.whitelist()
+	@office_only
 	def get_financials(self):
 		"""Return per-job financial metrics from the GL (Job accounting
 		dimension), Payment Entries and Sales Invoices. Profit is EX-VAT

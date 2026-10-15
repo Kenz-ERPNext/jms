@@ -16,7 +16,7 @@ add_to_apps_screen = [
 		"name": "jms",
 		"logo": "/assets/jms/images/oasis-cienteirs-logo.png",
 		"title": "SBM Dashboard",
-		"route": "/app/jms-dashboard",
+		"route": "/sbm",
 		"has_permission": "jms.api.has_app_permission",
 	}
 ]
@@ -63,6 +63,14 @@ app_include_js = "/assets/jms/js/jms.js"
 # role_home_page = {
 # 	"Role": "home_page"
 # }
+
+# SBM frontend (React): every /sbm/... path loads jms/www/sbm.html, React handles the route.
+website_route_rules = [
+	{"from_route": "/sbm/<path:app_path>", "to_route": "sbm"},
+]
+
+# ERPNext's /login shows the SBM login page (/login?desk=1 still opens ERPNext's).
+page_renderer = ["jms.sbm_login.SBMLoginPage"]
 
 # Generators
 # ----------
