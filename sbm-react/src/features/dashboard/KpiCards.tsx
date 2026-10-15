@@ -58,6 +58,9 @@ export default function KpiCards({ money }: { money: { key: string; value: numbe
 										style={{
 											margin: `${space.xs}px 0`,
 											color: profit ? color.surface : color.text,
+											// the amount stays on one line and shrinks on narrow cards
+											whiteSpace: "nowrap",
+											fontSize: "clamp(18px, 1.5vw, 30px)",
 										}}
 									>
 										{formatMoney(value[key])}

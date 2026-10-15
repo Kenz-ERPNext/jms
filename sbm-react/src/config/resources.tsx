@@ -10,7 +10,6 @@ import {
 	DashboardOutlined,
 	DatabaseOutlined,
 	FileTextOutlined,
-	SettingOutlined,
 } from "@ant-design/icons";
 import type { ResourceProps } from "@refinedev/core";
 import { lazy, type ComponentType, type LazyExoticComponent, type ReactNode } from "react";
@@ -34,12 +33,20 @@ export interface AppResource {
 	detail?: LazyExoticComponent<ComponentType>;
 }
 
-const master = (name: string, label: string, slug: string): AppResource => ({
+// Masters: one list page for all, picked by the path (features/masters/masterConfig.ts).
+const MasterListPage = lazy(() => import("@/features/masters/MasterListPage"));
+const master = (
+	name: string,
+	label: string,
+	slug: string,
+	roles: readonly string[] = OFFICE_ROLES,
+): AppResource => ({
 	name,
 	label,
+	page: MasterListPage,
 	path: `${HOME}/masters/${slug}`,
 	parent: "masters",
-	roles: OFFICE_ROLES,
+	roles,
 	task: "FE-6",
 });
 
@@ -75,6 +82,7 @@ export const appResources: AppResource[] = [
 	{
 		name: "task-board",
 		label: "Task Board",
+		page: lazy(() => import("@/features/task-board/TaskBoardPage")),
 		path: `${HOME}/task-board`,
 		icon: <AppstoreOutlined />,
 		roles: ADMIN_ROLES,
@@ -83,6 +91,7 @@ export const appResources: AppResource[] = [
 	{
 		name: "reports",
 		label: "Reports",
+		page: lazy(() => import("@/features/reports/ReportsPage")),
 		path: `${HOME}/reports`,
 		icon: <BarChartOutlined />,
 		roles: OFFICE_ROLES,
@@ -90,27 +99,17 @@ export const appResources: AppResource[] = [
 	},
 	{ name: "masters", label: "Masters", icon: <DatabaseOutlined />, roles: OFFICE_ROLES },
 	master("Customer", "Customers", "customers"),
-	master("Agent", "Agents", "agents"),
-	master("Work Template", "Work Templates", "work-templates"),
-	master("Job Type", "Job Types", "job-types"),
-	master("Job Nature", "Job Natures", "job-natures"),
-	master("Job Source", "Job Sources", "job-sources"),
+	master("Employee", "Employees", "employees"),
 	master("Outsourced Party", "Outsourced Parties", "outsourced-parties"),
-	master("Expense Type", "Expense Types", "expense-types"),
+	master("User", "Users", "users", ADMIN_ROLES),
 	{
-		name: "settings",
-		label: "Settings",
-		path: `${HOME}/settings`,
-		icon: <SettingOutlined />,
-		roles: ADMIN_ROLES,
-		task: "FE-16",
-	},
-	{
-		name: "audit-log",
-		label: "Audit Log",
-		path: `${HOME}/audit-log`,
+		name: "activity-log",
+		label: "Activity Log",
+		page: lazy(() => import("@/features/activity-log/ActivityLogPage")),
+		path: `${HOME}/activity-log`,
 		icon: <AuditOutlined />,
-		roles: ADMIN_ROLES,
+		// who may read the Accounting Change Log
+		roles: [...ADMIN_ROLES, "Accounts Manager", "Auditor"],
 		task: "FE-16",
 	},
 ];

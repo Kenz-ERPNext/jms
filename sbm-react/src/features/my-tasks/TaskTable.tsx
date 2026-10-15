@@ -1,8 +1,9 @@
 // Tasks as a table, for laptops: task, job, customer, who does it, due date,
 // status and the status buttons. Late rows are marked in red.
 
-import { Table, Typography } from "antd";
+import { Typography } from "antd";
 
+import DataTable from "@/components/DataTable";
 import StatusPill from "@/components/StatusPill";
 import { formatDate } from "@/lib/format";
 import { tokens } from "@/theme/tokens";
@@ -28,9 +29,9 @@ export default function TaskTable({
 }: TaskTableProps) {
 	const small = { fontSize: tokens.font.size.sm };
 	return (
-		<Table<MyTask>
-			size="middle"
-			rowKey="name"
+		<DataTable<MyTask>
+			rowsHeight="calc(100vh - 420px)"
+			scroll={{ x: undefined }}
 			dataSource={tasks}
 			pagination={false}
 			// fits the screen: long text wraps or ends in "…" instead of scrolling sideways

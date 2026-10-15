@@ -1,7 +1,7 @@
 // Dashboard, by importance: the money at the top, then the jobs that need action
 // now, with the job pipeline beside them, and the last six months as charts.
 
-import { PlusOutlined, ReloadOutlined } from "@ant-design/icons";
+import { PlusOutlined } from "@ant-design/icons";
 import { Alert, Button, Col, Flex, Row, Skeleton, Space, Typography } from "antd";
 
 import { useOpenJob } from "@/features/job-form/JobModalProvider";
@@ -15,7 +15,7 @@ import TrendCharts from "./TrendCharts";
 import { useDashboard } from "./useDashboard";
 
 export default function DashboardPage() {
-	const { data, isLoading, error, refetch } = useDashboard();
+	const { data, isLoading, error } = useDashboard();
 	const company = getBoot().company;
 	const openJob = useOpenJob();
 
@@ -31,13 +31,6 @@ export default function DashboardPage() {
 					</Typography.Text>
 				</div>
 				<Space>
-					<Button
-						icon={<ReloadOutlined />}
-						onClick={() => refetch()}
-						loading={isLoading}
-					>
-						Refresh
-					</Button>
 					<Button type="primary" icon={<PlusOutlined />} onClick={() => openJob()}>
 						New Job
 					</Button>

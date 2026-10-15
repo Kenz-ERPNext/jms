@@ -2,20 +2,7 @@
 // Task Staff see their own tasks (their home page); office users see every task, can
 // filter by who it is assigned to and see the assignee. Ten tasks a page.
 
-import { ReloadOutlined } from "@ant-design/icons";
-import {
-	Alert,
-	Button,
-	Empty,
-	Flex,
-	Grid,
-	Pagination,
-	Skeleton,
-	Space,
-	Switch,
-	Tabs,
-	Typography,
-} from "antd";
+import { Alert, Empty, Flex, Grid, Pagination, Skeleton, Space, Tabs, Typography } from "antd";
 import { useState } from "react";
 
 import LinkSelect from "@/components/LinkSelect";
@@ -30,16 +17,14 @@ const PAGE_SIZE = 10;
 
 export default function MyTasksPage() {
 	const [assignedTo, setAssignedTo] = useState<string>();
-	const { data, isLoading, error, refetch, setStatus, saving } = useMyTasks(assignedTo);
+	const { data, isLoading, error, setStatus, saving } = useMyTasks(assignedTo);
 	const [tab, setTab] = useState("Open");
-	const [lateOnly, setLateOnly] = useState(false);
 	const [page, setPage] = useState(1);
 	const all = data?.scope === "all";
 	const tasks = data?.tasks ?? [];
 	const count = (status: string) => tasks.filter((t) => t.status === status).length;
-	const shown = tasks.filter((t) => t.status === tab && (!lateOnly || t.overdue));
-	const late = tasks.filter((t) => t.overdue).length;
-	const EMPTY = lateOnly ? "No late tasks here" : `No ${tab.toLowerCase()} tasks`;
+	const shown = tasks.filter((t) => t.status === tab);
+	const EMPTY = `No ${tab.toLowerCase()} tasks`;
 	// a table on a laptop, cards on a phone
 	const wide = Grid.useBreakpoint().lg;
 	const onPage = shown.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -72,13 +57,6 @@ export default function MyTasksPage() {
 							onChange={(v) => reset(setAssignedTo)(v as string | undefined)}
 						/>
 					)}
-					<Button
-						icon={<ReloadOutlined />}
-						onClick={() => refetch()}
-						loading={isLoading}
-					>
-						Refresh
-					</Button>
 				</Space>
 			</Flex>
 
@@ -110,16 +88,6 @@ export default function MyTasksPage() {
 							style={{ minWidth: 0, maxWidth: "100%" }}
 							items={TABS.map((s) => ({ key: s, label: `${s} (${count(s)})` }))}
 						/>
-						{late > 0 && (
-							<Space>
-								<Switch
-									checked={lateOnly}
-									onChange={reset(setLateOnly)}
-									size="small"
-								/>
-								<Typography.Text type="danger">Late only ({late})</Typography.Text>
-							</Space>
-						)}
 					</Flex>
 					{tab === "Completed" && (
 						<Typography.Text type="secondary">

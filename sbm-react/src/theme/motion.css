@@ -53,3 +53,19 @@
 		transform: none;
 	}
 }
+
+/* The total row of a report table */
+.sbm-total-row > td {
+	background: var(--sbm-hover-bg) !important;
+}
+
+/* Activity Log rows: a divider between changes and a soft highlight on hover */
+.sbm-log-row {
+	padding: var(--sbm-sm);
+	border-radius: var(--sbm-radius);
+	border-bottom: 1px solid var(--sbm-border);
+	transition: background var(--sbm-fast) var(--sbm-ease);
+}
+.sbm-log-row:hover {
+	background: var(--sbm-hover-bg);
+}

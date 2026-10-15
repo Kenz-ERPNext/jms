@@ -12,6 +12,7 @@ export function applyCssVars(root: HTMLElement = document.documentElement) {
 		"--sbm-lift": motion.lift,
 		"--sbm-shadow": motion.shadow,
 		"--sbm-hover-bg": color.primaryBgSoft,
+		"--sbm-border": color.border,
 		"--sbm-radius": `${radius.md}px`,
 		"--sbm-xs": `${space.xs}px`,
 		"--sbm-sm": `${space.sm}px`,

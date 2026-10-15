@@ -2,8 +2,9 @@
 // A row opens the job.
 
 import { PlusOutlined } from "@ant-design/icons";
-import { Alert, Button, Card, Flex, Table, Tabs, Typography } from "antd";
+import { Alert, Button, Card, Flex, Tabs, Typography } from "antd";
 
+import DataTable from "@/components/DataTable";
 import { STAGE_LABEL } from "@/config/stages";
 import { useOpenJob } from "@/features/job-form/JobModalProvider";
 import { tokens } from "@/theme/tokens";
@@ -60,14 +61,13 @@ export default function JobsListPage() {
 						style={{ marginTop: tokens.space.lg }}
 					/>
 				)}
-				<Table
+				<DataTable
 					style={{ marginTop: tokens.space.lg }}
-					rowKey="name"
+					noun="jobs"
 					columns={jobsColumns}
 					dataSource={list.data?.jobs}
 					loading={list.isLoading}
-					// only the rows scroll; the header, tabs and paging stay in view
-					scroll={{ x: "max-content", y: "calc(100vh - 470px)" }}
+					rowsHeight="calc(100vh - 470px)"
 					onRow={(row) => ({
 						onClick: () => openJob(row.name),
 						style: { cursor: "pointer" },
@@ -79,8 +79,7 @@ export default function JobsListPage() {
 						total: list.data?.total ?? 0,
 						showSizeChanger: true,
 						pageSizeOptions: [10, 20, 50],
-						showTotal: (total, [from, to]) =>
-							`${from}–${to} of ${total.toLocaleString()} jobs`,
+						hideOnSinglePage: false,
 						onChange: (page, size) => list.update({ page, size }),
 					}}
 				/>

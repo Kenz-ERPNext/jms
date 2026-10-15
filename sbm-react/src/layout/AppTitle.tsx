@@ -12,7 +12,7 @@ export default function AppTitle({ collapsed }: { collapsed: boolean }) {
 	return (
 		<Link to={HOME}>
 			<Flex align="center" gap={tokens.space.sm}>
-				<img src={LOGO} alt="" height={36} />
+				<img src={LOGO} alt="" height={collapsed ? 40 : 48} />
 				{!collapsed && (
 					<Typography.Text
 						strong

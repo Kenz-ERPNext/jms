@@ -13,12 +13,15 @@ interface LinkSelectProps extends Omit<SelectProps, "options" | "onSearch"> {
 	labelField?: string;
 	/** Field shown in the list under the label and also searched. */
 	descriptionField?: string;
+	/** Only records matching these (e.g. enabled users). */
+	filters?: CrudFilter[];
 }
 
 export default function LinkSelect({
 	doctype,
 	labelField = "name",
 	descriptionField,
+	filters,
 	...rest
 }: LinkSelectProps) {
 	const searched = [
@@ -29,6 +32,7 @@ export default function LinkSelect({
 		optionValue: (row) => String(row.name),
 		optionLabel: (row) => String(row[labelField] || row.name),
 		meta: { fields: searched },
+		filters,
 		pagination: { pageSize: 20 },
 		debounce: 300,
 		defaultValue: rest.value ?? undefined,

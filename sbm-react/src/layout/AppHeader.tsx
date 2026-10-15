@@ -27,7 +27,6 @@ export default function AppHeader() {
 				display: "flex",
 				alignItems: "center",
 				justifyContent: "space-between",
-				borderBottom: `1px solid ${tokens.color.border}`,
 				position: "sticky",
 				top: 0,
 				zIndex: 10,

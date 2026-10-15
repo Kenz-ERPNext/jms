@@ -44,12 +44,12 @@ describe("accessControlProvider", () => {
 		expect(await can("Job")).toBe(true);
 		expect(await can("Customer")).toBe(true);
 		expect(await can("task-board")).toBe(false);
-		expect(await can("settings")).toBe(false);
+		expect(await can("activity-log")).toBe(false);
 	});
 
 	it("Admin sees everything", async () => {
 		as(["Admin"]);
-		for (const resource of ["Job", "task-board", "settings", "audit-log", "my-tasks"]) {
+		for (const resource of ["Job", "task-board", "activity-log", "my-tasks"]) {
 			expect(await can(resource)).toBe(true);
 		}
 	});
