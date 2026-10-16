@@ -14,6 +14,7 @@ import dayjs from "dayjs";
 import type { ReactNode } from "react";
 
 import { formatMoney } from "@/lib/format";
+import { canUseDesk } from "@/lib/boot";
 import { deskPath } from "@/lib/links";
 import { tokens } from "@/theme/tokens";
 
@@ -78,15 +79,19 @@ export default function ActivityItem({ row, open, onToggle, onJob }: Props) {
 					<Typography.Text>
 						<strong>{row.changed_by_name || "Someone"}</strong>{" "}
 						{row.action.toLowerCase()} {row.reference_doctype}{" "}
-						<a
-							href={deskPath(row.reference_doctype, row.reference_name)}
-							target="_blank"
-							rel="noreferrer"
-							onClick={stop}
-							style={{ fontWeight: 600 }}
-						>
-							{row.reference_name}
-						</a>
+						{canUseDesk() ? (
+							<a
+								href={deskPath(row.reference_doctype, row.reference_name)}
+								target="_blank"
+								rel="noreferrer"
+								onClick={stop}
+								style={{ fontWeight: 600 }}
+							>
+								{row.reference_name}
+							</a>
+						) : (
+							<strong>{row.reference_name}</strong>
+						)}
 						{row.party && <> for {row.party}</>}
 					</Typography.Text>
 					<Flex gap={space.sm} wrap style={{ marginTop: 2 }}>

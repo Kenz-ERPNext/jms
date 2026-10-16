@@ -5,9 +5,9 @@ import { DownOutlined, ExportOutlined, PrinterOutlined } from "@ant-design/icons
 import { Button, Dropdown, Flex, Space, Typography, type MenuProps } from "antd";
 
 import StatusPill, { StagePill } from "@/components/StatusPill";
+import { canUseDesk } from "@/lib/boot";
 import { formatDate } from "@/lib/format";
 import { deskPath, openPrint } from "@/lib/links";
-import { ADMIN_ROLES, hasAnyRole } from "@/lib/roles";
 import { tokens } from "@/theme/tokens";
 
 import { ACTION_TEXT, GROUP_TITLE, type ActionGroup } from "./jobActions";
@@ -56,7 +56,7 @@ export default function JobHeader({ job, state, onAction }: JobHeaderProps) {
 				</div>
 			</div>
 			<Space wrap>
-				{hasAnyRole(ADMIN_ROLES) && (
+				{canUseDesk() && (
 					<Button icon={<ExportOutlined />} href={deskPath("Job", job.name)}>
 						ERPNext
 					</Button>

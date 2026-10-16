@@ -7,6 +7,8 @@ export interface Boot {
 	roles?: string[];
 	is_office?: boolean;
 	is_task_staff?: boolean;
+	/** May open the ERPNext desk (only the Administrator; jms/desk_access.py). */
+	desk?: boolean;
 	employees?: string[];
 	company?: string;
 	currency?: string;
@@ -43,3 +45,6 @@ export async function loadBoot(): Promise<Boot> {
 	window.csrf_token = boot.csrf_token;
 	return boot;
 }
+
+/** Links into the ERPNext desk are shown only to users who may open it. */
+export const canUseDesk = () => !!getBoot().desk;

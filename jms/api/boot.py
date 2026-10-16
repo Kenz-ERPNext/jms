@@ -4,6 +4,7 @@
 import frappe
 from frappe.sessions import get_csrf_token
 
+from jms.desk_access import can_use_desk
 from jms.jms.doctype.job.job import is_office_user, is_task_staff_only
 
 # JMS Settings flags the frontend needs to show or hide money figures.
@@ -27,6 +28,8 @@ def get_boot():
 		"roles": frappe.get_roles(user),
 		"is_office": office,
 		"is_task_staff": is_task_staff_only(user),
+		# may open the ERPNext desk (only the Administrator, see desk_access.py)
+		"desk": can_use_desk(user),
 		# Employee records of this user; their tasks are the ones assigned to these.
 		"employees": frappe.get_all("Employee", filters={"user_id": user}, pluck="name"),
 		**(_office_data() if office else {}),

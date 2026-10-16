@@ -4,8 +4,7 @@ import { DownOutlined, ExportOutlined, LogoutOutlined } from "@ant-design/icons"
 import { useLogout } from "@refinedev/core";
 import { Avatar, Dropdown, Flex, Layout, Typography, type MenuProps } from "antd";
 
-import { getBoot } from "@/lib/boot";
-import { ADMIN_ROLES, hasAnyRole } from "@/lib/roles";
+import { canUseDesk, getBoot } from "@/lib/boot";
 import { BRAND_GRADIENT } from "@/lib/brand";
 import { tokens } from "@/theme/tokens";
 
@@ -15,8 +14,8 @@ export default function AppHeader() {
 	const name = boot.full_name || boot.user;
 
 	const items: MenuProps["items"] = [
-		// Desk roles may still open ERPNext; everyone else works only in SBM.
-		...(hasAnyRole(ADMIN_ROLES)
+		// Only the Administrator may open ERPNext; everyone else works only in SBM.
+		...(canUseDesk()
 			? [{ key: "desk", icon: <ExportOutlined />, label: <a href="/app">Open ERPNext</a> }]
 			: []),
 		{ key: "logout", icon: <LogoutOutlined />, label: "Logout", onClick: () => logout() },

@@ -14,7 +14,7 @@ app_license = "mit"
 add_to_apps_screen = [
 	{
 		"name": "jms",
-		"logo": "/assets/jms/images/oasis-cienteirs-logo.png",
+		"logo": "/assets/jms/images/kenz-mark.png",
 		"title": "SBM Dashboard",
 		"route": "/sbm",
 		"has_permission": "jms.api.has_app_permission",
@@ -229,7 +229,11 @@ ignore_links_on_delete = ["Accounting Change Log"]
 # ----------------
 # Compat shim for frappe<->erpnext version skew (round_floats_in). No-op once
 # frappe is updated to match erpnext. See jms/compat.py.
-before_request = ["jms.compat.patch_round_floats_in"]
+before_request = [
+	"jms.compat.patch_round_floats_in",
+	# only the Administrator may open the ERPNext desk; others go to SBM
+	"jms.desk_access.block_desk",
+]
 # after_request = ["jms.utils.after_request"]
 
 # Job Events

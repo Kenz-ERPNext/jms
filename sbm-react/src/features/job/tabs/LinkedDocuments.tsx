@@ -7,9 +7,9 @@
 import { useList, type BaseRecord } from "@refinedev/core";
 import { Card, Space, Table, Tag, Typography } from "antd";
 
+import { canUseDesk } from "@/lib/boot";
 import { formatDate, formatMoney } from "@/lib/format";
 import { deskPath } from "@/lib/links";
-import { ADMIN_ROLES, hasAnyRole } from "@/lib/roles";
 
 interface Row {
 	key: string;
@@ -129,7 +129,7 @@ export default function LinkedDocuments({ name }: { name: string }) {
 					{
 						title: "Number",
 						render: (_, r) =>
-							hasAnyRole(ADMIN_ROLES) ? (
+							canUseDesk() ? (
 								<a
 									href={deskPath(r.doctype, r.name)}
 									target="_blank"

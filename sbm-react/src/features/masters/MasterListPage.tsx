@@ -10,6 +10,7 @@ import { useState } from "react";
 import { useLocation } from "react-router";
 
 import DataTable from "@/components/DataTable";
+import { canUseDesk } from "@/lib/boot";
 import { deskPath } from "@/lib/links";
 import { tokens } from "@/theme/tokens";
 
@@ -53,15 +54,19 @@ export default function MasterListPage() {
 		queryOptions: { enabled: !!config },
 	});
 	if (!config) return <Typography.Text>Unknown list.</Typography.Text>;
+	const desk = canUseDesk();
 	const newPath = `${deskPath(config.doctype, "").replace(/\/$/, "")}/new`;
 
 	return (
 		<Card
 			title={config.title}
 			extra={
-				<Button type="primary" icon={<PlusOutlined />} href={newPath} target="_blank">
-					New
-				</Button>
+				// the forms are ERPNext's, so only desk users can open them
+				desk && (
+					<Button type="primary" icon={<PlusOutlined />} href={newPath} target="_blank">
+						New
+					</Button>
+				)
 			}
 		>
 			<Input.Search
@@ -74,10 +79,15 @@ export default function MasterListPage() {
 				noun={config.noun}
 				loading={query.isLoading}
 				dataSource={query.data?.data}
-				onRow={(r) => ({
-					onClick: () => window.open(deskPath(config.doctype, r.name), "_blank"),
-					style: { cursor: "pointer" },
-				})}
+				onRow={(r) =>
+					desk
+						? {
+								onClick: () =>
+									window.open(deskPath(config.doctype, r.name), "_blank"),
+								style: { cursor: "pointer" },
+							}
+						: {}
+				}
 				pagination={{
 					current: page,
 					pageSize: PAGE_SIZE,
