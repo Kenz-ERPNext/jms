@@ -31,7 +31,7 @@ export const antdTheme: ThemeConfig = {
 			siderBg: color.surface,
 			bodyBg: color.bg,
 		},
-		// Every table: green header, light green hover, compact rows.
+		// Every table: tinted header in the main colour, light hover, compact rows.
 		Table: {
 			headerBg: color.primaryBg,
 			headerColor: color.primary,

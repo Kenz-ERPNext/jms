@@ -25,8 +25,7 @@ describe("roles", () => {
 	});
 
 	it("sends office users to the Dashboard and Task Staff to their tasks", () => {
-		expect(homePath(["Accounts User"])).toBe("/sbm/dashboard");
-		expect(homePath(["Task Staff"])).toBe("/sbm/my-tasks");
+		expect(homePath()).toBe("/sbm/dashboard");
 	});
 });
 
@@ -35,7 +34,7 @@ describe("accessControlProvider", () => {
 		as(["Task Staff", "Employee"]);
 		expect(await can("my-tasks")).toBe(true);
 		expect(await can("Job")).toBe(false);
-		expect(await can("dashboard")).toBe(false);
+		expect(await can("dashboard")).toBe(true);
 		expect(await can("Customer")).toBe(false);
 	});
 

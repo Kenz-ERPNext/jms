@@ -1,12 +1,18 @@
-// The reports SBM lists, by topic, each with one line saying what it shows. The
-// filters and columns come from the report itself (see lib/reportScript.ts).
+// The reports SBM lists, by topic, each with one line saying what it shows, and who
+// may open them (the same roles as each report's own Roles in ERPNext). The filters
+// and columns come from the report itself (see lib/reportScript.ts).
+
+import { ADMIN_ROLES, hasAnyRole, OFFICE_ROLES } from "@/lib/roles";
 
 export const REPORT_GROUPS: {
 	title: string;
+	roles: readonly string[];
 	reports: { name: string; hint: string }[];
 }[] = [
 	{
 		title: "Work",
+		// task reports: admins; Accounts users see only money and profit
+		roles: ADMIN_ROLES,
 		reports: [
 			{
 				name: "Job Status Report",
@@ -20,6 +26,7 @@ export const REPORT_GROUPS: {
 	},
 	{
 		title: "Money",
+		roles: OFFICE_ROLES,
 		reports: [
 			{ name: "Cash Collection", hint: "Money received and paid back, by day" },
 			{ name: "Job Collection Report", hint: "Billed, received and due per job" },
@@ -30,6 +37,7 @@ export const REPORT_GROUPS: {
 	},
 	{
 		title: "Profit",
+		roles: OFFICE_ROLES,
 		reports: [
 			{ name: "Job Profitability", hint: "Income, costs and profit per job" },
 			{ name: "Job Gross Profit", hint: "Gross profit per job" },
@@ -38,6 +46,9 @@ export const REPORT_GROUPS: {
 		],
 	},
 ];
+
+/** The groups the logged-in user may open. */
+export const myReportGroups = () => REPORT_GROUPS.filter((g) => hasAnyRole(g.roles));
 
 const ALL = REPORT_GROUPS.flatMap((g) => g.reports);
 

@@ -1,5 +1,5 @@
 // The frame of the login and password pages. On a laptop: one card in the middle of
-// the screen, a green panel on the left with a slanted edge (it slides in when the
+// the screen, a navy-to-teal panel on the left with a slanted edge (it slides in when the
 // page opens) telling what SBM does, and the form on the right. On a phone: just the
 // form under the logo.
 
@@ -7,9 +7,9 @@ import { CheckCircleOutlined, FileDoneOutlined, LineChartOutlined } from "@ant-d
 import { Flex, Grid, Typography } from "antd";
 import type { ReactNode } from "react";
 
+import { BRAND_GRADIENT, LOGO, LOGO_ON_DARK } from "@/lib/brand";
 import { tokens } from "@/theme/tokens";
 
-const LOGO = "/assets/jms/images/oasis-cienteirs-logo.png";
 const { color, space, font, radius } = tokens;
 
 const POINTS = [
@@ -25,24 +25,6 @@ interface AuthCardProps {
 	title: string;
 	subtitle?: string;
 	children: ReactNode;
-}
-
-function Logo({ size }: { size: number }) {
-	return (
-		<span
-			style={{
-				display: "inline-grid",
-				placeItems: "center",
-				width: size + space.xl,
-				height: size + space.xl,
-				borderRadius: "50%",
-				background: color.surface,
-				boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-			}}
-		>
-			<img src={LOGO} alt="Oasis" height={size} />
-		</span>
-	);
 }
 
 function Blade() {
@@ -66,10 +48,15 @@ function Blade() {
 					clipPath: BLADE(4),
 					padding: space.xxl + space.lg,
 					color: color.surface,
-					background: `linear-gradient(150deg, ${color.primary} 0%, ${color.primaryDark} 100%)`,
+					background: BRAND_GRADIENT(150),
 				}}
 			>
-				<Logo size={48} />
+				<img
+					src={LOGO_ON_DARK}
+					alt="Kenz Technology"
+					height={44}
+					style={{ alignSelf: "flex-start" }}
+				/>
 				<div>
 					<Typography.Title level={1} style={{ color: color.surface, margin: 0 }}>
 						SBM
@@ -101,7 +88,7 @@ function Blade() {
 					</Flex>
 				</div>
 				<Typography.Text style={{ color: color.primaryBg, fontSize: font.size.sm }}>
-					© {new Date().getFullYear()} Oasis
+					© {new Date().getFullYear()} Kenz Technology
 				</Typography.Text>
 			</Flex>
 		</div>
@@ -113,7 +100,7 @@ function Form({ title, subtitle, children, phone }: AuthCardProps & { phone?: bo
 		<div style={{ width: "100%", maxWidth: 360 }}>
 			{phone && (
 				<Flex justify="center" style={{ marginBottom: space.xl }}>
-					<Logo size={48} />
+					<img src={LOGO} alt="Kenz Technology" height={40} />
 				</Flex>
 			)}
 			<Typography.Title level={2} style={{ margin: 0 }}>
@@ -156,7 +143,7 @@ export default function AuthCard(props: AuthCardProps) {
 					borderRadius: radius.lg * 2,
 					overflow: "hidden",
 					background: color.surface,
-					boxShadow: "0 24px 60px rgba(11, 61, 42, 0.12)",
+					boxShadow: "0 24px 60px rgba(26, 38, 69, 0.14)",
 				}}
 			>
 				<Blade />

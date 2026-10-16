@@ -9,7 +9,7 @@ import { useSearchParams } from "react-router";
 
 import { tokens } from "@/theme/tokens";
 
-import { REPORT_GROUPS, reportBySlug, reportHint, reportSlug } from "./reportList";
+import { myReportGroups, reportBySlug, reportHint, reportSlug } from "./reportList";
 import ReportView from "./ReportView";
 
 const { color, space, font, radius } = tokens;
@@ -31,7 +31,7 @@ export default function ReportsPage() {
 				</Typography.Title>
 				<Typography.Text type="secondary">Click a report to open it.</Typography.Text>
 			</div>
-			{REPORT_GROUPS.map((g) => (
+			{myReportGroups().map((g) => (
 				<Card key={g.title} title={g.title} size="small">
 					<Row gutter={[space.md, space.md]}>
 						{g.reports.map((r) => (

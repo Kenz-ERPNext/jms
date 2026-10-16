@@ -1,17 +1,18 @@
 // SBM design tokens: every colour, size and space the UI uses. Components get
 // them through the Ant Design theme (antdTheme.ts), never as raw values.
-// Colours follow the current SBM pages (green and gold); confirm with the client.
+// Colours come from the Kenz Technology logo (navy and teal).
 
 export const tokens = {
 	color: {
-		primary: "#166848",
-		primaryBg: "#E7F3ED",
-		/** Lighter green for hover and alternate rows. */
-		primaryBgSoft: "#F3F9F6",
-		/** Deep green for the login brand panel (with primary, as a gradient). */
-		primaryDark: "#0B3D2A",
-		accent: "#B8892B",
-		bg: "#F7F6F2",
+		// Kenz Technology logo: navy (KENZ) as the main colour, teal (TECHNOLOGY) as the accent
+		primary: "#1E3D69",
+		primaryBg: "#E6ECF4",
+		/** Lighter navy tint for hover and alternate rows. */
+		primaryBgSoft: "#F3F6FA",
+		/** Deep navy for the login brand panel (with primary, as a gradient). */
+		primaryDark: "#132A4C",
+		accent: "#33B2A1",
+		bg: "#F5F7FA",
 		surface: "#FFFFFF",
 		border: "#E5E7EB",
 		text: "#1F2937",
@@ -20,10 +21,11 @@ export const tokens = {
 		warning: "#D97706",
 		danger: "#B42318",
 		info: "#2563EB",
-		/** Bars of charts: SBM green bright enough to read as a colour (passes the dataviz checks). */
-		chart: "#1F8A55",
+		/** Bars of charts: the logo teal, deepened enough to read on white. */
+		chart: "#2A9E8E",
 		grid: "#EEF0F2",
 	},
+
 	space: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 },
 	radius: { sm: 6, md: 8, lg: 12 },
 	font: {

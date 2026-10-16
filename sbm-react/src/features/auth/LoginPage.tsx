@@ -6,6 +6,7 @@ import { useLogin } from "@refinedev/core";
 import { Button, Form, Input } from "antd";
 import { Navigate, useLocation } from "react-router";
 
+import { BRAND_GRADIENT } from "@/lib/brand";
 import { HOME } from "@/lib/redirect";
 import { tokens } from "@/theme/tokens";
 
@@ -56,7 +57,15 @@ export default function LoginPage() {
 					/>
 				</Form.Item>
 				{/* "Forgot password?" comes back here once its page gets this design */}
-				<Button type="primary" htmlType="submit" size="large" block loading={isPending}>
+				<Button
+					type="primary"
+					htmlType="submit"
+					size="large"
+					block
+					loading={isPending}
+					// the brand gradient, like the panel beside the form
+					style={{ background: BRAND_GRADIENT(90), border: "none" }}
+				>
 					Log in
 				</Button>
 			</Form>

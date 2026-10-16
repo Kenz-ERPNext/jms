@@ -12,6 +12,7 @@ import { Card, Col, Flex, Grid, Row, Typography } from "antd";
 import type { ReactNode } from "react";
 
 import { formatMoney } from "@/lib/format";
+import { BRAND_GRADIENT } from "@/lib/brand";
 import { tokens } from "@/theme/tokens";
 
 import { COST_LABELS, KPIS } from "./dashboardText";
@@ -45,7 +46,7 @@ export default function KpiCards({ money }: { money: { key: string; value: numbe
 							className="sbm-lift"
 							style={{
 								height: "100%",
-								background: profit ? color.primary : color.surface,
+								background: profit ? BRAND_GRADIENT() : color.surface,
 							}}
 						>
 							<Flex justify="space-between" align="start" gap={space.md}>

@@ -1,5 +1,5 @@
 // The one list table of the app (Jobs, Reports, Task Board, Tasks, Activity Log):
-// green header from the theme, ten rows a page, "1–10 of N <noun>", and only the
+// tinted header from the theme, ten rows a page, "1–10 of N <noun>", and only the
 // rows scroll, so the header and the paging stay in view.
 
 import { Table, type TableProps } from "antd";

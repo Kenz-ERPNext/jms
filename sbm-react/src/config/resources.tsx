@@ -57,7 +57,8 @@ export const appResources: AppResource[] = [
 		page: lazy(() => import("@/features/dashboard/DashboardPage")),
 		path: `${HOME}/dashboard`,
 		icon: <DashboardOutlined />,
-		roles: OFFICE_ROLES,
+		// office users see the business, Task Staff their own tasks
+		roles: ALL_ROLES,
 		task: "FE-13",
 	},
 	{

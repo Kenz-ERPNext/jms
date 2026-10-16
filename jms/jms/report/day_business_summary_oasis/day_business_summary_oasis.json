@@ -10,7 +10,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "letterhead": null,
- "modified": "2026-04-07 13:49:06.454035",
+ "modified": "2026-10-16 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Jms",
  "name": "Day Business Summary Oasis",
@@ -28,6 +28,9 @@
   },
   {
    "role": "Auditor"
+  },
+  {
+   "role": "System Manager"
   }
  ],
  "timeout": 0

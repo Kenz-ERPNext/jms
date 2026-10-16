@@ -23,7 +23,7 @@ export function hasAnyRole(
 	return allowed.length === 0 || allowed.some((role) => roles.includes(role));
 }
 
-/** First page after login: office users get the Dashboard, Task Staff their tasks. */
-export function homePath(roles: readonly string[] = getBoot().roles ?? []): string {
-	return hasAnyRole(OFFICE_ROLES, roles) ? `${HOME}/dashboard` : `${HOME}/my-tasks`;
+/** First page after login: the Dashboard for everyone (Task Staff get theirs). */
+export function homePath(): string {
+	return `${HOME}/dashboard`;
 }

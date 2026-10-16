@@ -1,20 +1,27 @@
-// Dashboard, by importance: the money at the top, then the jobs that need action
-// now, with the job pipeline beside them, and the last six months as charts.
+// Dashboard. Office users: by importance, the money at the top, then the jobs that
+// need action now, with the job pipeline beside them, and the last six months as
+// charts. Task Staff: their own tasks (StaffDashboard).
 
 import { PlusOutlined } from "@ant-design/icons";
 import { Alert, Button, Col, Flex, Row, Skeleton, Space, Typography } from "antd";
 
 import { useOpenJob } from "@/features/job-form/JobModalProvider";
 import { getBoot } from "@/lib/boot";
+import { hasAnyRole, OFFICE_ROLES } from "@/lib/roles";
 import { tokens } from "@/theme/tokens";
 
 import ActionPanel from "./ActionPanel";
 import KpiCards from "./KpiCards";
 import PipelineCard from "./PipelineCard";
+import StaffDashboard from "./StaffDashboard";
 import TrendCharts from "./TrendCharts";
 import { useDashboard } from "./useDashboard";
 
 export default function DashboardPage() {
+	return hasAnyRole(OFFICE_ROLES) ? <OfficeDashboard /> : <StaffDashboard />;
+}
+
+function OfficeDashboard() {
 	const { data, isLoading, error } = useDashboard();
 	const company = getBoot().company;
 	const openJob = useOpenJob();

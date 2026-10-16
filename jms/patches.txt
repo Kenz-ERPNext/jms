@@ -18,3 +18,4 @@ jms.patches.v1_10.add_dashboard_shortcut_to_sbm
 jms.patches.v1_11.rename_dashboard_shortcut
 jms.patches.v1_12.dashboard_card_on_sbm
 jms.patches.v1_13.add_accounting_activity_shortcut
+jms.patches.v1_14.add_sbm_admin_role_profile

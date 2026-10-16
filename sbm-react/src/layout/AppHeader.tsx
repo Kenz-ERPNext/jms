@@ -6,6 +6,7 @@ import { Avatar, Dropdown, Flex, Layout, Typography, type MenuProps } from "antd
 
 import { getBoot } from "@/lib/boot";
 import { ADMIN_ROLES, hasAnyRole } from "@/lib/roles";
+import { BRAND_GRADIENT } from "@/lib/brand";
 import { tokens } from "@/theme/tokens";
 
 export default function AppHeader() {
@@ -36,7 +37,15 @@ export default function AppHeader() {
 			<div />
 			<Dropdown menu={{ items }} trigger={["click"]} placement="bottomRight">
 				<Flex align="center" gap={tokens.space.sm} style={{ cursor: "pointer" }}>
-					<Avatar style={{ background: tokens.color.accent }}>{initials(name)}</Avatar>
+					<Avatar
+						style={{
+							background: BRAND_GRADIENT(),
+							boxShadow: `0 0 0 2px ${tokens.color.surface}, 0 0 0 3px ${tokens.color.accent}`,
+							fontWeight: 600,
+						}}
+					>
+						{initials(name)}
+					</Avatar>
 					<Typography.Text>{name}</Typography.Text>
 					<DownOutlined
 						style={{ fontSize: tokens.font.size.sm, color: tokens.color.textMuted }}
