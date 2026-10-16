@@ -4,14 +4,23 @@ import { afterLoginPath, isAppPath } from "./redirect";
 
 const ORIGIN = "https://service.example.com";
 const go = (search: string) => afterLoginPath(search, ORIGIN);
+const goDesk = (search: string) => afterLoginPath(search, ORIGIN, true);
 
 describe("afterLoginPath", () => {
 	it("goes to the app home by default", () => {
 		expect(go("")).toBe("/sbm");
 	});
 
-	it("follows ERPNext's redirect-to (a site path)", () => {
-		expect(go("?redirect-to=%2Fapp%2Fjob%2FJOB-1")).toBe("/app/job/JOB-1");
+	it("follows ERPNext's redirect-to (a site path) for desk users", () => {
+		expect(goDesk("?redirect-to=%2Fapp%2Fjob%2FJOB-1")).toBe("/app/job/JOB-1");
+	});
+
+	it("starts desk users in ERPNext, everyone else in SBM", () => {
+		expect(goDesk("")).toBe("/app");
+		expect(goDesk("?redirect-to=%2Fapp")).toBe("/app");
+		expect(goDesk("?to=%2Fsbm%2Fjobs")).toBe("/sbm/jobs");
+		expect(go("?redirect-to=%2Fapp%2Fjob%2FJOB-1")).toBe("/sbm");
+		expect(go("?redirect-to=%2Fapps")).toBe("/sbm");
 	});
 
 	it("follows the SBM router's to", () => {
@@ -30,7 +39,6 @@ describe("afterLoginPath", () => {
 		expect(go("?redirect-to=/")).toBe("/sbm");
 		expect(go("?redirect-to=%2Fapp%2Fjms-dashboard")).toBe("/sbm");
 		expect(go("?redirect-to=/app/sbm/")).toBe("/sbm");
-		expect(go("?redirect-to=%2Fapp%2Fjob%2FJOB-1")).toBe("/app/job/JOB-1");
 	});
 
 	it("never loops back to a login page", () => {

@@ -25,7 +25,15 @@ export const authProvider: AuthProvider = {
 					"Two-factor login is on. Use the ERPNext login: /login?desk=1",
 				);
 			}
-			window.location.assign(afterLoginPath(window.location.search));
+			// now logged in: may this user use the ERPNext desk? (decides where they start)
+			const boot = await callMethod<{ desk?: boolean }>(
+				"jms.api.boot.get_boot",
+				{},
+				"GET",
+			).catch(() => undefined);
+			window.location.assign(
+				afterLoginPath(window.location.search, undefined, !!boot?.desk),
+			);
 			return { success: true };
 		} catch (error) {
 			return failure("Login failed", messageOf(error, "Wrong email or password"));
