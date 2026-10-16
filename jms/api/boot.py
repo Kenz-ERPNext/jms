@@ -28,7 +28,7 @@ def get_boot():
 		"roles": frappe.get_roles(user),
 		"is_office": office,
 		"is_task_staff": is_task_staff_only(user),
-		# may open the ERPNext desk (only the Administrator, see desk_access.py)
+		# may open the ERPNext desk (System Manager or Admin, see desk_access.py)
 		"desk": can_use_desk(user),
 		# Employee records of this user; their tasks are the ones assigned to these.
 		"employees": frappe.get_all("Employee", filters={"user_id": user}, pluck="name"),

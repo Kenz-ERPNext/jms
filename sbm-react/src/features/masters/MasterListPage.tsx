@@ -11,6 +11,7 @@ import { useLocation } from "react-router";
 
 import DataTable from "@/components/DataTable";
 import { canUseDesk } from "@/lib/boot";
+import { formatDate, formatMoney } from "@/lib/format";
 import { deskPath } from "@/lib/links";
 import { tokens } from "@/theme/tokens";
 
@@ -22,11 +23,18 @@ type Rec = Record<string, unknown> & { name: string };
 function cell(v: unknown, col: MasterColumn) {
 	if (col.kind === "check") return v ? "Yes" : "No";
 	if (col.kind === "datetime") return v ? dayjs(String(v)).format("DD MMM YYYY, HH:mm") : "";
+	if (col.kind === "date") return formatDate(v as string);
+	if (col.kind === "money") return v ? formatMoney(Number(v)) : "";
 	return v as string;
 }
 
+/** The list page at /sbm/masters/<slug>. */
 export default function MasterListPage() {
-	const slug = useLocation().pathname.split("/").pop() ?? "";
+	return <MasterList slug={useLocation().pathname.split("/").pop() ?? ""} />;
+}
+
+/** One master list; inModal drops the card frame (the Reports modal has its own title). */
+export function MasterList({ slug, inModal }: { slug: string; inModal?: boolean }) {
 	const config = MASTERS[slug];
 	const [page, setPage] = useState(1);
 	const [search, setSearch] = useState("");
@@ -48,7 +56,7 @@ export default function MasterListPage() {
 	const { query } = useList<Rec>({
 		resource: config?.doctype ?? "",
 		filters,
-		sorters: config?.sort ? [{ field: config.sort, order: "asc" }] : [],
+		sorters: config?.sort ? [{ field: config.sort, order: config.desc ? "desc" : "asc" }] : [],
 		pagination: { currentPage: page, pageSize: PAGE_SIZE },
 		meta: { fields: ["name", ...(config?.columns.map((c) => c.field) ?? [])] },
 		queryOptions: { enabled: !!config },
@@ -59,7 +67,9 @@ export default function MasterListPage() {
 
 	return (
 		<Card
-			title={config.title}
+			title={inModal ? undefined : config.title}
+			variant={inModal ? "borderless" : undefined}
+			styles={inModal ? { body: { padding: 0 } } : undefined}
 			extra={
 				// the forms are ERPNext's, so only desk users can open them
 				desk && (

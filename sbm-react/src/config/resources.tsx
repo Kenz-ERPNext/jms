@@ -29,6 +29,8 @@ export interface AppResource {
 	task?: string;
 	/** The page, loaded when first opened. Without one the page shows "coming". */
 	page?: LazyExoticComponent<ComponentType>;
+	/** A page with a route but no menu item (opened from another page). */
+	hidden?: boolean;
 	/** Page for one record, at <path>/<name> (the name may contain "/"). */
 	detail?: LazyExoticComponent<ComponentType>;
 }
@@ -100,9 +102,16 @@ export const appResources: AppResource[] = [
 	},
 	{ name: "masters", label: "Masters", icon: <DatabaseOutlined />, roles: OFFICE_ROLES },
 	master("Customer", "Customers", "customers"),
+	master("Agent", "Agents", "agents"),
+	master("Work Template", "Services", "services"),
+	master("Job Type", "Job Types", "job-types"),
+	master("Job Nature", "Job Natures", "job-natures"),
+	master("Job Source", "Job Sources", "job-sources"),
+	master("Job Task Template", "Job Task Templates", "task-templates"),
 	master("Employee", "Employees", "employees"),
 	master("Outsourced Party", "Outsourced Parties", "outsourced-parties"),
 	master("User", "Users", "users", ADMIN_ROLES),
+	{ ...master("Journal Entry", "Journal Entries", "journal-entries"), hidden: true },
 	{
 		name: "activity-log",
 		label: "Activity Log",
@@ -120,7 +129,7 @@ export const refineResources: ResourceProps[] = appResources.map((r) => ({
 	name: r.name,
 	list: r.path,
 	show: r.detail ? `${r.path}/:id` : undefined,
-	meta: { label: r.label, icon: r.icon, parent: r.parent },
+	meta: { label: r.label, icon: r.icon, parent: r.parent, hide: r.hidden },
 }));
 
 export function findResource(name?: string): AppResource | undefined {

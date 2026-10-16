@@ -231,7 +231,7 @@ ignore_links_on_delete = ["Accounting Change Log"]
 # frappe is updated to match erpnext. See jms/compat.py.
 before_request = [
 	"jms.compat.patch_round_floats_in",
-	# only the Administrator may open the ERPNext desk; others go to SBM
+	# only System Managers and Admins may open the ERPNext desk; others go to SBM
 	"jms.desk_access.block_desk",
 ]
 # after_request = ["jms.utils.after_request"]

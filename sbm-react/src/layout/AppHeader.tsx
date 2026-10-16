@@ -14,7 +14,7 @@ export default function AppHeader() {
 	const name = boot.full_name || boot.user;
 
 	const items: MenuProps["items"] = [
-		// Only the Administrator may open ERPNext; everyone else works only in SBM.
+		// System Managers and Admins may open ERPNext; everyone else works only in SBM.
 		...(canUseDesk()
 			? [{ key: "desk", icon: <ExportOutlined />, label: <a href="/app">Open ERPNext</a> }]
 			: []),

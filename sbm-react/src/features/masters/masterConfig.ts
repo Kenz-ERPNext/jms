@@ -6,7 +6,7 @@ import type { CrudFilter } from "@refinedev/core";
 export interface MasterColumn {
 	field: string;
 	label: string;
-	kind?: "check" | "datetime";
+	kind?: "check" | "datetime" | "date" | "money";
 }
 
 export interface MasterConfig {
@@ -18,6 +18,8 @@ export interface MasterConfig {
 	search: string[];
 	filters?: CrudFilter[];
 	sort?: string;
+	/** Newest first instead of A–Z. */
+	desc?: boolean;
 }
 
 export const MASTERS: Record<string, MasterConfig> = {
@@ -62,6 +64,101 @@ export const MASTERS: Record<string, MasterConfig> = {
 		],
 		search: ["party_name", "mobile", "email"],
 		sort: "party_name",
+	},
+	agents: {
+		doctype: "Agent",
+		title: "Agents",
+		noun: "agents",
+		columns: [
+			{ field: "agent_name", label: "Agent" },
+			{ field: "mobile", label: "Mobile" },
+			{ field: "email", label: "Email" },
+			{ field: "commission_type", label: "Commission" },
+			{ field: "commission_rate", label: "Rate" },
+			{ field: "is_active", label: "Active", kind: "check" },
+		],
+		search: ["agent_name", "mobile", "email"],
+		sort: "agent_name",
+	},
+	services: {
+		doctype: "Work Template",
+		title: "Services",
+		noun: "services",
+		columns: [
+			{ field: "template_code", label: "Code" },
+			{ field: "description", label: "Description" },
+			{ field: "job_type", label: "Job type" },
+			{ field: "fee_price", label: "Gov fee", kind: "money" },
+			{ field: "is_active", label: "Active", kind: "check" },
+		],
+		search: ["template_code", "description"],
+		sort: "template_code",
+	},
+	"job-types": {
+		doctype: "Job Type",
+		title: "Job Types",
+		noun: "job types",
+		columns: [
+			{ field: "job_type_name", label: "Job type" },
+			{ field: "description", label: "Description" },
+			{ field: "default_duration_days", label: "Days" },
+			{ field: "is_active", label: "Active", kind: "check" },
+		],
+		search: ["job_type_name", "description"],
+		sort: "job_type_name",
+	},
+	"job-natures": {
+		doctype: "Job Nature",
+		title: "Job Natures",
+		noun: "job natures",
+		columns: [
+			{ field: "nature_name", label: "Job nature" },
+			{ field: "job_type", label: "Job type" },
+			{ field: "description", label: "Description" },
+		],
+		search: ["nature_name", "job_type"],
+		sort: "nature_name",
+	},
+	"job-sources": {
+		doctype: "Job Source",
+		title: "Job Sources",
+		noun: "job sources",
+		columns: [
+			{ field: "source_name", label: "Job source" },
+			{ field: "is_agent_required", label: "Agent needed", kind: "check" },
+		],
+		search: ["source_name"],
+		sort: "source_name",
+	},
+	"task-templates": {
+		doctype: "Job Task Template",
+		title: "Job Task Templates",
+		noun: "templates",
+		columns: [
+			{ field: "task_name", label: "Task" },
+			{ field: "job_type", label: "Job type" },
+			{ field: "days_from_start", label: "Days from start" },
+			{ field: "default_assignee", label: "Default assignee" },
+		],
+		search: ["task_name", "job_type"],
+		sort: "job_type",
+	},
+	// not in the Masters menu: opened from Reports > Money
+	"journal-entries": {
+		doctype: "Journal Entry",
+		title: "Journal Entries",
+		noun: "entries",
+		columns: [
+			{ field: "name", label: "Entry" },
+			{ field: "posting_date", label: "Date", kind: "date" },
+			{ field: "voucher_type", label: "Type" },
+			{ field: "total_debit", label: "Amount", kind: "money" },
+			{ field: "user_remark", label: "Remark" },
+		],
+		search: ["name", "user_remark"],
+		filters: [{ field: "docstatus", operator: "eq", value: 1 }],
+		sort: "posting_date",
+		desc: true,
 	},
 	users: {
 		doctype: "User",

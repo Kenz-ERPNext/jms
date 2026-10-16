@@ -7,7 +7,7 @@ export interface Boot {
 	roles?: string[];
 	is_office?: boolean;
 	is_task_staff?: boolean;
-	/** May open the ERPNext desk (only the Administrator; jms/desk_access.py). */
+	/** May open the ERPNext desk (System Manager or Admin; jms/desk_access.py). */
 	desk?: boolean;
 	employees?: string[];
 	company?: string;
