@@ -29,6 +29,8 @@ interface JobsResponse {
 	jobs: JobListRow[];
 	total: number;
 	tab_counts: Record<string, number>;
+	/** Jobs with each kind of payment (jms/api/job_payments.py). */
+	payment_counts?: Record<string, number>;
 }
 
 /** URL keys of the filters; the same names as list_jobs takes. */
@@ -40,6 +42,7 @@ export const FILTERS = [
 	"priority",
 	"from_date",
 	"to_date",
+	"payment",
 ] as const;
 export type FilterKey = (typeof FILTERS)[number];
 

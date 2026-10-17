@@ -101,7 +101,8 @@ class TestAccountingChangeLog(FrappeTestCase):
 		# side effects of the rate change are left out
 		for noise in ("Base", "In Words", "Net Total", "Outstanding", "Payment Schedule", "(empty) → (empty)"):
 			self.assertNotIn(noise, rows[1].details)
-		self.assertIn("Grand Total: 100.00 → 120.00", rows[1].details)
+		# money is shown with the currency symbol when the currency has one
+		self.assertRegex(rows[1].details, r"Grand Total: (\S+ )?100\.00 → (\S+ )?120\.00")
 
 	def test_job_is_logged_only_when_money_changes(self):
 		company, customer, job_type = _first("Company"), _first("Customer"), _first("Job Type")

@@ -1,6 +1,7 @@
 // One change in the Activity Log: an icon for the action, "<who> <did> <document>
-// for <party>", the job, the time, and the amount on the right. Clicking it shows
-// what changed (one open at a time; the page keeps which).
+// for <party>", the job, the time, and the amount on the right. An edit also shows
+// what changed in one line; clicking it opens the full before / after table (one
+// open at a time; the page keeps which).
 
 import {
 	CheckOutlined,
@@ -18,7 +19,10 @@ import { canUseDesk } from "@/lib/boot";
 import { deskPath } from "@/lib/links";
 import { tokens } from "@/theme/tokens";
 
-const { space, font, color, radius } = tokens;
+import { changeSummary, parseChanges } from "./changes";
+import ChangeTable from "./ChangeTable";
+
+const { space, font, color } = tokens;
 
 export interface LogRow {
 	name: string;
@@ -54,6 +58,7 @@ const stop = (e: { stopPropagation: () => void }) => e.stopPropagation();
 export default function ActivityItem({ row, open, onToggle, onJob }: Props) {
 	const look = ACTION_LOOK[row.action] ?? { icon: <EditOutlined />, tint: color.textMuted };
 	const small = { fontSize: font.size.sm };
+	const changes = parseChanges(row.details);
 	return (
 		<div
 			className="sbm-log-row"
@@ -106,26 +111,26 @@ export default function ActivityItem({ row, open, onToggle, onJob }: Props) {
 								· <a onClick={(e) => (stop(e), onJob(row.job!))}>{row.job}</a>
 							</Typography.Text>
 						)}
-						{row.details && (
-							<Typography.Text type="secondary" style={small}>
-								· {open ? "Hide changes ▲" : "Show changes ▼"}
+						{changes.length > 0 && (
+							<Typography.Text
+								style={{ ...small, color: color.primary, fontWeight: 600 }}
+							>
+								· {changes.length} {changes.length === 1 ? "change" : "changes"}{" "}
+								{open ? "▲" : "▼"}
 							</Typography.Text>
 						)}
 					</Flex>
-					{open && row.details && (
-						<Typography.Paragraph
-							style={{
-								...small,
-								whiteSpace: "pre-wrap",
-								margin: `${space.sm}px 0 0`,
-								padding: space.sm,
-								background: color.bg,
-								borderRadius: radius.md,
-							}}
+					{/* what changed, in one line, without opening the row */}
+					{changes.length > 0 && !open && (
+						<Typography.Text
+							type="secondary"
+							ellipsis
+							style={{ ...small, display: "block", marginTop: 2 }}
 						>
-							{row.details}
-						</Typography.Paragraph>
+							{changeSummary(changes)}
+						</Typography.Text>
 					)}
+					{open && changes.length > 0 && <ChangeTable changes={changes} />}
 				</div>
 				{!!row.amount && (
 					<Typography.Text strong style={{ whiteSpace: "nowrap" }}>

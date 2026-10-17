@@ -6,6 +6,7 @@ import frappe
 from frappe import _
 from frappe.utils import flt, getdate, nowdate
 
+from jms.api.job_payments import jobs_by_kind
 from jms.api.job_state import get_stage
 from jms.jms.doctype.job.job import LOCKED_JOB_STATUSES, is_office_user
 from jms.jms.report.job_status_report.job_status_report import _sum_by_job, _task_counts
@@ -26,9 +27,11 @@ FIELDS = [
 def list_jobs(
 	tab=None, search=None, company=None, customer=None, agent=None, job_type=None,
 	status=None, priority=None, from_date=None, to_date=None, start=0, page_length=20,
+	payment=None,
 ):
 	"""One page of Jobs for a tab (a stage, "Overdue" or "Closed"; empty = all).
-	Returns {jobs, total, tab_counts}."""
+	payment: only Jobs with that kind of payment (job_payments.KINDS).
+	Returns {jobs, total, tab_counts, payment_counts}."""
 	check_office_user()
 	if tab and tab not in TABS:
 		frappe.throw(_("Tab must be one of: {0}").format(", ".join(TABS)))
@@ -37,12 +40,24 @@ def list_jobs(
 		search=search, company=company, customer=customer, agent=agent, job_type=job_type,
 		status=status, priority=priority, from_date=from_date, to_date=to_date,
 	)
+	# how many Jobs have each kind of payment (before choosing one), then filter
+	by_kind = jobs_by_kind([j.name for j in jobs])
+	payment_counts = {kind: len(names) for kind, names in by_kind.items()}
+	if payment:
+		if payment not in by_kind:
+			frappe.throw(_("Payment must be one of: {0}").format(", ".join(by_kind)))
+		jobs = [j for j in jobs if j.name in by_kind[payment]]
 	tab_counts = {t: sum(1 for j in jobs if t in j.tabs) for t in TABS}
 	tab_counts["All"] = len(jobs)
 	rows = [j for j in jobs if not tab or tab in j.tabs]
 	start = max(int(start or 0), 0)
 	page_length = min(max(int(page_length or 20), 1), MAX_PAGE_LENGTH)
-	return {"jobs": rows[start:start + page_length], "total": len(rows), "tab_counts": tab_counts}
+	return {
+		"jobs": rows[start:start + page_length],
+		"total": len(rows),
+		"tab_counts": tab_counts,
+		"payment_counts": payment_counts,
+	}
 
 
 def check_office_user():

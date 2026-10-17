@@ -24,8 +24,10 @@ import StatusPill from "@/components/StatusPill";
 import { openPrint } from "@/lib/links";
 import { tokens } from "@/theme/tokens";
 
+import { hasAnyRole, OFFICE_ROLES } from "@/lib/roles";
 import LinkedDocuments from "@/features/job/tabs/LinkedDocuments";
 
+import FinancesTab from "./FinancesTab";
 import JobFields from "./JobFields";
 import ServicesTable from "./ServicesTable";
 import TasksTable from "./TasksTable";
@@ -139,6 +141,16 @@ export default function JobModal({ name, open, onClose }: JobModalProps) {
 				<Tabs
 					items={[
 						{ key: "details", label: "Details", children: details },
+						// the money figures are for office users (get_financials is office only)
+						...(name && hasAnyRole(OFFICE_ROLES)
+							? [
+									{
+										key: "finances",
+										label: "Finances",
+										children: <FinancesTab name={name} />,
+									},
+								]
+							: []),
 						// an existing job also shows its invoices and payments
 						...(name
 							? [

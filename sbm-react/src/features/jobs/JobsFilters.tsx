@@ -11,6 +11,15 @@ import type { useJobsList } from "./useJobsList";
 
 const STATUSES = ["Created", "In Progress", "Completed", "Closed", "Cancelled"];
 const PRIORITIES = ["Low", "Medium", "High", "Urgent"];
+// the Create buttons whose documents can be looked for (jms/api/job_payments.py)
+const PAYMENTS = [
+	{ value: "invoice", label: "Invoice" },
+	{ value: "advance_receipt", label: "Advance Receipt" },
+	{ value: "payment_return", label: "Payment Return" },
+	{ value: "expense", label: "Expense" },
+	{ value: "expense_return", label: "Expense Return" },
+	{ value: "outsource_advance", label: "Outsource Advance Payment" },
+];
 const opts = (values: string[]) => values.map((v) => ({ value: v, label: v }));
 
 type ListState = ReturnType<typeof useJobsList>;
@@ -67,6 +76,19 @@ export default function JobsFilters({ list }: { list: ListState }) {
 				value={filters.priority}
 				onChange={set("priority")}
 				style={{ width: 130 }}
+			/>
+			<Select
+				placeholder="Payments"
+				allowClear
+				// each kind with how many jobs have it
+				options={PAYMENTS.map((p) => ({
+					value: p.value,
+					label: `${p.label} (${list.data?.payment_counts?.[p.value] ?? 0})`,
+				}))}
+				value={filters.payment}
+				onChange={set("payment")}
+				popupMatchSelectWidth={false}
+				style={{ width: 210 }}
 			/>
 			<DatePicker.RangePicker
 				placeholder={["Start from", "Start to"]}

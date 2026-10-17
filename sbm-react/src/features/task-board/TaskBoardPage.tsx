@@ -2,8 +2,9 @@
 // jobs with their task counts, and a job's tasks as a kanban when it is clicked.
 // Replaces the old desk dashboard (/app/jms-dashboard).
 
-import { Alert, Card, Col, Flex, Input, Row, Tooltip, Typography } from "antd";
+import { Alert, Card, Flex, Input, Tooltip, Typography } from "antd";
 import { useState } from "react";
+import { useSearchParams } from "react-router";
 
 import DataTable from "@/components/DataTable";
 import StatusPill from "@/components/StatusPill";
@@ -11,62 +12,21 @@ import { formatDate } from "@/lib/format";
 import { tokens } from "@/theme/tokens";
 
 import JobBoardDrawer from "./JobBoardDrawer";
-import {
-	BOARD_STATUSES,
-	statusKey,
-	useBoardCounts,
-	useBoardJobs,
-	type BoardJob,
-} from "./useTaskBoard";
+import StatusTiles, { TINT } from "./StatusTiles";
+import { BOARD_STATUSES, statusKey, useBoardJobs, type BoardJob } from "./useTaskBoard";
 
 const PAGE_SIZE = 10;
 const { color, space, font } = tokens;
-const TINT: Record<string, string> = {
-	Open: color.textMuted,
-	"In Progress": color.info,
-	Pending: color.warning,
-	Completed: color.success,
-	Cancelled: color.danger,
-};
 
 export default function TaskBoardPage() {
-	const [status, setStatus] = useState<string>();
+	// the chosen status is in the URL, so the Jobs list can open the board on one
+	const [params, setParams] = useSearchParams();
+	const status = params.get("status") || undefined;
 	const [search, setSearch] = useState("");
 	const [page, setPage] = useState(1);
 	const [open, setOpen] = useState<string>();
-	const counts = useBoardCounts();
 	const { data, isLoading, error } = useBoardJobs(status, search, page, PAGE_SIZE);
-	const pick = (s?: string) => (setStatus(s), setPage(1));
-
-	const tile = (label: string, s: string | undefined, key: string) => {
-		const active = status === s;
-		return (
-			<Col key={label} xs={12} md={8} xl={4}>
-				<Card
-					size="small"
-					hoverable
-					className="sbm-lift"
-					onClick={() => pick(s)}
-					style={{
-						height: "100%",
-						borderColor: active ? color.primary : undefined,
-						background: active ? color.primaryBg : undefined,
-					}}
-				>
-					<Typography.Text type="secondary">{label}</Typography.Text>
-					<Typography.Title
-						level={3}
-						style={{ margin: 0, color: s ? TINT[s] : color.text }}
-					>
-						{(counts?.[key] ?? 0).toLocaleString()}
-					</Typography.Title>
-					<Typography.Text type="secondary" style={{ fontSize: font.size.sm }}>
-						jobs · {(counts?.tasks?.[key] ?? 0).toLocaleString()} tasks
-					</Typography.Text>
-				</Card>
-			</Col>
-		);
-	};
+	const pick = (s?: string) => (setParams(s ? { status: s } : {}), setPage(1));
 
 	return (
 		<Flex vertical gap={space.lg}>
@@ -79,10 +39,7 @@ export default function TaskBoardPage() {
 					tasks.
 				</Typography.Text>
 			</div>
-			<Row gutter={[space.md, space.md]}>
-				{tile("All jobs", undefined, "all")}
-				{BOARD_STATUSES.map((s) => tile(s, s, statusKey(s)))}
-			</Row>
+			<StatusTiles active={status} onPick={pick} />
 			{error && (
 				<Alert
 					type="error"
