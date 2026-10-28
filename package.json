@@ -5,7 +5,7 @@
 		"dev": "cd frontend && yarn dev",
 		"dev:sbm": "cd sbm-react && yarn dev",
 		"build": "yarn build:dashboard && yarn build:sbm",
-		"build:dashboard": "cd frontend && yarn build",
+		"build:dashboard": "cd frontend && yarn install --frozen-lockfile --non-interactive && yarn build",
 		"build:sbm": "cd sbm-react && yarn install --frozen-lockfile --non-interactive && yarn build"
 	}
 }
