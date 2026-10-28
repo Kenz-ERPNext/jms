@@ -40,6 +40,7 @@ repos:
             (?x)^(
                 jms/public/dist/.*|
                 .*node_modules.*|
+                sbm-react/.*|
                 .*boilerplate.*|
                 jms/templates/includes/.*|
                 jms/public/js/lib/.*
@@ -58,6 +59,7 @@ repos:
                 jms/public/dist/.*|
                 cypress/.*|
                 .*node_modules.*|
+                sbm-react/.*|
                 .*boilerplate.*|
                 jms/templates/includes/.*|
                 jms/public/js/lib/.*

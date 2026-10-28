@@ -49,6 +49,8 @@ NOISE_FIELDS = {
 	# totals worked out from the lines; Grand Total / Rounded Total stay
 	"total", "net_total", "outstanding_amount", "amount_eligible_for_commission",
 	"rounding_adjustment",
+	# the tax breakdown table ERPNext redraws as HTML whenever taxes change
+	"other_charges_calculation",
 }
 # Child tables worked out from the rest of the document.
 NOISE_TABLES = {"payment_schedule"}
@@ -202,8 +204,12 @@ def change_lines(before, doc):
 		diff.added = [c for c in diff.added if c[0] in money_tables]
 		diff.removed = [c for c in diff.removed if c[0] in money_tables]
 
+	# get_diff gives values already formatted ("SAR 1,000.00"); formatting those again
+	# turns money into 0 on both sides, so the change was dropped. Use the documents'
+	# own values instead.
 	lines = []
-	for field, old, new in diff.changed:
+	for field, _old, _new in diff.changed:
+		old, new = before.get(field), doc.get(field)
 		df = doc.meta.get_field(field)
 		if money_tables is not None:
 			shown = df and not df.hidden and df.fieldtype in MONEY_FIELDTYPES
@@ -221,7 +227,8 @@ def change_lines(before, doc):
 		if not (row and old_row):
 			continue
 		where = f"{table_label} row {index + 1}{_row_title(row, prefix=' – ')}"
-		for field, old, new in changes:
+		for field, _old, _new in changes:
+			old, new = old_row.get(field), row.get(field)
 			df = row.meta.get_field(field)
 			if _is_shown(df) and not _both_empty(old, new):
 				_add(lines, f"{_(df.label)} ({where})", _show(old, df, old_row), _show(new, df, row))
@@ -263,7 +270,8 @@ def _show(value, df, doc):
 		return _("Yes") if cint(value) else _("No")
 	from frappe.utils.formatters import format_value
 
-	text = strip_html(cstr(format_value(value, df, doc))).strip()
+	# one line of plain text: HTML and the blank lines it leaves are dropped
+	text = " ".join(strip_html(cstr(format_value(value, df, doc))).split())
 	if len(text) > MAX_VALUE_LENGTH:
 		text = text[: MAX_VALUE_LENGTH - 1] + "…"
 	return text

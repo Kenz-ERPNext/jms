@@ -14,9 +14,9 @@ app_license = "mit"
 add_to_apps_screen = [
 	{
 		"name": "jms",
-		"logo": "/assets/jms/images/oasis-cienteirs-logo.png",
+		"logo": "/assets/jms/images/kenz-mark.png",
 		"title": "SBM Dashboard",
-		"route": "/app/jms-dashboard",
+		"route": "/sbm",
 		"has_permission": "jms.api.has_app_permission",
 	}
 ]
@@ -63,6 +63,14 @@ app_include_js = "/assets/jms/js/jms.js"
 # role_home_page = {
 # 	"Role": "home_page"
 # }
+
+# SBM frontend (React): every /sbm/... path loads jms/www/sbm.html, React handles the route.
+website_route_rules = [
+	{"from_route": "/sbm/<path:app_path>", "to_route": "sbm"},
+]
+
+# ERPNext's /login shows the SBM login page (/login?desk=1 still opens ERPNext's).
+page_renderer = ["jms.sbm_login.SBMLoginPage"]
 
 # Generators
 # ----------
@@ -221,7 +229,11 @@ ignore_links_on_delete = ["Accounting Change Log"]
 # ----------------
 # Compat shim for frappe<->erpnext version skew (round_floats_in). No-op once
 # frappe is updated to match erpnext. See jms/compat.py.
-before_request = ["jms.compat.patch_round_floats_in"]
+before_request = [
+	"jms.compat.patch_round_floats_in",
+	# only System Managers and Admins may open the ERPNext desk; others go to SBM
+	"jms.desk_access.block_desk",
+]
 # after_request = ["jms.utils.after_request"]
 
 # Job Events
