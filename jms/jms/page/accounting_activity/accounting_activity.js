@@ -56,9 +56,10 @@ class AccountingActivity {
 
 		this.listen();
 		this.load();
-		// keep "5 minutes ago" fresh
+		// keep "5 m" fresh; prettyDate gives plain text (comment_when gives HTML,
+		// which .text() would show as tags)
 		setInterval(() => this.$feed.find("[data-time]").each(function () {
-			$(this).text(comment_when($(this).attr("data-time"), true));
+			$(this).text(frappe.datetime.prettyDate($(this).attr("data-time"), true));
 		}), 60 * 1000);
 	}
 
@@ -192,7 +193,7 @@ class AccountingActivity {
 					<div class="acc-meta text-muted">
 						<span class="indicator-pill ${a.color} acc-badge">${__(row.action)}</span>
 						<span data-time="${row.creation}" title="${frappe.datetime.str_to_user(row.creation)}">
-							${comment_when(row.creation, true)}</span>
+							${frappe.datetime.prettyDate(row.creation, true)}</span>
 					</div>
 					${details}
 				</div>

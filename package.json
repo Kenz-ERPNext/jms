@@ -1,8 +1,11 @@
 {
 	"private": true,
 	"scripts": {
-		"postinstall": "cd frontend && yarn install",
+		"postinstall": "cd frontend && yarn install && cd ../sbm-react && yarn install",
 		"dev": "cd frontend && yarn dev",
-		"build": "cd frontend && yarn install --frozen-lockfile --non-interactive && yarn build"
+		"dev:sbm": "cd sbm-react && yarn dev",
+		"build": "yarn build:dashboard && yarn build:sbm",
+		"build:dashboard": "cd frontend && yarn install --frozen-lockfile --non-interactive && yarn build",
+		"build:sbm": "cd sbm-react && yarn install --frozen-lockfile --non-interactive && yarn build"
 	}
 }
