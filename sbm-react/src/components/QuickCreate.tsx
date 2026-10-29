@@ -15,10 +15,11 @@ import {
 	InputNumber,
 	Modal,
 	Row,
-	Select,
 	Skeleton,
 	type FormInstance,
 } from "antd";
+
+import FocusSelect from "./FocusSelect";
 import dayjs, { type Dayjs } from "dayjs";
 import { useEffect } from "react";
 
@@ -47,7 +48,9 @@ function FieldInput({ f, focus, ...form }: { f: DocField; focus?: boolean } & Fo
 		case "Link":
 			return <LinkSelect {...form} doctype={String(f.options)} placeholder={f.label} />;
 		case "Select":
-			return <Select {...form} options={options(f).map((o) => ({ value: o, label: o }))} />;
+			return (
+				<FocusSelect {...form} options={options(f).map((o) => ({ value: o, label: o }))} />
+			);
 		case "Date":
 			return <DatePicker {...form} style={{ width: "100%" }} format="DD-MM-YYYY" />;
 		case "Check":

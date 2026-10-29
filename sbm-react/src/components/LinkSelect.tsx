@@ -2,13 +2,16 @@
 // The value is the record's name. The label can be another field (customer_name);
 // with descriptionField the list also shows that field under each option and
 // searches it, while the chosen value shows only the label (a code like "101").
+// The list opens when the field is reached with Tab (FocusSelect).
 // With allowCreate the list ends in "+ Create a new <DocType>", as in ERPNext: a quick
 // form (QuickCreate) with the typed text, and the new record is then chosen.
 
 import { PlusOutlined } from "@ant-design/icons";
 import { useSelect } from "@refinedev/antd";
 import type { BaseRecord, CrudFilter } from "@refinedev/core";
-import { Button, Divider, Select, Typography, type SelectProps } from "antd";
+import { Button, Divider, Typography, type SelectProps } from "antd";
+
+import FocusSelect from "./FocusSelect";
 import { useState } from "react";
 
 import QuickCreate from "./QuickCreate";
@@ -99,7 +102,7 @@ export default function LinkSelect({
 
 	return (
 		<>
-			<Select
+			<FocusSelect
 				{...selectProps}
 				onSearch={(text) => (setTyped(text), selectProps.onSearch?.(text))}
 				optionRender={optionRender}

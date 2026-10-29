@@ -1,6 +1,8 @@
 // One modal for a new job and for an existing one: the job's fields, its services
 // and its tasks. Saving closes it and shows a short message with the job number.
 // The header and the buttons stay in view; only the form scrolls, inside the modal.
+// Made to be filled from the keyboard: a new job opens in Job title, and Tab goes
+// from field to field (a new job has no tab bar; the tab panels are not Tab stops).
 
 import {
 	Alert,
@@ -16,7 +18,7 @@ import {
 	Tabs,
 	Typography,
 } from "antd";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import { PrinterOutlined } from "@ant-design/icons";
 
@@ -64,6 +66,15 @@ export default function JobModal({ name, open, onClose }: JobModalProps) {
 	const [form] = Form.useForm<JobFormValues>();
 	const { message } = App.useApp();
 	const { job, isLoading, error, isSaving, save } = useJobForm(name);
+	const tabsRef = useRef<HTMLDivElement>(null);
+
+	// Ant Design makes the open tab panel a Tab stop of its own: a key press that seems
+	// to do nothing, with a focus ring cut off by the modal. Its fields are stops enough.
+	useEffect(() => {
+		tabsRef.current
+			?.querySelectorAll(".ant-tabs-tabpane")
+			.forEach((pane) => pane.setAttribute("tabindex", "-1"));
+	});
 
 	useEffect(() => {
 		if (!open) return;
@@ -118,6 +129,10 @@ export default function JobModal({ name, open, onClose }: JobModalProps) {
 			style={{ top: tokens.space.xl }}
 			styles={{ body: BODY }}
 			destroyOnHidden
+			// a new job: start typing the title straight away
+			afterOpenChange={(opened) =>
+				opened && !name && form.getFieldInstance("job_title")?.focus()
+			}
 			footer={
 				<Flex justify="end" gap={tokens.space.sm}>
 					<Button onClick={onClose}>Cancel</Button>
@@ -137,32 +152,33 @@ export default function JobModal({ name, open, onClose }: JobModalProps) {
 			)}
 			{isLoading ? (
 				<Skeleton active paragraph={{ rows: 10 }} />
+			) : !name ? (
+				// only Details for a new job: no tab bar to Tab through
+				details
 			) : (
-				<Tabs
-					items={[
-						{ key: "details", label: "Details", children: details },
-						// the money figures are for office users (get_financials is office only)
-						...(name && hasAnyRole(OFFICE_ROLES)
-							? [
-									{
-										key: "finances",
-										label: "Finances",
-										children: <FinancesTab name={name} />,
-									},
-								]
-							: []),
-						// an existing job also shows its invoices and payments
-						...(name
-							? [
-									{
-										key: "connections",
-										label: "Connections",
-										children: <LinkedDocuments name={name} />,
-									},
-								]
-							: []),
-					]}
-				/>
+				<div ref={tabsRef}>
+					<Tabs
+						items={[
+							{ key: "details", label: "Details", children: details },
+							// the money figures are for office users (get_financials is office only)
+							...(hasAnyRole(OFFICE_ROLES)
+								? [
+										{
+											key: "finances",
+											label: "Finances",
+											children: <FinancesTab name={name} />,
+										},
+									]
+								: []),
+							// an existing job also shows its invoices and payments
+							{
+								key: "connections",
+								label: "Connections",
+								children: <LinkedDocuments name={name} />,
+							},
+						]}
+					/>
+				</div>
 			)}
 		</Modal>
 	);

@@ -1,7 +1,9 @@
 // Create Purchase Invoice and Outsource Advance Payment (the outsourced tasks): the
 // same titles, fields, buttons, messages and Job methods as the ERPNext Job form.
 
-import { Form, Input, InputNumber, Select, Space } from "antd";
+import { Form, Input, InputNumber, Space } from "antd";
+
+import FocusSelect from "@/components/FocusSelect";
 
 import { allocate, openInvoices, runJobMethod } from "../api";
 import {
@@ -32,7 +34,7 @@ export const purchaseInvoice: JobAction = {
 		return (
 			<>
 				<Form.Item name="supplier" label="Select Supplier" rules={required("Supplier")}>
-					<Select
+					<FocusSelect
 						options={outsourceSuppliers(job, true).map((s) => ({
 							value: s,
 							label: s,

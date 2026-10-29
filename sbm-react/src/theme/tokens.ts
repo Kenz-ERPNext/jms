@@ -15,12 +15,16 @@ export const tokens = {
 		bg: "#F5F7FA",
 		surface: "#FFFFFF",
 		border: "#E5E7EB",
+		/** A field's border on hover and focus: a soft navy, quieter than primary. */
+		borderFocus: "#7A90B2",
 		text: "#1F2937",
 		textMuted: "#6B7280",
 		success: "#16A34A",
 		warning: "#D97706",
 		danger: "#B42318",
 		info: "#2563EB",
+		/** Sets the Sales Invoice action apart from the other job actions. */
+		purple: "#7C3AED",
 		/** Bars of charts: the logo teal, deepened enough to read on white. */
 		chart: "#2A9E8E",
 		grid: "#EEF0F2",

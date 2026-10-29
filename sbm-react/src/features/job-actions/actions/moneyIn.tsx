@@ -1,8 +1,9 @@
 // Advance Receipt, Create Sales Invoice and Expense Return: the same titles, fields,
 // buttons, messages and Job methods as the ERPNext Job form's Create menu.
 
-import { Alert, Form, Select } from "antd";
+import { Alert, Form } from "antd";
 
+import FocusSelect from "@/components/FocusSelect";
 import LinkSelect from "@/components/LinkSelect";
 import { apiFetch } from "@/lib/frappe";
 import { formatMoney } from "@/lib/format";
@@ -84,7 +85,7 @@ export const salesInvoice: JobAction = {
 					<>
 						<ModeOfPayment />
 						<Form.Item name="payment_type" label="Payment Type">
-							<Select
+							<FocusSelect
 								options={["Full Paid", "Partially Paid"].map((v) => ({
 									value: v,
 									label: v,

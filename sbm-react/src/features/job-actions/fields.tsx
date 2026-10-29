@@ -2,10 +2,11 @@
 // money amounts, a tax template list for the job's company.
 
 import { useList } from "@refinedev/core";
-import { DatePicker, Form, Input, InputNumber, Select } from "antd";
+import { DatePicker, Form, Input, InputNumber } from "antd";
 import dayjs from "dayjs";
 import { useEffect } from "react";
 
+import FocusSelect from "@/components/FocusSelect";
 import LinkSelect from "@/components/LinkSelect";
 
 import { defaultTemplate } from "./api";
@@ -78,7 +79,9 @@ export function Reference() {
 export function PaySelect({ name, label = "Payment" }: { name: string; label?: string }) {
 	return (
 		<Form.Item name={name} label={label} rules={required(label)}>
-			<Select options={["Payment Now", "Credit"].map((v) => ({ value: v, label: v }))} />
+			<FocusSelect
+				options={["Payment Now", "Credit"].map((v) => ({ value: v, label: v }))}
+			/>
 		</Form.Item>
 	);
 }
@@ -112,7 +115,7 @@ export function TaxTemplate({
 	const options = (templates ?? []).map((t) => ({ value: t.name, label: t.title || t.name }));
 	return (
 		<Form.Item name={name} label={label}>
-			<Select options={options} loading={query.isLoading} allowClear />
+			<FocusSelect options={options} loading={query.isLoading} allowClear />
 		</Form.Item>
 	);
 }

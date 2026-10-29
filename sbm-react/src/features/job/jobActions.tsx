@@ -9,7 +9,7 @@ import { tokens } from "@/theme/tokens";
 
 export type ActionGroup = "create" | "job";
 /** What a Create action is about, so its kind can be told apart by colour. */
-export type ActionKind = "customer" | "outsource" | "expense";
+export type ActionKind = "customer" | "invoice" | "outsource" | "expense";
 
 // Names as on the ERPNext Job form: the "Create" menu, "Close Job" and "Cancel".
 export const ACTION_TEXT: Record<
@@ -19,7 +19,7 @@ export const ACTION_TEXT: Record<
 	outsource_advance: { label: "Outsource Advance Payment", group: "create", kind: "outsource" },
 	advance_receipt: { label: "Advance Receipt", group: "create", kind: "customer" },
 	payment_return: { label: "Payment Return", group: "create", kind: "customer" },
-	sales_invoice: { label: "Create Sales Invoice", group: "create", kind: "customer" },
+	sales_invoice: { label: "Create Sales Invoice", group: "create", kind: "invoice" },
 	expense: { label: "Create Expense", group: "create", kind: "expense" },
 	expense_return: { label: "Expense Return", group: "create", kind: "expense" },
 	purchase_invoice: { label: "Create Purchase Invoice", group: "create", kind: "outsource" },
@@ -33,9 +33,11 @@ export const GROUP_TITLE: Record<ActionGroup, string> = {
 	job: "Job",
 };
 
-/** Create actions by kind (customer, outsourcing, expense), in this order, with their colour. */
+/** Create actions by kind (customer money, the sales invoice, outsourcing, expense),
+ * in this order, with their colour. */
 export const KIND: Record<ActionKind, { tint: string }> = {
 	customer: { tint: tokens.color.success },
+	invoice: { tint: tokens.color.purple },
 	outsource: { tint: tokens.color.info },
 	expense: { tint: tokens.color.warning },
 };

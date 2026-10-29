@@ -6,6 +6,13 @@ import { tokens } from "./tokens";
 
 const { color, radius, font, layout } = tokens;
 
+/** Form fields: a thin soft border on hover and focus, no glow around it. */
+const FIELD = {
+	hoverBorderColor: color.borderFocus,
+	activeBorderColor: color.borderFocus,
+	activeShadow: "none",
+};
+
 export const antdTheme: ThemeConfig = {
 	token: {
 		colorPrimary: color.primary,
@@ -24,6 +31,10 @@ export const antdTheme: ThemeConfig = {
 		fontSize: font.size.md,
 	},
 	components: {
+		Select: { ...FIELD, activeOutlineColor: "transparent" },
+		Input: FIELD,
+		InputNumber: FIELD,
+		DatePicker: FIELD,
 		Layout: {
 			headerBg: color.surface,
 			headerHeight: layout.headerHeight,
