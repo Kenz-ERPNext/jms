@@ -12,7 +12,11 @@ export interface Boot {
 	employees?: string[];
 	company?: string;
 	currency?: string;
+	/** The system's default country (new customer addresses). */
+	country?: string;
 	settings?: Record<string, number>;
+	/** Party Type → account type, like ERPNext's desk boot (report filters use it). */
+	party_account_types?: Record<string, string>;
 	csrf_token?: string;
 }
 

@@ -1,5 +1,6 @@
 // Icon buttons for one job in a list, each in its own colour: Create (the ERPNext
-// Create menu: the actions the server allows for this job, loaded on hover), Edit,
+// Create menu: the actions the server allows for this job, loaded on hover, grouped
+// and coloured by kind: customer, outsourcing, expense), Edit,
 // Print, Close and Cancel. Close and Cancel follow the ERPNext rules on the status.
 
 import {
@@ -13,7 +14,7 @@ import { useCustom } from "@refinedev/core";
 import { Button, Dropdown, Space, Tooltip } from "antd";
 import { useState, type ReactNode } from "react";
 
-import { ACTION_TEXT } from "@/features/job/jobActions";
+import { createMenuItems } from "@/features/job/jobActions";
 import type { JobState } from "@/features/job/useJob";
 import { openPrint } from "@/lib/links";
 
@@ -66,10 +67,7 @@ export default function RowActions({ job, status }: { job: string; status: strin
 		config: { query: { job } },
 		queryOptions: { enabled: open || wanted, staleTime: 30_000 },
 	});
-	const createItems = (query.data?.data?.actions ?? [])
-		.map((a) => a.key)
-		.filter((k) => ACTION_TEXT[k]?.group === "create")
-		.map((k) => ({ key: k, label: ACTION_TEXT[k].label }));
+	const createItems = createMenuItems((query.data?.data?.actions ?? []).map((a) => a.key));
 
 	return (
 		// a click here must not also open the row

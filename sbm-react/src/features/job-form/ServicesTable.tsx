@@ -81,6 +81,7 @@ export default function ServicesTable() {
 										rules={[{ required: true, message: "Choose a code" }]}
 									>
 										<LinkSelect
+											allowCreate
 											doctype="Work Template"
 											descriptionField="description"
 											placeholder="Code"

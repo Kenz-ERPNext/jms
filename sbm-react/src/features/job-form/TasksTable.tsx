@@ -76,6 +76,7 @@ export default function TasksTable({ isNew }: { isNew: boolean }) {
 											{outsourced ? (
 												<Form.Item name={[f.name, "assigned_tos"]} noStyle>
 													<LinkSelect
+														allowCreate
 														doctype="Outsourced Party"
 														placeholder="Outside party"
 														style={{ width: 170 }}
@@ -84,6 +85,7 @@ export default function TasksTable({ isNew }: { isNew: boolean }) {
 											) : (
 												<Form.Item name={[f.name, "assigned_to"]} noStyle>
 													<LinkSelect
+														allowCreate
 														doctype="Employee"
 														labelField="employee_name"
 														placeholder="Employee"

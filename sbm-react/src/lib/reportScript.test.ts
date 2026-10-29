@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { readFilters, selectOptions } from "./reportScript";
+import { linkDoctype, readFilters, selectOptions } from "./reportScript";
 
 const script = `
 frappe.query_reports["Cash Collection"] = {
@@ -40,5 +40,30 @@ describe("readFilters", () => {
 	it("gives no filters for a broken or other script", () => {
 		expect(readFilters("this is not js", "X")).toEqual([]);
 		expect(readFilters(script, "Other Report")).toEqual([]);
+	});
+
+	it("lists party types from the boot, as General Ledger does", () => {
+		window.boot = {
+			user: "a@b.c",
+			party_account_types: { Customer: "Receivable", Supplier: "Payable" },
+		};
+		const gl = `frappe.query_reports["General Ledger"] = { filters: [
+			{ fieldname: "party_type", fieldtype: "Autocomplete", options: Object.keys(frappe.boot.party_account_types) },
+			{ fieldname: "include_dimensions", fieldtype: "Check",
+			  default: frappe.boot.sysdefaults.disable_include_dimensions ? 0 : 1 },
+		] };`;
+		const [partyType, dims] = readFilters(gl, "General Ledger");
+		expect(partyType.options).toEqual(["Customer", "Supplier"]);
+		expect(dims.default).toBe(1);
+	});
+});
+
+describe("linkDoctype", () => {
+	it("is the options, or the value of the filter the options name", () => {
+		const account = { fieldname: "account", fieldtype: "MultiSelectList", options: "Account" };
+		const party = { fieldname: "party", fieldtype: "MultiSelectList", options: "party_type" };
+		expect(linkDoctype(account, {})).toBe("Account");
+		expect(linkDoctype(party, {})).toBeUndefined();
+		expect(linkDoctype(party, { party_type: "Customer" })).toBe("Customer");
 	});
 });

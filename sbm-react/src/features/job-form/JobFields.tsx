@@ -23,6 +23,7 @@ export default function JobFields() {
 				<Form.Item name="customer" label="Customer" rules={required("Customer")}>
 					<LinkSelect
 						doctype="Customer"
+						allowCreate
 						labelField="customer_name"
 						placeholder="Search customer"
 					/>
@@ -39,18 +40,22 @@ export default function JobFields() {
 			</Col>
 			<Col {...col}>
 				<Form.Item name="job_type" label="Job type" rules={required("Job type")}>
-					<LinkSelect doctype="Job Type" placeholder="Search job type" />
+					<LinkSelect allowCreate doctype="Job Type" placeholder="Search job type" />
 				</Form.Item>
 			</Col>
 			<Col {...col}>
 				<Form.Item name="job_source" label="Job source">
-					<LinkSelect doctype="Job Source" placeholder="Walk-in, referral, ..." />
+					<LinkSelect
+						allowCreate
+						doctype="Job Source"
+						placeholder="Walk-in, referral, ..."
+					/>
 				</Form.Item>
 			</Col>
 			{billTo === "Agent" && (
 				<Col {...col}>
 					<Form.Item name="agent" label="Agent" rules={required("Agent")}>
-						<LinkSelect doctype="Agent" placeholder="Search agent" />
+						<LinkSelect allowCreate doctype="Agent" placeholder="Search agent" />
 					</Form.Item>
 				</Col>
 			)}

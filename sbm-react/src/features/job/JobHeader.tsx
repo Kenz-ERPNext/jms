@@ -10,7 +10,7 @@ import { formatDate } from "@/lib/format";
 import { deskPath, openPrint } from "@/lib/links";
 import { tokens } from "@/theme/tokens";
 
-import { ACTION_TEXT, GROUP_TITLE, type ActionGroup } from "./jobActions";
+import { ACTION_TEXT, createMenuItems, GROUP_TITLE } from "./jobActions";
 import type { JobDoc, JobState } from "./useJob";
 
 interface JobHeaderProps {
@@ -22,15 +22,17 @@ interface JobHeaderProps {
 export default function JobHeader({ job, state, onAction }: JobHeaderProps) {
 	const next = state?.next_action;
 	const others = (state?.actions ?? []).map((a) => a.key).filter((k) => k !== next);
-	const groups = (["create", "job"] as ActionGroup[])
-		.map((group) => ({
+	// Create actions (coloured by kind: customer, outsourcing, expense), then the Job ones
+	const groups = [
+		{ type: "group" as const, label: GROUP_TITLE.create, children: createMenuItems(others) },
+		{
 			type: "group" as const,
-			label: GROUP_TITLE[group],
+			label: GROUP_TITLE.job,
 			children: others
-				.filter((k) => ACTION_TEXT[k]?.group === group)
+				.filter((k) => ACTION_TEXT[k]?.group === "job")
 				.map((k) => ({ key: k, label: ACTION_TEXT[k].label, danger: k === "cancel" })),
-		}))
-		.filter((g) => g.children.length);
+		},
+	].filter((g) => g.children.length);
 	const menu: MenuProps = { items: groups, onClick: ({ key }) => onAction(key) };
 
 	return (

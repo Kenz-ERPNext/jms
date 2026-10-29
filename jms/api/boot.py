@@ -50,4 +50,8 @@ def _office_data():
 		"currency": frappe.get_cached_value("Company", company, "default_currency") if company else None,
 		# A flag never saved on the Single is None: treat it as on, like get_financials.
 		"settings": {f: 1 if settings.get(f) is None else int(settings.get(f)) for f in SETTING_FLAGS},
+		# the address country a new customer gets (Customer quick form)
+		"country": frappe.db.get_default("country"),
+		# Party Type -> account type, as ERPNext's desk boot has it (report filters use it)
+		"party_account_types": dict(frappe.get_all("Party Type", fields=["name", "account_type"], as_list=1)),
 	}

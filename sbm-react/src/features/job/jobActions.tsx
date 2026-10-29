@@ -3,19 +3,26 @@
 // until then they open the job in ERPNext, where the same buttons are.
 
 import { useUpdate } from "@refinedev/core";
-import { App } from "antd";
+import { App, type MenuProps } from "antd";
+
+import { tokens } from "@/theme/tokens";
 
 export type ActionGroup = "create" | "job";
+/** What a Create action is about, so its kind can be told apart by colour. */
+export type ActionKind = "customer" | "outsource" | "expense";
 
 // Names as on the ERPNext Job form: the "Create" menu, "Close Job" and "Cancel".
-export const ACTION_TEXT: Record<string, { label: string; group: ActionGroup }> = {
-	outsource_advance: { label: "Outsource Advance Payment", group: "create" },
-	advance_receipt: { label: "Advance Receipt", group: "create" },
-	payment_return: { label: "Payment Return", group: "create" },
-	sales_invoice: { label: "Create Sales Invoice", group: "create" },
-	expense: { label: "Create Expense", group: "create" },
-	expense_return: { label: "Expense Return", group: "create" },
-	purchase_invoice: { label: "Create Purchase Invoice", group: "create" },
+export const ACTION_TEXT: Record<
+	string,
+	{ label: string; group: ActionGroup; kind?: ActionKind }
+> = {
+	outsource_advance: { label: "Outsource Advance Payment", group: "create", kind: "outsource" },
+	advance_receipt: { label: "Advance Receipt", group: "create", kind: "customer" },
+	payment_return: { label: "Payment Return", group: "create", kind: "customer" },
+	sales_invoice: { label: "Create Sales Invoice", group: "create", kind: "customer" },
+	expense: { label: "Create Expense", group: "create", kind: "expense" },
+	expense_return: { label: "Expense Return", group: "create", kind: "expense" },
+	purchase_invoice: { label: "Create Purchase Invoice", group: "create", kind: "outsource" },
 	close: { label: "Close Job", group: "job" },
 	cancel: { label: "Cancel", group: "job" },
 	tasks: { label: "Update tasks", group: "job" },
@@ -25,6 +32,25 @@ export const GROUP_TITLE: Record<ActionGroup, string> = {
 	create: "Create",
 	job: "Job",
 };
+
+/** Create actions by kind (customer, outsourcing, expense), in this order, with their colour. */
+export const KIND: Record<ActionKind, { tint: string }> = {
+	customer: { tint: tokens.color.success },
+	outsource: { tint: tokens.color.info },
+	expense: { tint: tokens.color.warning },
+};
+
+/** The Create menu items: the given actions kind by kind, each in its kind's colour. */
+export function createMenuItems(keys: string[]): NonNullable<MenuProps["items"]> {
+	return (Object.keys(KIND) as ActionKind[]).flatMap((kind) =>
+		keys
+			.filter((k) => ACTION_TEXT[k]?.kind === kind)
+			.map((k) => ({
+				key: k,
+				label: <span style={{ color: KIND[kind].tint }}>{ACTION_TEXT[k].label}</span>,
+			})),
+	);
+}
 
 const CONFIRM = {
 	close: {

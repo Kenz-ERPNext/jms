@@ -85,3 +85,16 @@
 		opacity: 1;
 	}
 }
+
+/* Report cards: the arrow is faint, and steps right on hover or keyboard focus */
+.sbm-report-card .sbm-report-open {
+	color: var(--sbm-border);
+	transition:
+		color var(--sbm-fast) var(--sbm-ease),
+		transform var(--sbm-fast) var(--sbm-ease);
+}
+.sbm-report-card:hover .sbm-report-open,
+.sbm-report-card:focus-visible .sbm-report-open {
+	color: inherit;
+	transform: translateX(var(--sbm-xs));
+}

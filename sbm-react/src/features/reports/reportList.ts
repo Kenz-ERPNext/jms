@@ -51,6 +51,7 @@ export const REPORT_GROUPS: {
 				label: "Day Business Summary",
 				hint: "One day's sales, purchases and payments",
 			},
+			{ name: "General Ledger", hint: "Every posting to an account, with its balance" },
 			{
 				name: "Journal Entries",
 				hint: "All posted journal entries",

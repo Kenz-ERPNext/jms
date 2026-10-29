@@ -1,6 +1,7 @@
 // Tasks by status, late ones first, as a table on a laptop and cards on a phone.
 // Task Staff see their own tasks (their home page); office users see every task, can
-// filter by who it is assigned to and see the assignee. Ten tasks a page.
+// filter by who it is assigned to and see the assignee. The All tab lists every
+// status together (each row shows its own). Ten tasks a page.
 
 import { Alert, Empty, Flex, Grid, Pagination, Skeleton, Space, Tabs, Typography } from "antd";
 import { useState } from "react";
@@ -12,7 +13,7 @@ import TaskCard from "./TaskCard";
 import TaskTable from "./TaskTable";
 import { useMyTasks } from "./useMyTasks";
 
-const TABS = ["Open", "In Progress", "Pending", "Completed"];
+const TABS = ["All", "Open", "In Progress", "Pending", "Completed"];
 const PAGE_SIZE = 10;
 
 export default function MyTasksPage() {
@@ -22,9 +23,11 @@ export default function MyTasksPage() {
 	const [page, setPage] = useState(1);
 	const all = data?.scope === "all";
 	const tasks = data?.tasks ?? [];
-	const count = (status: string) => tasks.filter((t) => t.status === status).length;
-	const shown = tasks.filter((t) => t.status === tab);
-	const EMPTY = `No ${tab.toLowerCase()} tasks`;
+	const inTab = (status: string) =>
+		status === "All" ? tasks : tasks.filter((t) => t.status === status);
+	const count = (status: string) => inTab(status).length;
+	const shown = inTab(tab);
+	const EMPTY = tab === "All" ? "No tasks" : `No ${tab.toLowerCase()} tasks`;
 	// a table on a laptop, cards on a phone
 	const wide = Grid.useBreakpoint().lg;
 	const onPage = shown.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -89,9 +92,11 @@ export default function MyTasksPage() {
 							items={TABS.map((s) => ({ key: s, label: `${s} (${count(s)})` }))}
 						/>
 					</Flex>
-					{tab === "Completed" && (
+					{(tab === "Completed" || tab === "All") && (
 						<Typography.Text type="secondary">
-							Completed in the last 30 days.
+							{tab === "All"
+								? "Every task, whatever its status (completed ones from the last 30 days)."
+								: "Completed in the last 30 days."}
 						</Typography.Text>
 					)}
 					{wide ? (

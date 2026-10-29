@@ -17,6 +17,14 @@ export interface ReportFilter {
 	reqd?: number | boolean;
 }
 
+/** A filter whose options name another filter (Party's is "party_type"): its doctype
+ * is that filter's value. Otherwise the options are the doctype. */
+export function linkDoctype(f: ReportFilter, values: Record<string, unknown>): string | undefined {
+	const opt = String(f.options ?? "");
+	if (/^[a-z_]+$/.test(opt)) return (values[opt] as string) || undefined;
+	return opt || undefined;
+}
+
 const DATE = "YYYY-MM-DD";
 const day = (d?: string) => (d ? dayjs(d) : dayjs());
 
@@ -40,6 +48,11 @@ function noop(): unknown {
 	return new Proxy(fn, { get: (_, key) => (key === Symbol.toPrimitive ? () => "" : noop()) });
 }
 
+/** The given values, and the stand-in for anything else. */
+function withNoop(known: Record<string, unknown>) {
+	return new Proxy(known, { get: (t, key: string) => (key in t ? t[key] : noop()) });
+}
+
 export function readFilters(script: string, reportName: string): ReportFilter[] {
 	const queryReports: Record<string, { filters?: ReportFilter[] }> = {};
 	const known: Record<string, unknown> = {
@@ -52,8 +65,13 @@ export function readFilters(script: string, reportName: string): ReportFilter[] 
 				key.toLowerCase() === "company" ? getBoot().company : undefined,
 		},
 		session: { user: getBoot().user },
+		// General Ledger lists the party types from here; empty sysdefaults keeps defaults
+		boot: withNoop({
+			party_account_types: getBoot().party_account_types ?? {},
+			sysdefaults: {},
+		}),
 	};
-	const frappe = new Proxy(known, { get: (t, key: string) => (key in t ? t[key] : noop()) });
+	const frappe = withNoop(known);
 	try {
 		new Function("frappe", "__", "$", "erpnext", script)(
 			frappe,
