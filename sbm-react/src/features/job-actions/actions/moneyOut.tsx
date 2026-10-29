@@ -89,8 +89,8 @@ export const expense: JobAction = {
 			</>
 		);
 	},
-	submit: async (job, values) =>
-		names(await runJobMethod(job.name, "create_expense", toServer(values))),
+	submit: async (job, values, amend) =>
+		names(await runJobMethod(job.name, "create_expense", toServer(values), amend)),
 };
 
 export const paymentReturn: JobAction = {
@@ -104,6 +104,6 @@ export const paymentReturn: JobAction = {
 			<PostingDate />
 		</>
 	),
-	submit: async (job, values) =>
-		names(await runJobMethod(job.name, "create_payment_return", toServer(values))),
+	submit: async (job, values, amend) =>
+		names(await runJobMethod(job.name, "create_payment_return", toServer(values), amend)),
 };

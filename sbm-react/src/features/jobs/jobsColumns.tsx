@@ -80,7 +80,7 @@ export const jobsColumns: TableColumnsType<JobListRow> = [
 			) : null,
 	},
 	{
-		title: "",
+		title: "Actions",
 		key: "actions",
 		align: "right",
 		width: 170,

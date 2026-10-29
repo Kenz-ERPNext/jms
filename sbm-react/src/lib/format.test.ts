@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { describe, expect, it } from "vitest";
 
-import { daysAgo, formatDate, formatMoney } from "./format";
+import { daysAgo, formatDate, formatDateTime, formatMoney } from "./format";
 import { deskPath, jobPath, jobsPath } from "./links";
 
 describe("format", () => {
@@ -18,6 +18,8 @@ describe("format", () => {
 	it("formats dates and counts days late", () => {
 		expect(formatDate("2026-05-09")).toBe("09 May 2026");
 		expect(formatDate(undefined)).toBe("");
+		expect(formatDateTime("2026-10-29 17:15:53.479991")).toBe("29 Oct 2026, 17:15");
+		expect(formatDateTime(null)).toBe("");
 		expect(daysAgo("2026-05-09", dayjs("2026-05-12"))).toBe(3);
 	});
 });

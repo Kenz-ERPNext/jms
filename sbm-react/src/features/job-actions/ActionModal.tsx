@@ -1,5 +1,6 @@
 // The modal around one job action form: loads the job, shows the form, saves
-// through the Job method and shows the server's message if it fails.
+// through the Job method and shows the server's message if it fails. To amend a
+// cancelled document, the form starts from its values and saves as its amendment.
 
 import { useOne } from "@refinedev/core";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -9,15 +10,17 @@ import { useState } from "react";
 import { tokens } from "@/theme/tokens";
 
 import { JOB_ACTIONS } from "./actions/registry";
-import type { ActionJob } from "./types";
+import type { ActionJob, AmendOf, Values } from "./types";
 
 interface ActionModalProps {
 	job: string;
 	action: string;
 	onClose: () => void;
+	/** Amend this cancelled document, starting from these values. */
+	amend?: AmendOf & { values: Values };
 }
 
-export default function ActionModal({ job: name, action, onClose }: ActionModalProps) {
+export default function ActionModal({ job: name, action, onClose, amend }: ActionModalProps) {
 	const config = JOB_ACTIONS[action];
 	const [form] = Form.useForm();
 	const [error, setError] = useState<string>();
@@ -43,7 +46,11 @@ export default function ActionModal({ job: name, action, onClose }: ActionModalP
 		if (!values || !job) return;
 		setSaving(true);
 		try {
-			const made = await config.submit(job, values);
+			const made = await config.submit(
+				job,
+				values,
+				amend && { doctype: amend.doctype, name: amend.name },
+			);
 			message.success(made.length ? `Saved: ${made.join(", ")}` : "Saved");
 			// lists, dashboard and money figures all change
 			await queryClient.invalidateQueries();
@@ -58,7 +65,7 @@ export default function ActionModal({ job: name, action, onClose }: ActionModalP
 	return (
 		<Modal
 			open
-			title={`${config.title} · ${name}`}
+			title={amend ? `Amend ${amend.name} · ${name}` : `${config.title} · ${name}`}
 			okText={config.okText}
 			okButtonProps={{ disabled: !!blocked || checking }}
 			onOk={save}
@@ -67,7 +74,11 @@ export default function ActionModal({ job: name, action, onClose }: ActionModalP
 			destroyOnHidden
 			width={md ? 940 : undefined}
 		>
-			<Typography.Paragraph type="secondary">{config.hint}</Typography.Paragraph>
+			<Typography.Paragraph type="secondary">
+				{amend
+					? `Filled in from the cancelled ${amend.name}. Change what was wrong and save: the new ${amend.doctype} is its amendment.`
+					: config.hint}
+			</Typography.Paragraph>
 			{error && (
 				<Alert
 					type="error"
@@ -84,7 +95,7 @@ export default function ActionModal({ job: name, action, onClose }: ActionModalP
 				<Form
 					form={form}
 					layout="vertical"
-					initialValues={config.initialValues?.(job)}
+					initialValues={{ ...config.initialValues?.(job), ...amend?.values }}
 					disabled={saving}
 					style={{
 						display: "grid",

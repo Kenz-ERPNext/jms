@@ -161,15 +161,19 @@ doc_events = {
 		"on_update_after_submit": "jms.accounting_log.log_accounting_change",
 		"on_trash": "jms.accounting_log.log_accounting_change",
 	},
+	# before_insert: an amendment made through SBM (jms/api/amend.py)
 	"Sales Invoice": {
+		"before_insert": "jms.api.amend.set_amended_from",
 		"on_submit": "jms.events.on_sales_invoice_submit",
 		"on_cancel": "jms.events.on_sales_invoice_cancel",
 	},
 	"Purchase Invoice": {
+		"before_insert": "jms.api.amend.set_amended_from",
 		"on_submit": "jms.events.on_purchase_invoice_submit",
 		"on_cancel": "jms.events.on_purchase_invoice_cancel",
 	},
 	"Payment Entry": {
+		"before_insert": "jms.api.amend.set_amended_from",
 		"on_cancel": "jms.events.on_payment_entry_cancel",
 	},
 }

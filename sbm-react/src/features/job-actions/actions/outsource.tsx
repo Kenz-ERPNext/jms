@@ -58,8 +58,8 @@ export const purchaseInvoice: JobAction = {
 			</>
 		);
 	},
-	submit: async (job, values) =>
-		names(await runJobMethod(job.name, "create_pinvoice", toServer(values))),
+	submit: async (job, values, amend) =>
+		names(await runJobMethod(job.name, "create_pinvoice", toServer(values), amend)),
 };
 
 export const outsourceAdvance: JobAction = {
@@ -97,7 +97,7 @@ export const outsourceAdvance: JobAction = {
 			<PostingDate />
 		</>
 	),
-	submit: async (job, values) => {
+	submit: async (job, values, amend) => {
 		const v = toServer(values);
 		const rows = (
 			(v.suppliers as { supplier: string; advance_amount?: number }[]) ?? []
@@ -112,7 +112,12 @@ export const outsourceAdvance: JobAction = {
 			).rows,
 		}));
 		return names(
-			await runJobMethod(job.name, "create_outsource_advance_payment", { ...v, suppliers }),
+			await runJobMethod(
+				job.name,
+				"create_outsource_advance_payment",
+				{ ...v, suppliers },
+				amend,
+			),
 		);
 	},
 };

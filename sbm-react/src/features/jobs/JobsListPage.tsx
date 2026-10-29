@@ -67,7 +67,8 @@ export default function JobsListPage() {
 					columns={jobsColumns}
 					dataSource={list.data?.jobs}
 					loading={list.isLoading}
-					rowsHeight="calc(100vh - 470px)"
+					// never fewer than about eight rows, even on a short screen (the page scrolls then)
+					rowsHeight="max(440px, calc(100vh - 430px))"
 					onRow={(row) => ({
 						onClick: () => openJob(row.name),
 						style: { cursor: "pointer" },

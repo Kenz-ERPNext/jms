@@ -125,7 +125,8 @@ export default function JobModal({ name, open, onClose }: JobModalProps) {
 			open={open}
 			title={title}
 			onCancel={onClose}
-			width={1100}
+			// wide enough for the Connections table without sideways scrolling
+			width={1280}
 			style={{ top: tokens.space.xl }}
 			styles={{ body: BODY }}
 			destroyOnHidden

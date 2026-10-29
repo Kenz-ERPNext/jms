@@ -1,26 +1,32 @@
-// Connections of one job, like the ERPNext Connections tab: Billing (Sales Invoice,
-// Purchase Invoice) and Payments (Payment Entry), newest first. A document belongs
-// to the job by `job` OR `custom_job`: payments made by Create Expense / Create
-// Purchase Invoice only have `job`, so the ERPNext tab (custom_job only) misses them.
-// Desk roles can open a document in ERPNext.
+// Connections of one job, like ERPNext's: invoices and payments, newest made first,
+// with when each was last updated. A document belongs to the job by `job` OR
+// `custom_job` (Create Expense / Purchase Invoice payments only have `job`, which the
+// ERPNext tab misses). Desk roles can open one in ERPNext. Office users can Cancel
+// one and Amend a cancelled one (docAmend.tsx), which waits on top until amended.
 
 import { useList, type BaseRecord } from "@refinedev/core";
 import { Card, Space, Table, Tag, Typography } from "antd";
 
+import { useDocAmend } from "@/features/job-actions/docAmend";
 import { canUseDesk } from "@/lib/boot";
-import { formatDate, formatMoney } from "@/lib/format";
+import { formatDate, formatDateTime, formatMoney } from "@/lib/format";
 import { deskPath } from "@/lib/links";
+import { hasAnyRole, OFFICE_ROLES } from "@/lib/roles";
 
 interface Row {
 	key: string;
 	doctype: string;
 	name: string;
 	date: string;
+	created: string;
+	updated: string;
 	party: string;
 	kind: string;
 	amount: number;
 	outstanding?: number;
 	status?: string;
+	docstatus: number;
+	amended_from?: string;
 }
 
 function useDocs(doctype: string, name: string, fields: string[]) {
@@ -34,9 +40,8 @@ function useDocs(doctype: string, name: string, fields: string[]) {
 					{ field: "custom_job", operator: "eq", value: name },
 				],
 			},
-			{ field: "docstatus", operator: "ne", value: 2 },
 		],
-		sorters: [{ field: "posting_date", order: "desc" }],
+		sorters: [{ field: "creation", order: "desc" }],
 		pagination: { mode: "off" },
 		meta: { fields },
 	});
@@ -44,7 +49,17 @@ function useDocs(doctype: string, name: string, fields: string[]) {
 }
 
 export default function LinkedDocuments({ name }: { name: string }) {
-	const common = ["name", "posting_date", "docstatus", "status"];
+	const common = [
+		"name",
+		"posting_date",
+		"creation",
+		"modified",
+		"docstatus",
+		"status",
+		"amended_from",
+	];
+	const { column, amendModal } = useDocAmend(name);
+	const office = hasAnyRole(OFFICE_ROLES);
 	const si = useDocs("Sales Invoice", name, [
 		...common,
 		"customer_name",
@@ -66,7 +81,7 @@ export default function LinkedDocuments({ name }: { name: string }) {
 		"mode_of_payment",
 	]);
 
-	const rows: Row[] = [
+	const all: Row[] = [
 		...si.rows.map((d) => ({
 			doctype: "Sales Invoice",
 			kind: "Sales invoice",
@@ -97,21 +112,36 @@ export default function LinkedDocuments({ name }: { name: string }) {
 			key: `${r.doctype}:${d.name}`,
 			name: String(d.name),
 			date: d.posting_date,
-			status: d.docstatus === 0 ? "Draft" : d.status,
+			created: String(d.creation),
+			updated: String(d.modified),
+			status: d.docstatus === 0 ? "Draft" : d.docstatus === 2 ? "Cancelled" : d.status,
+			docstatus: Number(d.docstatus),
+			amended_from: d.amended_from,
 		}))
-		.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+		// newest made first, as ERPNext's Connections: an amendment comes to the top
+		.sort((a, b) => b.created.localeCompare(a.created));
+	// a cancelled document is done with once amended; until then it waits on top
+	const amended = new Set(all.map((r) => r.amended_from).filter(Boolean));
+	const cancelled = all.filter((r) => r.docstatus === 2 && !amended.has(r.name));
+	const rows = [...cancelled, ...all.filter((r) => r.docstatus !== 2)];
+	const live = (list: BaseRecord[]) => list.filter((d) => d.docstatus !== 2).length;
 
 	return (
 		<Card
 			size="small"
-			title={`Connections (${rows.length})`}
+			title={`Connections (${all.length - all.filter((r) => r.docstatus === 2).length})`}
 			extra={
 				<Space wrap size={4}>
+					{cancelled.length > 0 && (
+						<Tag color="red" style={{ marginRight: 8 }}>
+							{cancelled.length} to amend
+						</Tag>
+					)}
 					<Typography.Text type="secondary">Billing:</Typography.Text>
-					<Tag>Sales Invoice {si.rows.length}</Tag>
-					<Tag>Purchase Invoice {pi.rows.length}</Tag>
+					<Tag>Sales Invoice {live(si.rows)}</Tag>
+					<Tag>Purchase Invoice {live(pi.rows)}</Tag>
 					<Typography.Text type="secondary">Payments:</Typography.Text>
-					<Tag>Payment Entry {pe.rows.length}</Tag>
+					<Tag>Payment Entry {live(pe.rows)}</Tag>
 				</Space>
 			}
 		>
@@ -164,10 +194,18 @@ export default function LinkedDocuments({ name }: { name: string }) {
 					{
 						title: "Status",
 						dataIndex: "status",
-						render: (v?: string) => v && <Tag>{v}</Tag>,
+						render: (v?: string) =>
+							v && <Tag color={v === "Cancelled" ? "red" : undefined}>{v}</Tag>,
 					},
+					{
+						title: "Updated",
+						dataIndex: "updated",
+						render: (v: string) => formatDateTime(v),
+					},
+					...(office ? [column] : []),
 				]}
 			/>
+			{amendModal}
 		</Card>
 	);
 }

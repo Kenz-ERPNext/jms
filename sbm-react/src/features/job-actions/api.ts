@@ -1,17 +1,31 @@
 // Calls the Job's own methods, the same ones the ERPNext Job form's Create buttons
-// call (create_invoice, create_expense, ...), through Frappe's run_doc_method.
+// call (create_invoice, create_expense, ...), through Frappe's run_doc_method. When
+// amending, through jms.api.amend.run_amendment: the same method, and its new
+// document is the amendment of the cancelled one.
 
 import { apiFetch } from "@/lib/frappe";
+
+import type { AmendOf } from "./types";
 
 export async function runJobMethod<T = unknown>(
 	job: string,
 	method: string,
 	args: Record<string, unknown> = {},
+	amend?: AmendOf,
 ): Promise<T> {
-	const body = await apiFetch("/api/method/run_doc_method", {
-		method: "POST",
-		body: { dt: "Job", dn: job, method, args: JSON.stringify(args) },
-	});
+	const body = await apiFetch(
+		amend ? "/api/method/jms.api.amend.run_amendment" : "/api/method/run_doc_method",
+		{
+			method: "POST",
+			body: {
+				...(amend
+					? { job, amended_doctype: amend.doctype, amended_from: amend.name }
+					: { dt: "Job", dn: job }),
+				method,
+				args: JSON.stringify(args),
+			},
+		},
+	);
 	return body.message as T;
 }
 

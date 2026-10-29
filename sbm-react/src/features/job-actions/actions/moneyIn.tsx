@@ -36,11 +36,16 @@ export const advanceReceipt: JobAction = {
 			<PostingDate />
 		</>
 	),
-	submit: async (job, values) => {
+	submit: async (job, values, amend) => {
 		const v = toServer(values);
 		const { rows } = allocate(Number(v.amount), await openInvoices(job.name, "Sales Invoice"));
 		return names(
-			await runJobMethod(job.name, "create_advance_receipt", { ...v, allocations: rows }),
+			await runJobMethod(
+				job.name,
+				"create_advance_receipt",
+				{ ...v, allocations: rows },
+				amend,
+			),
 		);
 	},
 };
@@ -99,7 +104,7 @@ export const salesInvoice: JobAction = {
 			</>
 		);
 	},
-	submit: async (job, values) => {
+	submit: async (job, values, amend) => {
 		const v = toServer(values);
 		if (v.payment === "Payment Now" && v.payment_type === "Partially Paid") {
 			const paid = Number(v.partial_amount);
@@ -108,10 +113,15 @@ export const salesInvoice: JobAction = {
 				throw new Error("Partial amount cannot exceed Invoice Total");
 		}
 		return names(
-			await runJobMethod(job.name, "create_invoice", {
-				...v,
-				partial_amount: v.partial_amount ?? 0,
-			}),
+			await runJobMethod(
+				job.name,
+				"create_invoice",
+				{
+					...v,
+					partial_amount: v.partial_amount ?? 0,
+				},
+				amend,
+			),
 		);
 	},
 };
@@ -138,6 +148,6 @@ export const expenseReturn: JobAction = {
 			<PostingDate />
 		</>
 	),
-	submit: async (job, values) =>
-		names(await runJobMethod(job.name, "create_expense_return", toServer(values))),
+	submit: async (job, values, amend) =>
+		names(await runJobMethod(job.name, "create_expense_return", toServer(values), amend)),
 };

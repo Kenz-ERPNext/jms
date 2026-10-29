@@ -25,6 +25,11 @@ export function formatDate(value?: string | null): string {
 	return value ? dayjs(value).format("DD MMM YYYY") : "";
 }
 
+/** A date and time as the server keeps it (its own time zone), e.g. "29 Oct 2026, 17:15". */
+export function formatDateTime(value?: string | null): string {
+	return value ? dayjs(value).format("DD MMM YYYY, HH:mm") : "";
+}
+
 /** Whole days from the date until today (positive = in the past). */
 export function daysAgo(value?: string | null, today = dayjs()): number {
 	return value ? today.startOf("day").diff(dayjs(value).startOf("day"), "day") : 0;

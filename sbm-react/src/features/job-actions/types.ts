@@ -17,6 +17,12 @@ export interface ActionJob {
 
 export type Values = Record<string, unknown>;
 
+/** The cancelled document an action's new one amends. */
+export interface AmendOf {
+	doctype: string;
+	name: string;
+}
+
 export interface JobAction {
 	title: string;
 	okText: string;
@@ -26,8 +32,9 @@ export interface JobAction {
 	initialValues?: (job: ActionJob) => Values;
 	/** A message instead of the form when the action cannot be done (as ERPNext says it). */
 	blocked?: (job: ActionJob) => Promise<string | undefined>;
-	/** Calls the Job method; returns the names of the documents made. */
-	submit: (job: ActionJob, values: Values) => Promise<string[]>;
+	/** Calls the Job method; returns the names of the documents made. With `amend`,
+	 * the new document of that DocType is the amendment of the cancelled one. */
+	submit: (job: ActionJob, values: Values, amend?: AmendOf) => Promise<string[]>;
 }
 
 /** Suppliers of the job's outsourced tasks (all, or only those without an invoice). */
