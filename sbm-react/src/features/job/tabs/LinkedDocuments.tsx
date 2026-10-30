@@ -7,11 +7,12 @@
 import { useList, type BaseRecord } from "@refinedev/core";
 import { Card, Space, Table, Tag, Typography } from "antd";
 
-import { useDocAmend } from "@/features/job-actions/docAmend";
+// Cancel / Amend is off until the client confirms it; uncomment the lines marked AMEND
+// import { useDocAmend } from "@/features/job-actions/docAmend"; // AMEND
 import { canUseDesk } from "@/lib/boot";
 import { formatDate, formatDateTime, formatMoney } from "@/lib/format";
 import { deskPath } from "@/lib/links";
-import { hasAnyRole, OFFICE_ROLES } from "@/lib/roles";
+// import { hasAnyRole, OFFICE_ROLES } from "@/lib/roles"; // AMEND
 
 interface Row {
 	key: string;
@@ -58,8 +59,8 @@ export default function LinkedDocuments({ name }: { name: string }) {
 		"status",
 		"amended_from",
 	];
-	const { column, amendModal } = useDocAmend(name);
-	const office = hasAnyRole(OFFICE_ROLES);
+	// const { column, amendModal } = useDocAmend(name); // AMEND
+	// const office = hasAnyRole(OFFICE_ROLES); // AMEND
 	const si = useDocs("Sales Invoice", name, [
 		...common,
 		"customer_name",
@@ -202,10 +203,10 @@ export default function LinkedDocuments({ name }: { name: string }) {
 						dataIndex: "updated",
 						render: (v: string) => formatDateTime(v),
 					},
-					...(office ? [column] : []),
+					// ...(office ? [column] : []), // AMEND
 				]}
 			/>
-			{amendModal}
+			{/* {amendModal} AMEND */}
 		</Card>
 	);
 }
