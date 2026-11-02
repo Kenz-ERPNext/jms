@@ -65,6 +65,15 @@ export const antdTheme: ThemeConfig = {
 			inkBarColor: color.primary,
 			itemHoverColor: color.primary,
 		},
+		// Switches (Table | Cards …): the chosen one filled in the main colour, so it is plain to see.
+		Segmented: {
+			trackBg: color.primaryBg,
+			itemColor: color.textMuted,
+			itemHoverColor: color.primary,
+			itemHoverBg: color.primaryBgSoft,
+			itemSelectedBg: color.primary,
+			itemSelectedColor: color.surface,
+		},
 		Menu: {
 			itemSelectedBg: color.primaryBg,
 			itemSelectedColor: color.primary,

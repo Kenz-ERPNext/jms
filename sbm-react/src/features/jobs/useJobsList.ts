@@ -46,7 +46,7 @@ export const FILTERS = [
 ] as const;
 export type FilterKey = (typeof FILTERS)[number];
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 12;
 
 export function useJobsList() {
 	const [params, setParams] = useSearchParams();
@@ -88,6 +88,8 @@ export function useJobsList() {
 
 	return {
 		tab: value("tab") ?? "",
+		/** "cards" (like the desk Job Portal) or "table". */
+		view: value("view") === "cards" ? ("cards" as const) : ("table" as const),
 		search: value("q") ?? "",
 		filters,
 		activeFilters: FILTERS.filter((key) => filters[key]).length,

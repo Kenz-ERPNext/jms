@@ -14,6 +14,8 @@ import { formatDate, formatDateTime, formatMoney } from "@/lib/format";
 import { deskPath } from "@/lib/links";
 // import { hasAnyRole, OFFICE_ROLES } from "@/lib/roles"; // AMEND
 
+import PaidVia, { PAYMENT_VIA_FIELDS, paymentVia, type PaymentVia } from "./PaidVia";
+
 interface Row {
 	key: string;
 	doctype: string;
@@ -25,6 +27,8 @@ interface Row {
 	kind: string;
 	amount: number;
 	outstanding?: number;
+	/** Cash or bank, and the account (payments only). */
+	via?: PaymentVia;
 	status?: string;
 	docstatus: number;
 	amended_from?: string;
@@ -80,6 +84,7 @@ export default function LinkedDocuments({ name }: { name: string }) {
 		"party_type",
 		"paid_amount",
 		"mode_of_payment",
+		...PAYMENT_VIA_FIELDS,
 	]);
 
 	const all: Row[] = [
@@ -105,6 +110,7 @@ export default function LinkedDocuments({ name }: { name: string }) {
 			party: d.party_name,
 			amount: d.paid_amount,
 			outstanding: undefined,
+			via: paymentVia(d),
 			d,
 		})),
 	]
@@ -173,6 +179,7 @@ export default function LinkedDocuments({ name }: { name: string }) {
 							),
 					},
 					{ title: "Party", dataIndex: "party" },
+					{ title: "Paid by", render: (_, r) => <PaidVia via={r.via} /> },
 					{
 						title: "Amount",
 						dataIndex: "amount",

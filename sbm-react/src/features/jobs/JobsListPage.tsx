@@ -1,14 +1,15 @@
-// Jobs list: tabs by stage (with counts), search and filters, 20 jobs a page.
+// Jobs list: tabs by stage (with counts), search and filters, 12 jobs a page.
 // A row opens the job.
 
-import { PlusOutlined } from "@ant-design/icons";
-import { Alert, Button, Card, Flex, Tabs, Typography } from "antd";
+import { AppstoreOutlined, PlusOutlined, UnorderedListOutlined } from "@ant-design/icons";
+import { Alert, Button, Card, Flex, Segmented, Tabs, Typography } from "antd";
 
 import DataTable from "@/components/DataTable";
 import { STAGE_LABEL } from "@/config/stages";
 import { useOpenJob } from "@/features/job-form/JobModalProvider";
 import { tokens } from "@/theme/tokens";
 
+import JobsCards from "./JobsCards";
 import { jobsColumns } from "./jobsColumns";
 import JobsFilters from "./JobsFilters";
 import { useJobsList } from "./useJobsList";
@@ -37,9 +38,25 @@ export default function JobsListPage() {
 						Find a job by its stage, search or filters. Click a job to open it.
 					</Typography.Text>
 				</div>
-				<Button type="primary" icon={<PlusOutlined />} onClick={() => openJob()}>
-					New Job
-				</Button>
+				<Flex gap={tokens.space.sm} align="center">
+					<Segmented
+						value={list.view}
+						// the same page in the other look
+						onChange={(view) =>
+							list.update({
+								view: view === "cards" ? view : undefined,
+								page: list.page,
+							})
+						}
+						options={[
+							{ value: "table", label: "Table", icon: <UnorderedListOutlined /> },
+							{ value: "cards", label: "Cards", icon: <AppstoreOutlined /> },
+						]}
+					/>
+					<Button type="primary" icon={<PlusOutlined />} onClick={() => openJob()}>
+						New Job
+					</Button>
+				</Flex>
 			</Flex>
 
 			<Card styles={{ body: { paddingTop: 0 } }}>
@@ -61,29 +78,37 @@ export default function JobsListPage() {
 						style={{ marginTop: tokens.space.lg }}
 					/>
 				)}
-				<DataTable
-					style={{ marginTop: tokens.space.lg }}
-					noun="jobs"
-					columns={jobsColumns}
-					dataSource={list.data?.jobs}
-					loading={list.isLoading}
-					// never fewer than about eight rows, even on a short screen (the page scrolls then)
-					rowsHeight="max(440px, calc(100vh - 430px))"
-					onRow={(row) => ({
-						onClick: () => openJob(row.name),
-						style: { cursor: "pointer" },
-					})}
-					locale={{ emptyText: "No jobs match. Try another tab or clear the filters." }}
-					pagination={{
-						current: list.page,
-						pageSize: list.pageSize,
-						total: list.data?.total ?? 0,
-						showSizeChanger: true,
-						pageSizeOptions: [10, 20, 50],
-						hideOnSinglePage: false,
-						onChange: (page, size) => list.update({ page, size }),
-					}}
-				/>
+				{list.view === "cards" ? (
+					<div style={{ marginTop: tokens.space.lg }}>
+						<JobsCards list={list} />
+					</div>
+				) : (
+					<DataTable
+						style={{ marginTop: tokens.space.lg }}
+						noun="jobs"
+						columns={jobsColumns}
+						dataSource={list.data?.jobs}
+						loading={list.isLoading}
+						// never fewer than about eight rows, even on a short screen (the page scrolls then)
+						rowsHeight="max(440px, calc(100vh - 430px))"
+						onRow={(row) => ({
+							onClick: () => openJob(row.name),
+							style: { cursor: "pointer" },
+						})}
+						locale={{
+							emptyText: "No jobs match. Try another tab or clear the filters.",
+						}}
+						pagination={{
+							current: list.page,
+							pageSize: list.pageSize,
+							total: list.data?.total ?? 0,
+							showSizeChanger: true,
+							pageSizeOptions: [12, 24, 48],
+							hideOnSinglePage: false,
+							onChange: (page, size) => list.update({ page, size }),
+						}}
+					/>
+				)}
 			</Card>
 		</Flex>
 	);

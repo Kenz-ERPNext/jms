@@ -34,9 +34,14 @@ interface PillProps {
 	label?: string;
 }
 
+/** The colour of a status or stage (grey for one not known). */
+export function statusColor(value?: string | null): string {
+	return (value && COLORS[value]) || color.textMuted;
+}
+
 export default function StatusPill({ value, label }: PillProps) {
 	if (!value) return null;
-	const c = COLORS[value] ?? color.textMuted;
+	const c = statusColor(value);
 	return (
 		<Tag
 			bordered={false}
