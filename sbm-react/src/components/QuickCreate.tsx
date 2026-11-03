@@ -8,7 +8,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
 	Checkbox,
 	Col,
-	DatePicker,
 	Divider,
 	Form,
 	Input,
@@ -19,6 +18,7 @@ import {
 	type FormInstance,
 } from "antd";
 
+import FocusDatePicker from "./FocusDatePicker";
 import FocusSelect from "./FocusSelect";
 import dayjs, { type Dayjs } from "dayjs";
 import { useEffect } from "react";
@@ -52,7 +52,7 @@ function FieldInput({ f, focus, ...form }: { f: DocField; focus?: boolean } & Fo
 				<FocusSelect {...form} options={options(f).map((o) => ({ value: o, label: o }))} />
 			);
 		case "Date":
-			return <DatePicker {...form} style={{ width: "100%" }} format="DD-MM-YYYY" />;
+			return <FocusDatePicker {...form} style={{ width: "100%" }} format="DD-MM-YYYY" />;
 		case "Check":
 			return <Checkbox {...form}>{f.label}</Checkbox>;
 		case "Small Text":

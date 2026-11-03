@@ -2,10 +2,11 @@
 // money amounts, a tax template list for the job's company.
 
 import { useList } from "@refinedev/core";
-import { DatePicker, Form, Input, InputNumber } from "antd";
+import { Form, Input, InputNumber } from "antd";
 import dayjs from "dayjs";
 import { useEffect } from "react";
 
+import FocusDatePicker from "@/components/FocusDatePicker";
 import FocusSelect from "@/components/FocusSelect";
 import LinkSelect from "@/components/LinkSelect";
 
@@ -58,7 +59,7 @@ export function PostingDate() {
 			initialValue={dayjs()}
 			rules={required("Posting Date")}
 		>
-			<DatePicker style={{ width: "100%" }} format="DD-MM-YYYY" />
+			<FocusDatePicker style={{ width: "100%" }} format="DD-MM-YYYY" />
 		</Form.Item>
 	);
 }
@@ -70,7 +71,7 @@ export function Reference() {
 				<Input placeholder="Cheque / transfer no" />
 			</Form.Item>
 			<Form.Item name="reference_date" label="Reference Date">
-				<DatePicker style={{ width: "100%" }} format="DD-MM-YYYY" />
+				<FocusDatePicker style={{ width: "100%" }} format="DD-MM-YYYY" />
 			</Form.Item>
 		</>
 	);
