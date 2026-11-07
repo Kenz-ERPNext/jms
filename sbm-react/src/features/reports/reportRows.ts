@@ -54,6 +54,28 @@ export function toRows(rows: ReportRow[], columns: ReportColumn[]): Row[] {
 		.filter((r) => columns.some((c) => !empty(r[c.fieldname])));
 }
 
+/** Where a cell links to: a job (opens in SBM) or another document (opens in the desk).
+ * Link columns (GL Entry, Account, Job…) link to their doctype; accounting-dimension
+ * columns, which the General Ledger sends with no fieldtype, link only when they are Job. A Dynamic Link (Voucher No, Party,
+ * Against Voucher) takes its doctype from the row's column named in options. */
+export function linkTarget(
+	value: unknown,
+	row: Row,
+	col: ReportColumn,
+): { doctype: string; name: string } | null {
+	if (empty(value) || row._total || row._heading || !col.options) return null;
+	const name = fromHtml(String(value)).text.trim();
+	// labels like 'Opening' and 'Closing (Opening + Total)' name no document
+	if (!name || name.startsWith("'")) return null;
+	if (col.fieldtype === "Dynamic Link") {
+		const doctype = row[col.options];
+		return typeof doctype === "string" && doctype ? { doctype, name } : null;
+	}
+	if (col.fieldtype === "Link") return { doctype: col.options, name };
+	if (col.options === "Job" && !col.fieldtype) return { doctype: "Job", name };
+	return null;
+}
+
 /** The columns that have a value in at least one row. */
 export function usedColumns(rows: Row[], columns: ReportColumn[]): ReportColumn[] {
 	return columns.filter((c) => rows.some((r) => !r._heading && !empty(r[c.fieldname])));

@@ -156,7 +156,8 @@ export const MASTERS: Record<string, MasterConfig> = {
 			{ field: "user_remark", label: "Remark" },
 		],
 		search: ["name", "user_remark"],
-		filters: [{ field: "docstatus", operator: "eq", value: 1 }],
+		// drafts too (saved from SBM's form, submitted from the drawer); not cancelled
+		filters: [{ field: "docstatus", operator: "ne", value: 2 }],
 		sort: "posting_date",
 		desc: true,
 	},

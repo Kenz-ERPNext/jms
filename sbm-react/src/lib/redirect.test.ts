@@ -15,9 +15,9 @@ describe("afterLoginPath", () => {
 		expect(goDesk("?redirect-to=%2Fapp%2Fjob%2FJOB-1")).toBe("/app/job/JOB-1");
 	});
 
-	it("starts desk users in ERPNext, everyone else in SBM", () => {
-		expect(goDesk("")).toBe("/app");
-		expect(goDesk("?redirect-to=%2Fapp")).toBe("/app");
+	it("starts everyone in SBM, desk users too", () => {
+		expect(goDesk("")).toBe("/sbm");
+		expect(goDesk("?redirect-to=%2Fapp")).toBe("/sbm");
 		expect(goDesk("?to=%2Fsbm%2Fjobs")).toBe("/sbm/jobs");
 		expect(go("?redirect-to=%2Fapp%2Fjob%2FJOB-1")).toBe("/sbm");
 		expect(go("?redirect-to=%2Fapps")).toBe("/sbm");

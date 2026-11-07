@@ -54,7 +54,7 @@ export const REPORT_GROUPS: {
 			{ name: "General Ledger", hint: "Every posting to an account, with its balance" },
 			{
 				name: "Journal Entries",
-				hint: "All posted journal entries",
+				hint: "Journal entries, drafts and posted",
 				list: "journal-entries",
 			},
 		],

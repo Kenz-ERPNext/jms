@@ -60,6 +60,18 @@
 	background: var(--sbm-hover-bg) !important;
 }
 
+/* A document number in a report cell: plain text, a link only while hovered */
+a.sbm-cell-link,
+a.sbm-cell-link:visited {
+	color: inherit;
+	text-decoration: none;
+}
+a.sbm-cell-link:hover {
+	color: var(--sbm-primary);
+	text-decoration: underline;
+	cursor: pointer;
+}
+
 /* Activity Log rows: a divider between changes and a soft highlight on hover */
 .sbm-log-row {
 	padding: var(--sbm-sm);

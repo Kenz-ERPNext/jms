@@ -44,16 +44,28 @@ const KEEP_ON_CANCEL: Record<string, string[]> = {
 		"Serial and Batch Bundle",
 	],
 	"Payment Entry": [...LEDGER, "Sales Invoice", "Purchase Invoice"],
+	// journal_entry.js
+	"Journal Entry": [
+		...LEDGER,
+		"Sales Invoice",
+		"Purchase Invoice",
+		"Asset",
+		"Asset Movement",
+		"Asset Depreciation Schedule",
+	],
 };
 
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 /** cancel and amend for one job's documents, a table column with their buttons, and
- * the amend form to render (amendModal). */
-export function useDocAmend(job: string) {
+ * the amend form to render (amendModal). Without a job (the document drawer), an
+ * invoice or payment is amended for the job it belongs to, and a Journal Entry goes
+ * to onAmendJournal (the SBM Journal Entry form). */
+export function useDocAmend(job?: string, opts: { onAmendJournal?: (doc: Doc) => void } = {}) {
 	const { modal, message } = App.useApp();
 	const queryClient = useQueryClient();
 	const [amending, setAmending] = useState<{
+		job: string;
 		action: string;
 		amend: AmendOf & { values: Values };
 	}>();
@@ -64,6 +76,10 @@ export function useDocAmend(job: string) {
 				`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`,
 			);
 			const doc = body.data as Doc;
+			if (doctype === "Journal Entry" && opts.onAmendJournal) {
+				return opts.onAmendJournal(doc);
+			}
+			const forJob = job || String(doc.job || doc.custom_job || "");
 			// an expense invoice's item is its Expense Type's item
 			const item = doc.doctype === "Purchase Invoice" ? doc.items?.[0] : undefined;
 			if (item) {
@@ -76,8 +92,12 @@ export function useDocAmend(job: string) {
 				item.expense_type = types?.[0]?.name;
 			}
 			const action = amendAction(doc);
-			if (!action) throw new Error(`${name} was not made by a job action`);
-			setAmending({ action, amend: { doctype, name, values: amendValues(action, doc) } });
+			if (!action || !forJob) throw new Error(`${name} was not made by a job action`);
+			setAmending({
+				job: forJob,
+				action,
+				amend: { doctype, name, values: amendValues(action, doc) },
+			});
 		} catch (e) {
 			message.error(`Could not amend ${name}: ${errorText(e)}`);
 		}
@@ -172,7 +192,7 @@ export function useDocAmend(job: string) {
 
 	const amendModal = amending && (
 		<ActionModal
-			job={job}
+			job={amending.job}
 			action={amending.action}
 			amend={amending.amend}
 			onClose={() => setAmending(undefined)}

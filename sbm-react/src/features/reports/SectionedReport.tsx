@@ -8,6 +8,7 @@ import DataTable from "@/components/DataTable";
 import { formatMoney } from "@/lib/format";
 import { tokens } from "@/theme/tokens";
 
+import ReportCell from "./ReportCell";
 import { NUMBER, show, usedColumns, type Row } from "./reportRows";
 import type { Section } from "./sections";
 import type { ReportColumn } from "./useReport";
@@ -82,7 +83,7 @@ function DetailsTable({ section, columns }: { section: Section; columns: ReportC
 				dataIndex: c.fieldname,
 				align: NUMBER.includes(c.fieldtype ?? "") ? "right" : "left",
 				ellipsis: true,
-				render: (v: unknown) => show(v, c),
+				render: (v: unknown, row) => <ReportCell value={v} row={row} col={c} />,
 			}))}
 		/>
 	);

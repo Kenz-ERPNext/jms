@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { toRows, toCsv } from "./reportRows";
+import { linkTarget, toRows, toCsv } from "./reportRows";
 import { toColumn } from "./useReport";
 
 describe("report table helpers", () => {
@@ -34,5 +34,55 @@ describe("report table helpers", () => {
 	it("writes CSV with quotes escaped", () => {
 		const rows = toRows([{ col_0: 'a "b"', amount: 5 }], columns);
 		expect(toCsv(rows, columns)).toBe('"Job","Amount"\n"a ""b""","5"');
+	});
+
+	it("links vouchers by their row's doctype and jobs from dimension columns", () => {
+		const voucher = {
+			fieldname: "voucher_no",
+			label: "Voucher No",
+			fieldtype: "Dynamic Link",
+			options: "voucher_type",
+		};
+		const job = { fieldname: "job", label: "Job", options: "Job" };
+		const [row, total] = toRows(
+			[
+				{ voucher_type: "Payment Entry", voucher_no: "ACC-PAY-1", job: "JOB-1/26" },
+				{ voucher_type: "", voucher_no: "'Total'", job: "" },
+			],
+			[voucher, job],
+		);
+		expect(linkTarget(row.voucher_no, row, voucher)).toEqual({
+			doctype: "Payment Entry",
+			name: "ACC-PAY-1",
+		});
+		expect(linkTarget(row.job, row, job)).toEqual({ doctype: "Job", name: "JOB-1/26" });
+		expect(linkTarget(total.voucher_no, total, voucher)).toBeNull();
+	});
+
+	it("links Link columns, but not quoted labels like 'Opening'", () => {
+		const gle = {
+			fieldname: "gl_entry",
+			label: "GL Entry",
+			fieldtype: "Link",
+			options: "GL Entry",
+		};
+		const account = {
+			fieldname: "account",
+			label: "Account",
+			fieldtype: "Link",
+			options: "Account",
+		};
+		const [row, opening] = toRows(
+			[
+				{ gl_entry: "ACC-GLE-1", account: "2110 - Creditors" },
+				{ gl_entry: "", account: "'Opening'" },
+			],
+			[gle, account],
+		);
+		expect(linkTarget(row.gl_entry, row, gle)).toEqual({
+			doctype: "GL Entry",
+			name: "ACC-GLE-1",
+		});
+		expect(linkTarget(opening.account, opening, account)).toBeNull();
 	});
 });

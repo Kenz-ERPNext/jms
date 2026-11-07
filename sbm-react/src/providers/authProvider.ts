@@ -25,7 +25,7 @@ export const authProvider: AuthProvider = {
 					"Two-factor login is on. Use the ERPNext login: /login?desk=1",
 				);
 			}
-			// now logged in: may this user use the ERPNext desk? (decides where they start)
+			// now logged in: may this user use the ERPNext desk? (decides whether a desk page asked for is followed)
 			const boot = await callMethod<{ desk?: boolean }>(
 				"jms.api.boot.get_boot",
 				{},

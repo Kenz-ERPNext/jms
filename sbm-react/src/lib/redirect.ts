@@ -1,19 +1,18 @@
 // Where to go after login: ?redirect-to= (from ERPNext) or ?to= (from the SBM
 // router), both full site paths such as /app/job/JOB-1 or /sbm/jobs.
 // Only paths on this site are allowed, so a crafted link cannot send the user elsewhere.
-// Desk users (System Manager, Admin) start in ERPNext; everyone else in SBM, and a
-// desk page as target is not for them (the server would send them back anyway).
+// Everyone starts in SBM, desk users (Administrator, System Manager, Admin) too. A
+// desk user still goes to a desk page asked for (/app/job/JOB-1); for everyone else
+// a desk page is not for them (the server would send them back anyway).
 
 export const HOME = "/sbm";
 export const LOGIN = "/login";
-export const DESK_HOME = "/app";
-
 export function afterLoginPath(
 	search: string,
 	origin = window.location.origin,
 	desk = false,
 ): string {
-	const home = desk ? DESK_HOME : HOME;
+	const home = HOME;
 	const params = new URLSearchParams(search);
 	const target = params.get("redirect-to") ?? params.get("to");
 	if (!target) return home;

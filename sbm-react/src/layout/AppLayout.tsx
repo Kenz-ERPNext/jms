@@ -6,6 +6,7 @@ import { Grid } from "antd";
 import { Outlet } from "react-router";
 
 import { JobActionsProvider } from "@/features/job-actions/JobActionsProvider";
+import { DocViewProvider } from "@/features/doc-view/DocViewProvider";
 import { JobModalProvider } from "@/features/job-form/JobModalProvider";
 
 import { tokens } from "@/theme/tokens";
@@ -31,9 +32,11 @@ export default function AppLayout() {
 				}}
 			>
 				<JobModalProvider>
-					<JobActionsProvider>
-						<Outlet />
-					</JobActionsProvider>
+					<DocViewProvider>
+						<JobActionsProvider>
+							<Outlet />
+						</JobActionsProvider>
+					</DocViewProvider>
 				</JobModalProvider>
 			</div>
 		</ThemedLayout>
