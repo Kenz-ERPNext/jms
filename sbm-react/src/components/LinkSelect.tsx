@@ -5,6 +5,7 @@
 // The list opens when the field is reached with Tab (FocusSelect).
 // With allowCreate the list ends in "+ Create a new <DocType>", as in ERPNext: a quick
 // form (QuickCreate) with the typed text, and the new record is then chosen.
+// The list shows 20 at first and 20 more each time it is scrolled to the bottom.
 
 import { PlusOutlined } from "@ant-design/icons";
 import { useSelect } from "@refinedev/antd";
@@ -28,6 +29,8 @@ interface LinkSelectProps extends Omit<SelectProps, "options" | "onSearch"> {
 	allowCreate?: boolean;
 }
 
+const PAGE = 20;
+
 export default function LinkSelect({
 	doctype,
 	labelField = "name",
@@ -38,6 +41,7 @@ export default function LinkSelect({
 }: LinkSelectProps) {
 	const [typed, setTyped] = useState("");
 	const [creating, setCreating] = useState(false);
+	const [pageSize, setPageSize] = useState(PAGE);
 	const searched = [
 		...new Set(["name", labelField, descriptionField].filter(Boolean)),
 	] as string[];
@@ -47,7 +51,8 @@ export default function LinkSelect({
 		optionLabel: (row) => String(row[labelField] || row.name),
 		meta: { fields: searched },
 		filters,
-		pagination: { pageSize: 20 },
+		pagination: { pageSize },
+		queryOptions: { placeholderData: (previous) => previous },
 		debounce: 300,
 		defaultValue: rest.value ?? undefined,
 		onSearch: (text): CrudFilter[] =>
@@ -79,6 +84,15 @@ export default function LinkSelect({
 			)
 		: undefined;
 
+	// near the bottom of the list: load the next page, while there are more
+	const loaded = query.data?.data.length ?? 0;
+	const onPopupScroll: SelectProps["onPopupScroll"] = (e) => {
+		const el = e.currentTarget as HTMLElement;
+		const more = (query.data?.total ?? 0) > loaded && loaded >= pageSize;
+		if (more && !query.isFetching && el.scrollTop + el.clientHeight >= el.scrollHeight - 40)
+			setPageSize((n) => n + PAGE);
+	};
+
 	const canCreate = allowCreate && !rest.mode;
 	const popupRender: SelectProps["popupRender"] = canCreate
 		? (menu) => (
@@ -104,7 +118,12 @@ export default function LinkSelect({
 		<>
 			<FocusSelect
 				{...selectProps}
-				onSearch={(text) => (setTyped(text), selectProps.onSearch?.(text))}
+				onSearch={(text) => (
+					setTyped(text),
+					setPageSize(PAGE),
+					selectProps.onSearch?.(text)
+				)}
+				onPopupScroll={onPopupScroll}
 				optionRender={optionRender}
 				popupRender={popupRender}
 				popupMatchSelectWidth={descriptionField || canCreate ? 280 : true}

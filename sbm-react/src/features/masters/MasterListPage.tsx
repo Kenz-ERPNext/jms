@@ -74,7 +74,8 @@ export function MasterList({ slug, inModal }: { slug: string; inModal?: boolean 
 		<Card
 			title={inModal ? undefined : config.title}
 			variant={inModal ? "borderless" : undefined}
-			styles={inModal ? { body: { padding: 0 } } : undefined}
+			// in the modal: no side padding, but a gap under the header line (the New button)
+			styles={inModal ? { body: { padding: 0, paddingTop: tokens.space.md } } : undefined}
 			extra={
 				inSbm ? (
 					<Button

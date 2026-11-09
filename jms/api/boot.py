@@ -48,6 +48,8 @@ def _office_data():
 	return {
 		"company": company,
 		"currency": frappe.get_cached_value("Company", company, "default_currency") if company else None,
+		# the Job each row of a new Journal Entry starts with (SBM's form)
+		"default_je_job": settings.get("default_journal_entry_job"),
 		# A flag never saved on the Single is None: treat it as on, like get_financials.
 		"settings": {f: 1 if settings.get(f) is None else int(settings.get(f)) for f in SETTING_FLAGS},
 		# the address country a new customer gets (Customer quick form)

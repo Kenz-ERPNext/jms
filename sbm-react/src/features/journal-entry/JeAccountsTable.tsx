@@ -14,7 +14,12 @@ import { tokens } from "@/theme/tokens";
 
 import { PARTY_TYPES, partyTypeFor, totals, type JeRow } from "./journalEntry";
 
-export const EMPTY_ROW: JeRow = { debit: null, credit: null };
+/** A new row: no amounts, the default job (JMS Settings), changeable. */
+export const newRow = (): JeRow => ({
+	debit: null,
+	credit: null,
+	job: getBoot().default_je_job || undefined,
+});
 
 export default function JeAccountsTable() {
 	const form = Form.useFormInstance();
@@ -187,7 +192,7 @@ export default function JeAccountsTable() {
 					<Button
 						icon={<PlusOutlined />}
 						style={{ marginTop: tokens.space.sm }}
-						onClick={() => add({ ...EMPTY_ROW })}
+						onClick={() => add(newRow())}
 					>
 						Add row
 					</Button>

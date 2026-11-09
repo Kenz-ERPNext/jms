@@ -22,9 +22,13 @@ const DocViewContext = createContext<{ openDoc: OpenDoc; openJournalEntry: OpenJ
 export function DocViewProvider({ children }: { children: ReactNode }) {
 	const openJob = useOpenJob();
 	const [stack, setStack] = useState<{ doctype: string; name: string }[]>([]);
-	const [je, setJe] = useState<{ open: boolean; values?: JeValues; amendedFrom?: string }>({
-		open: false,
-	});
+	// opened: a new count each time, so the form starts afresh (not with the last values)
+	const [je, setJe] = useState<{
+		open: boolean;
+		opened: number;
+		values?: JeValues;
+		amendedFrom?: string;
+	}>({ open: false, opened: 0 });
 
 	const open = useCallback(
 		(doctype: string, name: string, push: boolean) => {
@@ -35,7 +39,13 @@ export function DocViewProvider({ children }: { children: ReactNode }) {
 	);
 	const openDoc: OpenDoc = useCallback((d, n) => open(d, n, false), [open]);
 	const openJournalEntry: OpenJournalEntry = useCallback(
-		(amend) => setJe({ open: true, values: amend?.values, amendedFrom: amend?.amendedFrom }),
+		(amend) =>
+			setJe((s) => ({
+				open: true,
+				opened: s.opened + 1,
+				values: amend?.values,
+				amendedFrom: amend?.amendedFrom,
+			})),
 		[],
 	);
 
@@ -51,13 +61,13 @@ export function DocViewProvider({ children }: { children: ReactNode }) {
 				onClose={() => setStack([])}
 			/>
 			<JournalEntryModal
-				key={je.amendedFrom ?? "new"}
+				key={je.opened}
 				open={je.open}
 				initial={je.values}
 				amendedFrom={je.amendedFrom}
-				onClose={() => setJe({ open: false })}
+				onClose={() => setJe((s) => ({ ...s, open: false }))}
 				onSaved={(name) => {
-					setJe({ open: false });
+					setJe((s) => ({ ...s, open: false }));
 					openDoc("Journal Entry", name);
 				}}
 			/>

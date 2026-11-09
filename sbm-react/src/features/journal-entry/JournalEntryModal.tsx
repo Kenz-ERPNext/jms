@@ -14,7 +14,7 @@ import { formatMoney } from "@/lib/format";
 import { callMethod } from "@/lib/frappe";
 import { tokens } from "@/theme/tokens";
 
-import JeAccountsTable, { EMPTY_ROW } from "./JeAccountsTable";
+import JeAccountsTable, { newRow } from "./JeAccountsTable";
 import { NEEDS_REFERENCE, toDoc, totals, VOUCHER_TYPES, type JeValues } from "./journalEntry";
 
 interface Props {
@@ -132,7 +132,7 @@ export default function JournalEntryModal({
 					initial ?? {
 						voucher_type: "Journal Entry",
 						posting_date: dayjs(),
-						accounts: [{ ...EMPTY_ROW }, { ...EMPTY_ROW }],
+						accounts: [newRow(), newRow()],
 					}
 				}
 			>

@@ -12,6 +12,8 @@ export interface Boot {
 	employees?: string[];
 	company?: string;
 	currency?: string;
+	/** JMS Settings' Default Journal Entry Job: each new Journal Entry row starts with it. */
+	default_je_job?: string;
 	/** The system's default country (new customer addresses). */
 	country?: string;
 	settings?: Record<string, number>;

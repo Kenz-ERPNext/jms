@@ -22,6 +22,7 @@
   "outsourcing_cost_account",
   "accounting_column_break",
   "default_company",
+  "default_journal_entry_job",
   "status_section",
   "enable_amount_pending_indicator",
   "enable_exp_pending_indicator"
@@ -125,6 +126,13 @@
    "options": "Company"
   },
   {
+   "fieldname": "default_journal_entry_job",
+   "fieldtype": "Link",
+   "label": "Default Journal Entry Job",
+   "options": "Job",
+   "description": "Job filled in on each row of a new Journal Entry in SBM (it can be changed per row)."
+  },
+  {
    "fieldname": "status_section",
    "fieldtype": "Section Break",
    "label": "Status Indicators"
@@ -147,7 +155,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-06-03 00:00:00",
+ "modified": "2026-11-09 13:48:05.899708",
  "modified_by": "Administrator",
  "module": "Jms",
  "name": "JMS Settings",
